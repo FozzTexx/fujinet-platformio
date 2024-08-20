@@ -11,6 +11,7 @@
 #endif
 #include <driver/spi_master.h>
 #include <freertos/semphr.h>
+#include <soc/spi_periph.h>
 
 #include "../../include/pinmap.h"
 #include "fnRMTstream.h"

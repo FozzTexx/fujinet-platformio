@@ -206,7 +206,7 @@ int IRAM_ATTR iwm_sp_ll::iwm_send_packet_spi()
   trans.length = spi_len * 8;   // Data length, in bits
   trans.flags = 0;              // undo SPI_TRANS_USE_TXDATA flag
 
-  iwm_ack_set(); // go hi-z - signal ready to send data
+  iwm_ack_set(); // signal ready to send data
 
   // wait for req line to go high
   if (req_wait_for_rising_timeout(300000))
@@ -867,6 +867,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
   if (doCapture) {
     d2w_begin = track_location;
 
+#if 0
     //memset(d2w_buffer, 0xff, d2w_buflen);
     //memset(&rxtrans, 0, sizeof(spi_transaction_t));
     rxtrans = {
@@ -880,6 +881,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       .rx_buffer = d2w_buffer,
     };
     ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
+#endif
     rx_enabled = true;
     IWM_BIT_SET(SP_DEBUG);
 
@@ -923,6 +925,17 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
   else {
     smartport.iwm_ack_clr();
     gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
+
+    memset(d2w_buffer, 0xff, d2w_buflen);
+    memset(&rxtrans, 0, sizeof(spi_transaction_t));
+    rxtrans.rxlength = d2w_buflen;
+    rxtrans.rx_buffer = d2w_buffer;
+    rxtrans.flags = SPI_TRANS_USE_RXDATA;
+    ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
+
+    // SPI3 since using VSPI_HOST
+    SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_OUT_DATA_BURST_EN | SPI_INDSCR_BURST_EN;
+    SPI3.dma_conf.dma_continue = 1;
   }
 
   diskii_xface.set_output_to_rmt();
@@ -934,8 +947,12 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
 
 void iwm_diskii_ll::stop()
 {
+  spi_dev_t *spi_host;
+
+
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
+  SPI3.dma_conf.dma_continue = 0;
   smartport.iwm_ack_set();
   gpio_isr_handler_remove(SP_WREQ);
   fnLedManager.set(LED_BUS, false);
