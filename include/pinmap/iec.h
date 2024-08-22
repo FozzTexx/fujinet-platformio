@@ -1,22 +1,16 @@
 /* FujiLoaf REV0 */
 #ifdef PINMAP_IEC
 
-#include "common.h"
-
-#undef PIN_CARD_DETECT
-#undef PIN_CARD_DETECT_FIX
 #define PIN_CARD_DETECT         GPIO_NUM_35 // fnSystem.h
 #define PIN_CARD_DETECT_FIX     GPIO_NUM_35 // fnSystem.h
 
-#undef PIN_BUTTON_B
-#undef PIN_BUTTON_C
 #define PIN_BUTTON_B            GPIO_NUM_NC // No Button B
 #define PIN_BUTTON_C            GPIO_NUM_36
 
-#undef PIN_LED_BUS
-#undef PIN_LED_BT
 #define PIN_LED_BUS             GPIO_NUM_12 // 4 FN
 #define PIN_LED_BT              GPIO_NUM_NC // No BT LED
+
+#include "common.h"
 
 // Reset line is available
 #define IEC_HAS_RESET

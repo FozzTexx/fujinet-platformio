@@ -2,20 +2,13 @@
 #ifndef PINMAP_FUJILOAF_REV0_H
 #define PINMAP_FUJILOAF_REV0_H
 
-#include "common.h"
-
 #ifdef PINMAP_FUJILOAF_REV0
-#undef PIN_CARD_DETECT
-#undef PIN_CARD_DETECT_FIX
 #define PIN_CARD_DETECT         GPIO_NUM_35 // fnSystem.h
 #define PIN_CARD_DETECT_FIX     GPIO_NUM_35 // fnSystem.h
 
-#undef PIN_BUTTON_B
-#undef PIN_BUTTON_C
 #define PIN_BUTTON_B            GPIO_NUM_NC // No Button B
 #define PIN_BUTTON_C            GPIO_NUM_36
 
-#undef PIN_LED_BT
 #define PIN_LED_BT              GPIO_NUM_NC // No BT LED
 
 /* LED Strip NEW */
@@ -31,6 +24,8 @@
 
 /* Audio Output */
 #define PIN_DAC1                GPIO_NUM_25 // samlib.h
+
+#include "common.h"
 
 // Reset line is available
 #define IEC_HAS_RESET

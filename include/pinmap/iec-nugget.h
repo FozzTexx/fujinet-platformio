@@ -3,27 +3,20 @@
 
 #ifdef PINMAP_IEC_NUGGET
 
-#include "common.h"
-
-#undef PIN_SD_HOST_CS
 #define PIN_SD_HOST_CS          GPIO_NUM_4  // LOLIN D32 Pro
 
-#undef PIN_BUTTON_A
-#undef PIN_BUTTON_B
-#undef PIN_BUTTON_C
 #define PIN_BUTTON_A            GPIO_NUM_NC  // keys.cpp
 #define PIN_BUTTON_B            GPIO_NUM_NC
 #define PIN_BUTTON_C            GPIO_NUM_NC
 
-#undef PIN_LED_WIFI
-#undef PIN_LED_BUS
 #define PIN_LED_WIFI            GPIO_NUM_5 // led.cpp
 #define PIN_LED_BUS             GPIO_NUM_2 // 4 FN
 
 #if defined(JTAG)
-#undef PIN_LED_BT
 #define PIN_LED_BT              GPIO_NUM_5  // LOLIN D32 PRO
 #endif
+
+#include "common.h"
 
 /* Commodore IEC Pins */
 //#define IEC_HAS_RESET // Reset line is available

@@ -3,15 +3,12 @@
  */
 #ifdef PINMAP_FUJIAPPLE_IEC
 
-#include "common.h"
-
-#undef PIN_BUTTON_B
 #define PIN_BUTTON_B            GPIO_NUM_NC // No Button B
 
-#undef PIN_LED_BUS
-#undef PIN_LED_BT
 #define PIN_LED_BUS             GPIO_NUM_12 // 4 FN
 #define PIN_LED_BT              GPIO_NUM_NC // No BT LED
+
+#include "common.h"
 
 // Reset line is available
 #define IEC_HAS_RESET

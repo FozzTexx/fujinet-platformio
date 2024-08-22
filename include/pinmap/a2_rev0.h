@@ -1,20 +1,16 @@
 /* FujiNet Hardware Pin Mapping */
 #ifdef PINMAP_A2_REV0
 
-#include "common.h"
-
 #ifdef MASTERIES_SPI_FIX
-#undef PIN_SD_HOST_MOSI
 #define PIN_SD_HOST_MOSI        GPIO_NUM_14
 #endif
 
-#undef PIN_BUTTON_B
 #define PIN_BUTTON_B            GPIO_NUM_NC // No Button B
 
-#undef PIN_LED_BUS
-#undef PIN_LED_BT
 #define PIN_LED_BUS             GPIO_NUM_12
 #define PIN_LED_BT              GPIO_NUM_NC // No BT LED
+
+#include "common.h"
 
 /* IWM Bus Pins */
 #define SP_PHI0                 GPIO_NUM_32
