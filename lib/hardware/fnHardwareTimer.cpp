@@ -77,11 +77,15 @@ void HardwareTimer::config()
   //     uint32_t divider;               /*!< Counter clock divider */
   // } timer_config_t;
 
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3)
 
 fn_config.direction = GPTIMER_COUNT_UP,
 fn_config.clk_src = GPTIMER_CLK_SRC_APB;
+#if defined(CONFIG_IDF_TARGET_ESP32)
+fn_config.resolution_hz = APB_CLK_FREQ / TIMER_DIVIDER;
+#else
 fn_config.resolution_hz = 10000000;
+#endif
 
 gptimer_new_timer(&fn_config, &gptimer);
 gptimer_enable(gptimer);
