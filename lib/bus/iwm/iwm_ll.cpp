@@ -1008,9 +1008,21 @@ void iwm_ll::disable_output()
 
 // }
 
+void IRAM_ATTR encode_rmt_bitstream_forwarder(const void* src, rmt_item32_t* dest,
+					      size_t src_size, size_t wanted_num,
+					      size_t* translated_size, size_t* item_num,
+					      int bit_period)
+{
+  diskii_xface.encode_rmt_bitstream(src, dest, src_size, wanted_num, translated_size,
+				    item_num, bit_period);
+  return;
+}
+
 //Convert track data to rmt format data.
-void IRAM_ATTR encode_rmt_bitstream(const void* src, rmt_item32_t* dest, size_t src_size,
-                         size_t wanted_num, size_t* translated_size, size_t* item_num, int bit_period)
+void IRAM_ATTR iwm_diskii_ll::encode_rmt_bitstream(const void* src, rmt_item32_t* dest,
+						   size_t src_size, size_t wanted_num,
+						   size_t* translated_size, size_t* item_num,
+						   int bit_period)
 {
     // *src is equal to *track_buffer
     // src_size is equal to numbits
@@ -1030,30 +1042,54 @@ void IRAM_ATTR encode_rmt_bitstream(const void* src, rmt_item32_t* dest, size_t 
     bit_ticks *= bit_period; // now units are ticks * ns /us
     bit_ticks /= 1000; // now units are ticks
 
-    const rmt_item32_t bit0 = {{{ (3 * bit_ticks) / 4, 0, bit_ticks / 4, 0 }}}; //Logical 0
-    const rmt_item32_t bit1 = {{{ (3 * bit_ticks) / 4, 0, bit_ticks / 4, 1 }}}; //Logical 1
+#define BIT_TICK_34 ((uint16_t) ((3 * bit_ticks) / 4))
+#define BIT_TICK_14 ((uint16_t) (bit_ticks / 4))
+
+    const rmt_symbol_word_t bits[] = {
+      {{ BIT_TICK_34, 0, BIT_TICK_14, 0 }},
+      {{ BIT_TICK_34, 0, BIT_TICK_14, 1 }},
+    };
     static uint8_t window = 0;
     uint8_t outbit = 0;
     size_t num = 0;
-    rmt_item32_t* pdest = dest;
-    while (num < wanted_num)
-    {
-        // move this to nextbit()
-        // MC34780 behavior for random bit insertion
-      // https://applesaucefdc.com/woz/reference2/
-      window <<= 1;
-      window |= (uint8_t)diskii_xface.nextbit();
-      window &= 0x0f;
-      outbit = (window != 0) ? window & 0x02 : diskii_xface.fakebit();
-      pdest->val = (outbit != 0) ? bit1.val : bit0.val;
+    uint8_t *trk_buf = (uint8_t *) src;
 
-      num++;
-      pdest++;
-    }
+    for (num = 0; num < wanted_num; num++, dest++)
+      {
+	// MC34780 behavior for random bit insertion
+	// https://applesaucefdc.com/woz/reference2/
+
+	int track_byte_ctr = track_location / 8;
+	int track_bit_ctr = track_location % 8;
+
+	// bits go MSB first
+	outbit = (trk_buf[track_byte_ctr] & (0x80 >> track_bit_ctr)) != 0;
+	track_location = (track_location + 1) % src_size;
+
+	window <<= 1;
+	window |= outbit;
+	window &= 0x0f;
+	if (window != 0)
+	  outbit = window & 0x02;
+	else
+	  {
+	    const uint8_t MC3470[] = {0b01010000, 0b10110011, 0b01000010, 0b00000000, 0b10101101, 0b00000010, 0b01101000, 0b01000110, 0b00000001, 0b10010000, 0b00001000, 0b00111000, 0b00001000, 0b00100101, 0b10000100, 0b00001000, 0b10001000, 0b01100010, 0b10101000, 0b01101000, 0b10010000, 0b00100100, 0b00001011, 0b00110010, 0b11100000, 0b01000001, 0b10001010, 0b00000000, 0b11000001, 0b10001000, 0b10001000, 0b00000000};
+
+	    static int MC3470_byte_ctr;
+	    static int MC3470_bit_ctr;
+
+	    ++MC3470_bit_ctr %= 8;
+	    if (MC3470_bit_ctr == 0)
+	      ++MC3470_byte_ctr %= sizeof(MC3470);
+
+	    outbit = (MC3470[MC3470_byte_ctr] & (0x01 << MC3470_bit_ctr)) != 0;
+	  }
+
+	dest->val = bits[!!outbit].val;
+      }
     *translated_size = wanted_num;
     *item_num = wanted_num;
 }
-
 
 /*
  * Initialize the RMT Tx channel and SPI Rx channel
@@ -1087,51 +1123,7 @@ void iwm_diskii_ll::setup_rmt()
 
   ESP_ERROR_CHECK(fnRMT.rmt_config(&config));
   ESP_ERROR_CHECK(fnRMT.rmt_driver_install(config.channel, 0, ESP_INTR_FLAG_IRAM));
-  ESP_ERROR_CHECK(fnRMT.rmt_translator_init(config.channel, encode_rmt_bitstream));
-}
-
-bool IRAM_ATTR iwm_diskii_ll::nextbit()
-{
-  int track_byte_ctr = track_location / 8;
-  int track_bit_ctr = track_location % 8;
-
-  bool outbit;
-  outbit = (track_buffer[track_byte_ctr] & (0x80 >> track_bit_ctr)) != 0; // bits go MSB first
-
-  track_location++;
-  if (track_location >= track_numbits)
-  {
-    track_location = 0;
-  }
-
-  return outbit;
-}
-
-bool IRAM_ATTR iwm_diskii_ll::fakebit()
-{
-  // MC3470 random bit behavior https://applesaucefdc.com/woz/reference2/
-  /** Of course, coming up with random values like this can be a bit processor intensive,
-   * so it is adequate to create a randomly-filled circular buffer of 32 bytes.
-   * We then just pull bits from this whenever we are in “fake bit mode”.
-   * This buffer should also be used for empty tracks as designated with an 0xFF value
-   * in the TMAP Chunk (see below). You will want to have roughly 30% of the buffer be 1 bits.
-   *
-   * For testing the MC3470 generation of fake bits, you can turn to "The Print Shop Companion".
-   * If you have control at the main menu, then you are passing this test.
-   *
-  **/
-  // generate PN bits using Octave/MATLAB with
-  // for i=1:32, printf("0b"),printf("%d",rand(8,1)<0.3),printf(","),end
-  const uint8_t MC3470[] = {0b01010000, 0b10110011, 0b01000010, 0b00000000, 0b10101101, 0b00000010, 0b01101000, 0b01000110, 0b00000001, 0b10010000, 0b00001000, 0b00111000, 0b00001000, 0b00100101, 0b10000100, 0b00001000, 0b10001000, 0b01100010, 0b10101000, 0b01101000, 0b10010000, 0b00100100, 0b00001011, 0b00110010, 0b11100000, 0b01000001, 0b10001010, 0b00000000, 0b11000001, 0b10001000, 0b10001000, 0b00000000};
-
-  static int MC3470_byte_ctr;
-  static int MC3470_bit_ctr;
-
-  ++MC3470_bit_ctr %= 8;
-  if (MC3470_bit_ctr == 0)
-    ++MC3470_byte_ctr %= sizeof(MC3470);
-
-  return (MC3470[MC3470_byte_ctr] & (0x01 << MC3470_bit_ctr)) != 0;
+  ESP_ERROR_CHECK(fnRMT.rmt_translator_init(config.channel, encode_rmt_bitstream_forwarder));
 }
 
 void IRAM_ATTR iwm_diskii_ll::copy_track(uint8_t *track, size_t tracklen, size_t trackbits,

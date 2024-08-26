@@ -299,14 +299,15 @@ public:
   uint8_t iwm_enable_states();
 
   // Disk II handling by RMT peripheral
+  void encode_rmt_bitstream(const void* src, rmt_item32_t* dest, size_t src_size,
+			    size_t wanted_num, size_t* translated_size,
+			    size_t* item_num, int bit_period);
   void setup_rmt(); // install the RMT device
   void diskii_write_handler();
   void start(uint8_t drive, bool write_protect);
   void stop();
   // need a function to remove the RMT device?
 
-  bool nextbit();
-  bool fakebit();
   void copy_track(uint8_t *track, size_t tracklen, size_t trackbits,
 		  int bitperiod, int tracknum);
 
