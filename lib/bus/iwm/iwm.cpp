@@ -553,7 +553,7 @@ void IRAM_ATTR iwmBus::service()
       {
         theFuji._fnDisk2s[diskii_xface.iwm_enable_states() - 1].change_track(0); // copy current track in for this drive
         diskii_xface.start(diskii_xface.iwm_enable_states() - 1,
-			   theFuji._fnDisk2s[diskii_xface.iwm_enable_states() - 1].readonly); // start it up
+                           theFuji._fnDisk2s[diskii_xface.iwm_enable_states() - 1].readonly); // start it up
       }
     } // make a call to start the RMT stream
     else
@@ -562,7 +562,8 @@ void IRAM_ATTR iwmBus::service()
       // alternative approach is to enable RMT to spit out PRN bits
     }
     // make sure the state machine moves on to iwm_enable_state_t::on
-    return; // return so the SP code doesn't get checked
+    break;
+
   case iwm_enable_state_t::on:
 #ifdef DEBUG
     new_track = theFuji._fnDisk2s[diskii_xface.iwm_enable_states() - 1].get_track_pos();
@@ -572,14 +573,99 @@ void IRAM_ATTR iwmBus::service()
       old_track = new_track;
     }
 #endif
-    return;
+    break;
+
   case iwm_enable_state_t::on2off:
     fnSystem.delay(1); // need a better way to figure out persistence
     diskii_xface.stop();
     iwm_ack_deassert();
-    return;
+    break;
   }
 #endif /* !SLIP */
+
+  iwm_write_data item;
+  if (xQueueReceive(diskii_xface.iwm_write_queue, &item, 0)) {
+    int sector_num;
+    uint8_t byte, *decoded;
+    size_t idx, offset, decode_len;
+    bool more_data;
+    size_t sector_start, sector_end;
+    bool found_start, found_end;
+
+
+    Debug_printf("\r\nDisk II iwm queue receive %u", item.length);
+    // FIXME - terrible hack to guess sector based on how serialise_track() works
+    // gap 1            = 16 * 10
+    // sector header    = 10 * 8        [D5 AA 96] + 4 + [DE AA EB]
+    // gap 2            = 7 * 10
+    // sector data      = (6 + 343) * 8 [D5 AA AD] + 343 + [DE AA EB]
+    // gap 3            = 16 * 10
+    // per sector bits  = 3102
+
+    sector_num = (item.track_begin - 16 * 10) / 3102;
+
+    // FIXME - find start of write. SPI doesn't always start soon
+    //         enough and misses sync bytes so force sync to 0xff
+    for (idx = 0; idx < 8; idx++) {
+      offset = idx * 8;
+      byte = diskii_xface.iwm_decode_byte(item.buffer, item.length, smartport.f_spirx,
+                                          19, &offset, &more_data);
+      if (byte == 0xff || byte == 0xd5)
+        break;
+    }
+
+    Debug_printf("\r\nDisk II write Qtrack/sector: %i/%i  bit_len: %i",
+                 item.quarter_track, sector_num, item.track_end - item.track_begin);
+    decoded = (uint8_t *) malloc(item.length);
+    decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[idx], item.length - idx, decoded);
+
+    // Find start of sector: D5 AA AD
+    for (sector_start = 0; sector_start <= decode_len - 349; sector_start++)
+      if (decoded[sector_start] == 0xD5
+          && decoded[sector_start+1] == 0xAA
+          && decoded[sector_start+2] == 0xAD)
+        break;
+    found_start = sector_start <= decode_len - 349;
+
+    // Find end of sector too: DE AA EB
+    for (sector_end = 0; sector_end <= decode_len - 3; sector_end++)
+      if (decoded[sector_end] == 0xDE
+          && decoded[sector_end+1] == 0xAA
+          && decoded[sector_end+2] == 0xEB)
+        break;
+    found_end = sector_end <= decode_len - 3;
+
+    // FIXME - sometimes the D5 AA AD doesn't decode correctly
+    if (!found_start && found_end) {
+      sector_start = sector_end - 346;
+      found_start = true;
+    }
+
+    if (found_start && found_end && sector_end - sector_start == 346) {
+      uint8_t sector_data[343]; // Need enough room to demap and de-xor
+      const int phys2log[] = {0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15};
+
+
+      Debug_printf("\r\nDisk II sector data: %i", sector_start + 3);
+      decode_6_and_2(sector_data, &decoded[sector_start + 3]);
+      //hexdump_slow(sector_data, 256);
+
+      iwmDisk2 *drive = &theFuji._fnDisk2s[diskii_xface.iwm_enable_states() - 1];
+      drive->write_sector(item.quarter_track, phys2log[sector_num], sector_data);
+      drive->change_track(0);
+    }
+    else {
+      Debug_printf("\r\nDisk II sector not found");
+      //hexdump_slow(decoded, decode_len);
+      Debug_printf("\r\nDisk II spi capture");
+      //hexdump_slow(item.buffer, std::max(item.length, (size_t) 512));
+    }
+
+    // FIXME - is there another sector to decode?
+
+    free(decoded);
+    free(item.buffer);
+  }
 }
 
 #ifndef DEV_RELAY_SLIP

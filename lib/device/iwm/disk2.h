@@ -54,6 +54,8 @@ public:
     // char get_disk_number() { return disk_num; };
     mediatype_t disktype() { return _disk == nullptr ? MEDIATYPE_UNKNOWN : _disk->_mediatype; };
 
+    bool write_sector(int track, int sector, uint8_t* buffer);
+
     ~iwmDisk2();
 };
 

@@ -16,8 +16,6 @@
 #include "../../include/debug.h"
 #include "led.h"
 
-#define MHZ (1000*1000)
-
 volatile uint8_t _phases = 0;
 volatile sp_cmd_state_t sp_command_mode = sp_cmd_state_t::standby;
 volatile int isrctr = 0;
@@ -293,6 +291,19 @@ uint8_t iwm_ll::iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int samp
   return byte;
 }
 
+size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest)
+{
+  bool more_data = true;
+  size_t offset = 0;
+  uint8_t *output;
+
+
+  for (output = dest, offset = 0; more_data; output++)
+    *output = iwm_decode_byte(src, src_size, smartport.f_spirx, 19, &offset, &more_data);
+
+  return output - dest;
+}
+
 int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(int n)
 {
   return iwm_read_packet_spi(packet_buffer, n);
@@ -524,7 +535,7 @@ void iwm_sp_ll::setup_spi()
     spirx_mosi_pin = SP_RDDATA;
 
   // SPI for receiving packets - sprirx
-  bus_cfg = {
+  spi_bus_config_t bus_cfg = {
     .mosi_io_num = spirx_mosi_pin,
     .miso_io_num = SP_WRDATA,
     .sclk_io_num = -1,
@@ -825,8 +836,71 @@ void iwm_diskii_ll::set_output_to_low()
 #define RMT_TX_CHANNEL rmt_channel_t::RMT_CHANNEL_0
 #define RMT_USEC (APB_CLK_FREQ / MHZ)
 
-void iwm_diskii_ll::start(uint8_t drive)
+// enable/disable capturing write signal from Disk II
+void IRAM_ATTR diskii_write_handler_forwarder(void *arg)
 {
+  iwm_diskii_ll *d2i = (iwm_diskii_ll *) arg;
+  d2i->diskii_write_handler();
+  return;
+}
+
+void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
+{
+  bool doCapture = !IWM_BIT(SP_WREQ);
+
+
+  //Debug_printf("\r\nDisk II write state: %i", doCapture);
+
+  if (doCapture) {
+    //IWM_BIT_SET(SP_ACK);
+
+    d2w_begin = track_location;
+
+    memset(d2w_buffer, 0xff, d2w_buflen);
+    memset(&rxtrans, 0, sizeof(spi_transaction_t));
+    rxtrans.rxlength = d2w_buflen;
+    rxtrans.rx_buffer = d2w_buffer;
+    ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
+    rx_enabled = true;
+    //IWM_BIT_CLEAR(SP_ACK);
+  }
+  else if (rx_enabled) {
+    BaseType_t woken;
+    iwm_write_data item = {
+      .quarter_track = d2w_tracknum,
+      .track_begin = d2w_begin,
+      .track_end = track_location,
+      .buffer = NULL,
+      .length = 0,
+    };
+
+    // FIXME - how to stop spi transfer in progress?
+
+    item.length = ((item.track_end - item.track_begin) % track_numbits)
+      * IWM_SAMPLES_PER_CELL(smartport.f_spirx);
+    item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
+    if (!item.buffer)
+      Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
+		   item.length, item.track_begin, item.track_end);
+    else {
+      memcpy(item.buffer, d2w_buffer, item.length);
+      xQueueSendFromISR(iwm_write_queue, &item, &woken);
+    }
+    rx_enabled = false;
+  }
+
+  return;
+}
+
+void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
+{
+  if (write_protect)
+    smartport.iwm_ack_set();
+  else {
+    smartport.iwm_ack_clr();
+    gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
+  }
+
   diskii_xface.set_output_to_rmt();
   diskii_xface.enable_output();
   ESP_ERROR_CHECK(fnRMT.rmt_write_bitstream(RMT_TX_CHANNEL, track_buffer, track_numbits, track_bit_period));
@@ -838,6 +912,8 @@ void iwm_diskii_ll::stop()
 {
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
+  smartport.iwm_ack_set();
+  gpio_isr_handler_remove(SP_WREQ);
   fnLedManager.set(LED_BUS, false);
   Debug_printf("\nstop diskII");
 }
@@ -980,10 +1056,14 @@ void IRAM_ATTR encode_rmt_bitstream(const void* src, rmt_item32_t* dest, size_t 
 
 
 /*
- * Initialize the RMT Tx channel
+ * Initialize the RMT Tx channel and SPI Rx channel
  */
 void iwm_diskii_ll::setup_rmt()
 {
+  iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
+  d2w_buflen = TRACK_LEN * IWM_SAMPLES_PER_CELL(smartport.f_spirx) * sizeof(*d2w_buffer);
+  d2w_buffer = (decltype(d2w_buffer)) heap_caps_malloc(d2w_buflen, MALLOC_CAP_DMA);
+
   track_buffer = (uint8_t *)heap_caps_malloc(TRACK_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (track_buffer == NULL)
     Debug_println("could not allocate track buffer");
@@ -1054,8 +1134,10 @@ bool IRAM_ATTR iwm_diskii_ll::fakebit()
   return (MC3470[MC3470_byte_ctr] & (0x01 << MC3470_bit_ctr)) != 0;
 }
 
-void IRAM_ATTR iwm_diskii_ll::copy_track(uint8_t *track, size_t tracklen, size_t trackbits, int bitperiod)
+void IRAM_ATTR iwm_diskii_ll::copy_track(uint8_t *track, size_t tracklen, size_t trackbits,
+					 int bitperiod, int tracknum)
 {
+  d2w_tracknum = tracknum;
   // copy track from SPIRAM to INTERNAL RAM
   if (track != nullptr)
     memcpy(track_buffer, track, tracklen);
