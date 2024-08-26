@@ -552,7 +552,8 @@ void IRAM_ATTR iwmBus::service()
       if (iwm_drive_enabled() == iwm_enable_state_t::on)
       {
         theFuji._fnDisk2s[diskii_xface.iwm_enable_states() - 1].change_track(0); // copy current track in for this drive
-        diskii_xface.start(diskii_xface.iwm_enable_states() - 1); // start it up
+        diskii_xface.start(diskii_xface.iwm_enable_states() - 1,
+			   theFuji._fnDisk2s[diskii_xface.iwm_enable_states() - 1].readonly); // start it up
       }
     } // make a call to start the RMT stream
     else

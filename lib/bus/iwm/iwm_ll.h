@@ -290,7 +290,7 @@ public:
 
   // Disk II handling by RMT peripheral
   void setup_rmt(); // install the RMT device
-  void start(uint8_t drive);
+  void start(uint8_t drive, bool write_protect);
   void stop();
   // need a function to remove the RMT device?
 

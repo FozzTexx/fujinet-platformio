@@ -348,14 +348,20 @@ uint8_t iwmFuji::iwm_ctrl_disk_image_mount() // SP CTRL command
 	uint8_t deviceSlot = data_buffer[0]; // adamnet_recv();
 	uint8_t options = data_buffer[1];	 // adamnet_recv(); // DISK_ACCESS_MODE
 
-	// TODO: Implement FETCH?
-	char flag[4] = {'r', 'b', 0, 0};
-	if (options == DISK_ACCESS_MODE_WRITE)
-		flag[2] = '+';
-
 	// A couple of reference variables to make things much easier to read...
 	fujiDisk &disk = _fnDisks[deviceSlot];
 	fujiHost &host = _fnHosts[disk.host_slot];
+
+	// TODO: Implement FETCH?
+	char flag[4] = {'r', 'b', 0, 0};
+	if (options == DISK_ACCESS_MODE_WRITE)
+	{
+		flag[2] = '+';
+		if (deviceSlot < 4)
+		  disk.disk_dev.readonly = false;
+		else
+		  _fnDisk2s[deviceSlot - 4].readonly = false;
+	}
 
 	Debug_printf("\r\nSelecting '%s' from host #%u as %s on D%u:\n", disk.filename, disk.host_slot, flag, deviceSlot + 1);
 
@@ -379,11 +385,6 @@ uint8_t iwmFuji::iwm_ctrl_disk_image_mount() // SP CTRL command
 	// if (mt == mediatype_t::MEDIATYPE_PO)
 	// { // And now mount it
 	disk.disk_type = disk.disk_dev.mount(disk.fileh, disk.filename, disk.disk_size);
-
-	if (options == DISK_ACCESS_MODE_WRITE)
-	{
-		disk.disk_dev.readonly = false;
-	}
 
 	return SP_ERR_NOERROR;
 }
