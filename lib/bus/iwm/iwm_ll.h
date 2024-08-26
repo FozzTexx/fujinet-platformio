@@ -194,6 +194,8 @@ protected:
   
 public:
   void setup_gpio();
+  uint8_t iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int sample_frequency,
+			  int timeout, size_t *bit_offset, bool *more_avail);
 };
 
 class iwm_sp_ll : public iwm_ll
@@ -219,10 +221,6 @@ private:
   const int f_spirx = APB_CLK_FREQ / 40; // 2 MHz - need slower rate for PAL
   const int pulsewidth = 8; // 8 samples per bit
   const int halfwidth = pulsewidth / 2;
-
-  // SPI receiver data stream counters
-  int spirx_byte_ctr = 0;
-  int spirx_bit_ctr = 0;
 
   //uint8_t packet_buffer[BLOCK_PACKET_LEN]; //smartport packet buffer
   uint16_t packet_len = 0;
@@ -309,6 +307,12 @@ public:
 
 extern iwm_sp_ll smartport;
 extern iwm_diskii_ll diskii_xface;
+
+#ifndef MHZ
+#define MHZ	(1000*1000)
+#endif
+#define CELL_US	4 // microseconds
+#define IWM_SAMPLES_PER_CELL(freq) ((CELL_US * (freq)) / MHZ)
 
 #endif // IWM_LL_H
 #endif // BUILD_APPLE
