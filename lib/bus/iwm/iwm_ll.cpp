@@ -291,7 +291,7 @@ uint8_t iwm_ll::iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int samp
   return byte;
 }
 
-size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest)
+size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest, size_t *used)
 {
   bool more_data = true;
   size_t offset = 0;
@@ -301,6 +301,7 @@ size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest)
   for (output = dest, offset = 0; more_data; output++)
     *output = iwm_decode_byte(src, src_size, smartport.f_spirx, 19, &offset, &more_data);
 
+  *used = (offset + 7) / 8;
   return output - dest;
 }
 
@@ -662,6 +663,10 @@ void iwm_ll::setup_gpio()
   Debug_printf("\nEXTRA signaling line configured");
 #endif
 
+#ifdef SP_DEBUG
+  fnSystem.set_pin_mode(SP_DEBUG, gpio_mode_t::GPIO_MODE_OUTPUT);
+  fnSystem.digital_write(SP_DEBUG, DIGI_LOW);
+#endif
 
   // attach the interrupt service routine
   gpio_isr_handler_add((gpio_num_t)SP_PHI0, phi_isr_handler, (void*) (gpio_num_t)SP_PHI0);
@@ -852,7 +857,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
   //Debug_printf("\r\nDisk II write state: %i", doCapture);
 
   if (doCapture) {
-    //IWM_BIT_SET(SP_ACK);
+    IWM_BIT_SET(SP_DEBUG);
 
     d2w_begin = track_location;
 
@@ -865,6 +870,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
     //IWM_BIT_CLEAR(SP_ACK);
   }
   else if (rx_enabled) {
+    IWM_BIT_CLEAR(SP_DEBUG);
     BaseType_t woken;
     iwm_write_data item = {
       .quarter_track = d2w_tracknum,

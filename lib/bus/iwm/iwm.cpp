@@ -385,6 +385,21 @@ std::vector<uint8_t> iwmDevice::create_dib_reply_packet(const std::string& devic
     return data;
 }
 
+void hexdump_slow(uint8_t *data, size_t length)
+{
+  char *p, *q, *msg = strdup(util_hexdump(data, length).c_str());
+
+
+  for (q = msg; (p = strchr(q, '\n')); ) {
+    Debug_printf("\r\n%.*s", p - q, q);
+    q = p + 1;
+    usleep(10 * 1000);
+  }
+  Debug_printf("\r\n%s", q);
+  free(msg);
+  return;
+}
+
 //*****************************************************************************
 // Function: main loop
 /*
@@ -617,7 +632,9 @@ void IRAM_ATTR iwmBus::service()
     Debug_printf("\r\nDisk II write Qtrack/sector: %i/%i  bit_len: %i",
                  item.quarter_track, sector_num, item.track_end - item.track_begin);
     decoded = (uint8_t *) malloc(item.length);
-    decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[idx], item.length - idx, decoded);
+    size_t used;
+    decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[idx], item.length - idx,
+						decoded, &used);
 
     // Find start of sector: D5 AA AD
     for (sector_start = 0; sector_start <= decode_len - 349; sector_start++)
@@ -648,17 +665,18 @@ void IRAM_ATTR iwmBus::service()
 
       Debug_printf("\r\nDisk II sector data: %i", sector_start + 3);
       decode_6_and_2(sector_data, &decoded[sector_start + 3]);
-      //hexdump_slow(sector_data, 256);
+      hexdump_slow(sector_data, 256);
 
       iwmDisk2 *drive = &theFuji._fnDisk2s[diskii_xface.iwm_enable_states() - 1];
       drive->write_sector(item.quarter_track, phys2log[sector_num], sector_data);
       drive->change_track(0);
     }
     else {
-      Debug_printf("\r\nDisk II sector not found");
-      //hexdump_slow(decoded, decode_len);
+      Debug_printf("\r\nDisk II sector not found ################");
+      hexdump_slow(decoded, decode_len);
       Debug_printf("\r\nDisk II spi capture");
-      //hexdump_slow(item.buffer, std::max(item.length, (size_t) 512));
+      //hexdump_slow(item.buffer, std::min(item.length, (size_t) 512));
+      hexdump_slow(item.buffer, used);
     }
 
     // FIXME - is there another sector to decode?
