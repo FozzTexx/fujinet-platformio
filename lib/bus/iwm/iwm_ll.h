@@ -323,7 +323,7 @@ extern iwm_diskii_ll diskii_xface;
 
 typedef struct {
   int quarter_track;
-  size_t track_begin, track_end;
+  size_t track_begin, track_end, track_numbits;
   uint8_t *buffer;
   size_t length;
 } iwm_write_data;

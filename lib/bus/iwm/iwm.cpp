@@ -606,9 +606,11 @@ void IRAM_ATTR iwmBus::service()
     bool more_data;
     size_t sector_start, sector_end;
     bool found_start, found_end;
+    size_t bitlen;
 
 
-    Debug_printf("\r\nDisk II iwm queue receive %u", item.length);
+    Debug_printf("\r\nDisk II iwm queue receive %u %u %u %u",
+		 item.length, item.track_begin, item.track_end, item.track_numbits);
     // FIXME - terrible hack to guess sector based on how serialise_track() works
     // gap 1            = 16 * 10
     // sector header    = 10 * 8        [D5 AA 96] + 4 + [DE AA EB]
@@ -629,8 +631,9 @@ void IRAM_ATTR iwmBus::service()
         break;
     }
 
+    bitlen = (item.track_end + item.track_numbits - item.track_begin) % item.track_numbits;
     Debug_printf("\r\nDisk II write Qtrack/sector: %i/%i  bit_len: %i",
-                 item.quarter_track, sector_num, item.track_end - item.track_begin);
+                 item.quarter_track, sector_num, bitlen);
     decoded = (uint8_t *) malloc(item.length);
     size_t used;
     decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[idx], item.length - idx,

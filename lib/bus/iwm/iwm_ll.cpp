@@ -876,13 +876,14 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       .quarter_track = d2w_tracknum,
       .track_begin = d2w_begin,
       .track_end = track_location,
+      .track_numbits = track_numbits,
       .buffer = NULL,
       .length = 0,
     };
 
     // FIXME - how to stop spi transfer in progress?
 
-    item.length = ((item.track_end - item.track_begin) % track_numbits)
+    item.length = ((item.track_end + track_numbits - item.track_begin) % track_numbits)
       * IWM_SAMPLES_PER_CELL(smartport.f_spirx);
     item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
     if (!item.buffer)
