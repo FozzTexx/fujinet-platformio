@@ -81,4 +81,5 @@
 #define SP_ACK                  SP_WRPROT
 
 #define SP_EXTRA                SP_DRIVE2 // For extra debugging with logic analyzer
+#define SP_DEBUG                GPIO_NUM_14 // For extra debugging with logic analyzer
 #endif /* PINMAP_A2_D32PRO */

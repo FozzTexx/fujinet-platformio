@@ -16,8 +16,6 @@
 #include "../../include/debug.h"
 #include "led.h"
 
-#define MHZ (1000*1000)
-
 volatile uint8_t _phases = 0;
 volatile sp_cmd_state_t sp_command_mode = sp_cmd_state_t::standby;
 volatile int isrctr = 0;
@@ -231,16 +229,81 @@ int IRAM_ATTR iwm_sp_ll::iwm_send_packet_spi()
   return 0;
 }
 
-bool IRAM_ATTR iwm_sp_ll::spirx_get_next_sample()
+#define IWM_NEXT_BIT() ({bool _v = ((src[offset / 8] << (offset % 8)) & 0x80) == 0x80; \
+      offset++; _v;})
+uint8_t iwm_ll::iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int sample_frequency,
+				int timeout, size_t *bit_offset, bool *more_avail)
 {
-  if (spirx_bit_ctr > 7)
-  {
-    spirx_bit_ctr = 0;
-    spirx_byte_ctr++;
+  unsigned int numbits, idx;
+  uint8_t byte;
+  bool bit, current_level;
+  const int spi_samples_per_cell = (CELL_US * sample_frequency) / MHZ;
+  const int half_samples = spi_samples_per_cell / 2;
+  size_t offset = *bit_offset;
+  static bool prev_level = true;
+
+  // ((f_nyquist * f_over) * 18) / (1000 * 1000);
+  int timeout_ctr = (sample_frequency * timeout) / MHZ;
+
+
+  *more_avail = true;
+  for (numbits = 8, byte = 0; numbits; numbits--) {
+    for (idx = bit = 0; idx < spi_samples_per_cell; idx++) {
+      if (offset / 8 >= src_size) {
+	// out of spi data, abort
+	numbits = 1;
+	*more_avail = false;
+	break;
+      }
+
+      current_level = IWM_NEXT_BIT();
+
+      // loop through 4 usec worth of samples looking for an edge
+      // if found, jump forward 2 usec and set bit = 1;
+      // otherwise, bit = 0;
+      if (prev_level != current_level) {
+	bit = true;
+	// resync the receiver - must be halfway through 4-us period at an edge
+	idx = half_samples;
+      }
+
+      prev_level = current_level;
+    }
+
+    byte <<= 1;
+    byte |= bit;
   }
-  return (((spi_buffer[spirx_byte_ctr] << spirx_bit_ctr++) & 0x80) == 0x80);
+
+  // See if there are more 1 bits
+  for (; timeout_ctr; timeout_ctr--) {
+    if (offset / 8 >= src_size) {
+      *more_avail = false;
+      break;
+    }
+    current_level = IWM_NEXT_BIT();
+    if (prev_level != current_level)
+      break;
+  }
+  if (!timeout_ctr)
+    *more_avail = false;
+
+  *bit_offset = offset;
+  return byte;
 }
 
+size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest, size_t *used)
+{
+  bool more_data = true;
+  size_t offset = 0;
+  uint8_t *output;
+
+
+  for (output = dest, offset = 0; more_data; output++)
+    *output = iwm_decode_byte(src, src_size, smartport.f_spirx, 19, &offset, &more_data);
+
+  *used = (offset + 7) / 8;
+  return output - dest;
+}
 
 int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(int n)
 {
@@ -316,22 +379,14 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
   iwm_extra_clr();
 
   // decode the packet here
-  spirx_byte_ctr = 0; // initialize the SPI buffer sampler
-  spirx_bit_ctr = 0;
-
-  bool have_data = true;
+  size_t spirx_bit_ctr = 0; // initialize the SPI buffer sampler
+  bool more_data, have_data = true;
   bool synced = false;
   int idx = 0;             // index into *buffer
-  bool bit = false; // = 0;        // logical bit value
 
   uint8_t rxbyte = 0;      // r23 received byte being built bit by bit
-  int numbits = 8;             // number of bits left to read into the rxbyte
-
-  bool prev_level = true;
-  bool current_level; // level is signal value (fast time), bits are decoded data values (slow time)
 
   //for tracking the number of samples
-  int bit_position;
   int last_bit_pos = 0;
   int samples;
   bool start_packet = true;
@@ -345,9 +400,8 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
   {
     iwm_extra_set(); // signal to LA we're in the nested loop
 
-    bit_position = spirx_byte_ctr * 8 + spirx_bit_ctr; // current bit positon
-    samples = bit_position - last_bit_pos; // difference since last time
-    last_bit_pos = bit_position;
+    samples = spirx_bit_ctr - last_bit_pos; // difference since last time
+    last_bit_pos = spirx_bit_ctr;
 
     // calc checksum as we go
     // note: idx is pointing to the next byte to be read at this point
@@ -402,63 +456,16 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
       fnTimer.alarm_snooze( (samples * 10 * 1000 * 1000) / f_spirx); // samples * 10 /2 ); // snooze the timer based on the previous number of samples
     }
 
-    iwm_extra_clr();
-    do
-    {
-      bit = false; // assume no edge in this next bit
-#ifdef VERBOSE_IWM
-      Debug_printf("\npulsewidth = %d, halfwidth = %d",pulsewidth,halfwidth);
-      Debug_printf("\nspibyte spibit intctr sampval preval rxbit rxbyte");
-#endif
-      int i = 0;
-      while (i < pulsewidth)
-      {
-        current_level = spirx_get_next_sample();
-        current_level ? iwm_extra_clr() : iwm_extra_set();
-#ifdef VERBOSE_IWM
-        Debug_printf("\n%7d %6d %6d %7d %6d %5d %6d", spirx_byte_ctr, spirx_bit_ctr, i, current_level, prev_level, bit, rxbyte);
-#endif
-        // sprix:
-        // loop through 4 usec worth of samples looking for an edge
-        // if found, jump forward 2 usec and set bit = 1;
-        // otherwise, bit = 0;
-        if ((prev_level != current_level))
-        {
-          i = halfwidth; // resync the receiver - must be halfway through 4-us period at an edge
-          bit = true;
-        }
-        prev_level = current_level;
-        i++;
-      }
-      rxbyte <<= 1;
-      rxbyte |= bit;
-      iwm_extra_set(); // signal to LA we're done with this bit
-    } while (--numbits > 0);
+    rxbyte = iwm_decode_byte(spi_buffer, SPI_SP_LEN, f_spirx, 19, &spirx_bit_ctr, &more_data);
+
     if ((rxbyte == 0xc3) && (!synced))
     {
       synced = true;
       idx = 5;
     }
     buffer[idx++] = rxbyte;
-    // wait for leading edge of next byte or timeout for end of packet
-    int timeout_ctr = (f_spirx * 19) / (1000 * 1000); //((f_nyquist * f_over) * 18) / (1000 * 1000);
-#ifdef VERBOSE_IWM
-    Debug_printf("%02x ", rxbyte);
-#endif
-    // now wait for leading edge of next byte
-    iwm_extra_clr();
-    if (idx > n)
+    if (idx > n || !more_data)
       have_data = false;
-    else
-      do
-      {
-        if (--timeout_ctr < 1)
-        { // end of packet
-          have_data = false;
-          break;
-        }
-      } while (spirx_get_next_sample() == prev_level);
-    numbits = 8;
   } while (have_data); // while have_data
 
   // keep this so we can print them later for debug
@@ -529,7 +536,7 @@ void iwm_sp_ll::setup_spi()
     spirx_mosi_pin = SP_RDDATA;
 
   // SPI for receiving packets - sprirx
-  bus_cfg = {
+  spi_bus_config_t bus_cfg = {
     .mosi_io_num = spirx_mosi_pin,
     .miso_io_num = SP_WRDATA,
     .sclk_io_num = -1,
@@ -629,7 +636,10 @@ void iwm_ll::setup_gpio()
   fnSystem.set_pin_mode(SP_PHI2, gpio_mode_t::GPIO_MODE_INPUT, SystemManager::pull_updown_t::PULL_NONE, gpio_int_type_t::GPIO_INTR_ANYEDGE);
   fnSystem.set_pin_mode(SP_PHI3, gpio_mode_t::GPIO_MODE_INPUT, SystemManager::pull_updown_t::PULL_NONE, gpio_int_type_t::GPIO_INTR_ANYEDGE);
 
-  fnSystem.set_pin_mode(SP_WREQ, gpio_mode_t::GPIO_MODE_INPUT);
+  fnSystem.set_pin_mode(SP_WREQ, gpio_mode_t::GPIO_MODE_INPUT,
+			SystemManager::pull_updown_t::PULL_UP,
+			gpio_int_type_t::GPIO_INTR_ANYEDGE);
+
   fnSystem.set_pin_mode(SP_DRIVE1, gpio_mode_t::GPIO_MODE_INPUT);
   fnSystem.set_pin_mode(SP_DRIVE2, gpio_mode_t::GPIO_MODE_INPUT, SystemManager::pull_updown_t::PULL_UP);
   fnSystem.set_pin_mode(SP_EN35, gpio_mode_t::GPIO_MODE_INPUT);
@@ -653,6 +663,10 @@ void iwm_ll::setup_gpio()
   Debug_printf("\nEXTRA signaling line configured");
 #endif
 
+#ifdef SP_DEBUG
+  fnSystem.set_pin_mode(SP_DEBUG, gpio_mode_t::GPIO_MODE_OUTPUT);
+  fnSystem.digital_write(SP_DEBUG, DIGI_LOW);
+#endif
 
   // attach the interrupt service routine
   gpio_isr_handler_add((gpio_num_t)SP_PHI0, phi_isr_handler, (void*) (gpio_num_t)SP_PHI0);
@@ -827,8 +841,72 @@ void iwm_diskii_ll::set_output_to_low()
 #define RMT_TX_CHANNEL rmt_channel_t::RMT_CHANNEL_0
 #define RMT_USEC (APB_CLK_FREQ / MHZ)
 
-void iwm_diskii_ll::start(uint8_t drive)
+// enable/disable capturing write signal from Disk II
+void IRAM_ATTR diskii_write_handler_forwarder(void *arg)
 {
+  iwm_diskii_ll *d2i = (iwm_diskii_ll *) arg;
+  d2i->diskii_write_handler();
+  return;
+}
+
+void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
+{
+  bool doCapture = !IWM_BIT(SP_WREQ);
+
+
+  //Debug_printf("\r\nDisk II write state: %i", doCapture);
+
+  if (doCapture) {
+    IWM_BIT_SET(SP_DEBUG);
+
+    d2w_begin = track_location;
+
+    memset(d2w_buffer, 0xff, d2w_buflen);
+    memset(&rxtrans, 0, sizeof(spi_transaction_t));
+    rxtrans.rxlength = d2w_buflen;
+    rxtrans.rx_buffer = d2w_buffer;
+    ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
+    rx_enabled = true;
+    //IWM_BIT_CLEAR(SP_ACK);
+  }
+  else if (rx_enabled) {
+    IWM_BIT_CLEAR(SP_DEBUG);
+    BaseType_t woken;
+    iwm_write_data item = {
+      .quarter_track = d2w_tracknum,
+      .track_begin = d2w_begin,
+      .track_end = track_location,
+      .buffer = NULL,
+      .length = 0,
+    };
+
+    // FIXME - how to stop spi transfer in progress?
+
+    item.length = ((item.track_end - item.track_begin) % track_numbits)
+      * IWM_SAMPLES_PER_CELL(smartport.f_spirx);
+    item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
+    if (!item.buffer)
+      Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
+		   item.length, item.track_begin, item.track_end);
+    else {
+      memcpy(item.buffer, d2w_buffer, item.length);
+      xQueueSendFromISR(iwm_write_queue, &item, &woken);
+    }
+    rx_enabled = false;
+  }
+
+  return;
+}
+
+void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
+{
+  if (write_protect)
+    smartport.iwm_ack_set();
+  else {
+    smartport.iwm_ack_clr();
+    gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
+  }
+
   diskii_xface.set_output_to_rmt();
   diskii_xface.enable_output();
   ESP_ERROR_CHECK(fnRMT.rmt_write_bitstream(RMT_TX_CHANNEL, track_buffer, track_numbits, track_bit_period));
@@ -840,6 +918,8 @@ void iwm_diskii_ll::stop()
 {
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
+  smartport.iwm_ack_set();
+  gpio_isr_handler_remove(SP_WREQ);
   fnLedManager.set(LED_BUS, false);
   Debug_printf("\nstop diskII");
 }
@@ -934,9 +1014,21 @@ void iwm_ll::disable_output()
 
 // }
 
+void IRAM_ATTR encode_rmt_bitstream_forwarder(const void* src, rmt_item32_t* dest,
+					      size_t src_size, size_t wanted_num,
+					      size_t* translated_size, size_t* item_num,
+					      int bit_period)
+{
+  diskii_xface.encode_rmt_bitstream(src, dest, src_size, wanted_num, translated_size,
+				    item_num, bit_period);
+  return;
+}
+
 //Convert track data to rmt format data.
-void IRAM_ATTR encode_rmt_bitstream(const void* src, rmt_item32_t* dest, size_t src_size,
-                         size_t wanted_num, size_t* translated_size, size_t* item_num, int bit_period)
+void IRAM_ATTR iwm_diskii_ll::encode_rmt_bitstream(const void* src, rmt_item32_t* dest,
+						   size_t src_size, size_t wanted_num,
+						   size_t* translated_size, size_t* item_num,
+						   int bit_period)
 {
     // *src is equal to *track_buffer
     // src_size is equal to numbits
@@ -956,37 +1048,64 @@ void IRAM_ATTR encode_rmt_bitstream(const void* src, rmt_item32_t* dest, size_t 
     bit_ticks *= bit_period; // now units are ticks * ns /us
     bit_ticks /= 1000; // now units are ticks
 
-    const rmt_item32_t bit0 = {{{ (3 * bit_ticks) / 4, 0, bit_ticks / 4, 0 }}}; //Logical 0
-    const rmt_item32_t bit1 = {{{ (3 * bit_ticks) / 4, 0, bit_ticks / 4, 1 }}}; //Logical 1
+#define BIT_TICK_34 ((uint16_t) ((3 * bit_ticks) / 4))
+#define BIT_TICK_14 ((uint16_t) (bit_ticks / 4))
+
+    const rmt_symbol_word_t bits[] = {
+      {{ BIT_TICK_34, 0, BIT_TICK_14, 0 }},
+      {{ BIT_TICK_34, 0, BIT_TICK_14, 1 }},
+    };
     static uint8_t window = 0;
     uint8_t outbit = 0;
     size_t num = 0;
-    rmt_item32_t* pdest = dest;
-    while (num < wanted_num)
-    {
-        // move this to nextbit()
-        // MC34780 behavior for random bit insertion
-      // https://applesaucefdc.com/woz/reference2/
-      window <<= 1;
-      window |= (uint8_t)diskii_xface.nextbit();
-      window &= 0x0f;
-      outbit = (window != 0) ? window & 0x02 : diskii_xface.fakebit();
-      pdest->val = (outbit != 0) ? bit1.val : bit0.val;
+    uint8_t *trk_buf = (uint8_t *) src;
 
-      num++;
-      pdest++;
-    }
+    for (num = 0; num < wanted_num; num++, dest++)
+      {
+	// MC34780 behavior for random bit insertion
+	// https://applesaucefdc.com/woz/reference2/
+
+	int track_byte_ctr = track_location / 8;
+	int track_bit_ctr = track_location % 8;
+
+	// bits go MSB first
+	outbit = (trk_buf[track_byte_ctr] & (0x80 >> track_bit_ctr)) != 0;
+	track_location = (track_location + 1) % src_size;
+
+	window <<= 1;
+	window |= outbit;
+	window &= 0x0f;
+	if (window != 0)
+	  outbit = window & 0x02;
+	else
+	  {
+	    const uint8_t MC3470[] = {0b01010000, 0b10110011, 0b01000010, 0b00000000, 0b10101101, 0b00000010, 0b01101000, 0b01000110, 0b00000001, 0b10010000, 0b00001000, 0b00111000, 0b00001000, 0b00100101, 0b10000100, 0b00001000, 0b10001000, 0b01100010, 0b10101000, 0b01101000, 0b10010000, 0b00100100, 0b00001011, 0b00110010, 0b11100000, 0b01000001, 0b10001010, 0b00000000, 0b11000001, 0b10001000, 0b10001000, 0b00000000};
+
+	    static int MC3470_byte_ctr;
+	    static int MC3470_bit_ctr;
+
+	    ++MC3470_bit_ctr %= 8;
+	    if (MC3470_bit_ctr == 0)
+	      ++MC3470_byte_ctr %= sizeof(MC3470);
+
+	    outbit = (MC3470[MC3470_byte_ctr] & (0x01 << MC3470_bit_ctr)) != 0;
+	  }
+
+	dest->val = bits[!!outbit].val;
+      }
     *translated_size = wanted_num;
     *item_num = wanted_num;
 }
 
-
 /*
- * Initialize the RMT Tx channel
+ * Initialize the RMT Tx channel and SPI Rx channel
  */
 void iwm_diskii_ll::setup_rmt()
 {
-#define RMT_TX_CHANNEL rmt_channel_t::RMT_CHANNEL_0
+  iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
+  d2w_buflen = TRACK_LEN * IWM_SAMPLES_PER_CELL(smartport.f_spirx) * sizeof(*d2w_buffer);
+  d2w_buffer = (decltype(d2w_buffer)) heap_caps_malloc(d2w_buflen, MALLOC_CAP_DMA);
+
   track_buffer = (uint8_t *)heap_caps_malloc(TRACK_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (track_buffer == NULL)
     Debug_println("could not allocate track buffer");
@@ -1010,55 +1129,13 @@ void iwm_diskii_ll::setup_rmt()
 
   ESP_ERROR_CHECK(fnRMT.rmt_config(&config));
   ESP_ERROR_CHECK(fnRMT.rmt_driver_install(config.channel, 0, ESP_INTR_FLAG_IRAM));
-  ESP_ERROR_CHECK(fnRMT.rmt_translator_init(config.channel, encode_rmt_bitstream));
+  ESP_ERROR_CHECK(fnRMT.rmt_translator_init(config.channel, encode_rmt_bitstream_forwarder));
 }
 
-bool IRAM_ATTR iwm_diskii_ll::nextbit()
+void IRAM_ATTR iwm_diskii_ll::copy_track(uint8_t *track, size_t tracklen, size_t trackbits,
+					 int bitperiod, int tracknum)
 {
-  int track_byte_ctr = track_location / 8;
-  int track_bit_ctr = track_location % 8;
-
-  bool outbit;
-  outbit = (track_buffer[track_byte_ctr] & (0x80 >> track_bit_ctr)) != 0; // bits go MSB first
-
-  track_location++;
-  if (track_location >= track_numbits)
-  {
-    track_location = 0;
-  }
-
-  return outbit;
-}
-
-bool IRAM_ATTR iwm_diskii_ll::fakebit()
-{
-  // MC3470 random bit behavior https://applesaucefdc.com/woz/reference2/
-  /** Of course, coming up with random values like this can be a bit processor intensive,
-   * so it is adequate to create a randomly-filled circular buffer of 32 bytes.
-   * We then just pull bits from this whenever we are in “fake bit mode”.
-   * This buffer should also be used for empty tracks as designated with an 0xFF value
-   * in the TMAP Chunk (see below). You will want to have roughly 30% of the buffer be 1 bits.
-   *
-   * For testing the MC3470 generation of fake bits, you can turn to "The Print Shop Companion".
-   * If you have control at the main menu, then you are passing this test.
-   *
-  **/
-  // generate PN bits using Octave/MATLAB with
-  // for i=1:32, printf("0b"),printf("%d",rand(8,1)<0.3),printf(","),end
-  const uint8_t MC3470[] = {0b01010000, 0b10110011, 0b01000010, 0b00000000, 0b10101101, 0b00000010, 0b01101000, 0b01000110, 0b00000001, 0b10010000, 0b00001000, 0b00111000, 0b00001000, 0b00100101, 0b10000100, 0b00001000, 0b10001000, 0b01100010, 0b10101000, 0b01101000, 0b10010000, 0b00100100, 0b00001011, 0b00110010, 0b11100000, 0b01000001, 0b10001010, 0b00000000, 0b11000001, 0b10001000, 0b10001000, 0b00000000};
-
-  static int MC3470_byte_ctr;
-  static int MC3470_bit_ctr;
-
-  ++MC3470_bit_ctr %= 8;
-  if (MC3470_bit_ctr == 0)
-    ++MC3470_byte_ctr %= sizeof(MC3470);
-
-  return (MC3470[MC3470_byte_ctr] & (0x01 << MC3470_bit_ctr)) != 0;
-}
-
-void IRAM_ATTR iwm_diskii_ll::copy_track(uint8_t *track, size_t tracklen, size_t trackbits, int bitperiod)
-{
+  d2w_tracknum = tracknum;
   // copy track from SPIRAM to INTERNAL RAM
   if (track != nullptr)
     memcpy(track_buffer, track, tracklen);

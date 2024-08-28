@@ -185,6 +185,9 @@ extern volatile sp_cmd_state_t sp_command_mode;
 class iwm_ll
 {
 protected:
+  // SPI receiver
+  spi_transaction_t rxtrans;
+
   // low level bit-banging i/o functions
   bool iwm_req_val() { return (IWM_BIT(SP_REQ)); };
   void iwm_extra_set();
@@ -194,6 +197,9 @@ protected:
   
 public:
   void setup_gpio();
+  uint8_t iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int sample_frequency,
+			  int timeout, size_t *bit_offset, bool *more_avail);
+  size_t iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest, size_t *used);
 };
 
 class iwm_sp_ll : public iwm_ll
@@ -204,11 +210,10 @@ private:
   // SPI data handling
   uint8_t *spi_buffer = nullptr; //[8 * (BLOCK_PACKET_LEN+2)]; //smartport packet buffer
   uint16_t spi_len = 0;
-  spi_bus_config_t bus_cfg;
   spi_device_handle_t spi;
-  // SPI receiver
-  spi_transaction_t rxtrans;
-  spi_device_handle_t spirx;
+
+public:
+  // FIXME - move spirx & f_spirx back to private
   /** SPI data clock 
    * N  Clock MHz   /8 Bit rate (kHz)    Bit/Byte period (us)
    * 39	2.051282051	256.4102564	        3.9	31.2          256410 is only 0.3% faster than 255682
@@ -218,11 +223,7 @@ private:
   // const int f_spirx = APB_CLK_FREQ / 39; // 2051282 Hz or 2052kHz or 2.052 MHz - works for NTSC but ...
   const int f_spirx = APB_CLK_FREQ / 40; // 2 MHz - need slower rate for PAL
   const int pulsewidth = 8; // 8 samples per bit
-  const int halfwidth = pulsewidth / 2;
-
-  // SPI receiver data stream counters
-  int spirx_byte_ctr = 0;
-  int spirx_bit_ctr = 0;
+  spi_device_handle_t spirx;
 
   //uint8_t packet_buffer[BLOCK_PACKET_LEN]; //smartport packet buffer
   uint16_t packet_len = 0;
@@ -239,7 +240,6 @@ public:
   // Smartport Bus handling by SPI interface
   void encode_spi_packet();
   int iwm_send_packet_spi();
-  bool spirx_get_next_sample();
   int iwm_read_packet_spi(uint8_t *buffer, int n);
   int iwm_read_packet_spi(int n);
   void spi_end();
@@ -285,20 +285,31 @@ private:
 
   bool enabledD2 = true;
 
+  // write state
+  bool rx_enabled = false;
+  uint8_t *d2w_buffer;
+  size_t d2w_buflen, d2w_begin;
+  int d2w_tracknum; // FIXME - drive doesn't even know what track it's on?
+
 public:
+  QueueHandle_t iwm_write_queue;
+
   // Phase lines and ACK handshaking
   uint8_t iwm_phase_vector() { return (uint8_t)(GPIO.in1.val & (uint32_t)0b1111); };
   uint8_t iwm_enable_states();
 
   // Disk II handling by RMT peripheral
+  void encode_rmt_bitstream(const void* src, rmt_item32_t* dest, size_t src_size,
+			    size_t wanted_num, size_t* translated_size,
+			    size_t* item_num, int bit_period);
   void setup_rmt(); // install the RMT device
-  void start(uint8_t drive);
+  void diskii_write_handler();
+  void start(uint8_t drive, bool write_protect);
   void stop();
   // need a function to remove the RMT device?
 
-  bool nextbit();
-  bool fakebit();
-  void copy_track(uint8_t *track, size_t tracklen, size_t trackbits, int bitperiod);
+  void copy_track(uint8_t *track, size_t tracklen, size_t trackbits,
+		  int bitperiod, int tracknum);
 
   void set_output_to_low();
 
@@ -309,6 +320,19 @@ public:
 
 extern iwm_sp_ll smartport;
 extern iwm_diskii_ll diskii_xface;
+
+typedef struct {
+  int quarter_track;
+  size_t track_begin, track_end;
+  uint8_t *buffer;
+  size_t length;
+} iwm_write_data;
+
+#ifndef MHZ
+#define MHZ	(1000*1000)
+#endif
+#define CELL_US	4 // microseconds
+#define IWM_SAMPLES_PER_CELL(freq) ((CELL_US * (freq)) / MHZ)
 
 #endif // IWM_LL_H
 #endif // BUILD_APPLE
