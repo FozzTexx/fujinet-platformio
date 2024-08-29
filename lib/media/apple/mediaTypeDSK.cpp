@@ -443,10 +443,11 @@ static void encode_6_and_2(uint8_t *dest, const uint8_t *src) {
 	}
 }
 
-void decode_6_and_2(uint8_t *dest, const uint8_t *src)
+uint16_t decode_6_and_2(uint8_t *dest, const uint8_t *src)
 {
   int idx, step;
   uint8_t bits;
+  uint16_t checksum;
   const uint8_t bit_reverse[] = {0, 2, 1, 3};
   const uint8_t six_and_two_unmapping[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
@@ -471,7 +472,7 @@ void decode_6_and_2(uint8_t *dest, const uint8_t *src)
   for (idx = 0; idx < 341; idx++)
     dest[idx + 1] ^= dest[idx];
 
-  // FIXME - validate checksum?
+  checksum = (dest[341] << 8) | dest[342];
 
   for (idx = 85; idx >= 0; idx--) {
     bits = dest[idx];
@@ -481,7 +482,7 @@ void decode_6_and_2(uint8_t *dest, const uint8_t *src)
     }
   }
 
-  return;
+  return checksum;
 }
 
 /*!

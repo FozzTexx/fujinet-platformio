@@ -14,7 +14,7 @@
 //     uint32_t bit_count;
 // };
 
-extern void decode_6_and_2(uint8_t *dest, const uint8_t *src);
+extern uint16_t decode_6_and_2(uint8_t *dest, const uint8_t *src);
 
 class MediaTypeDSK  : public MediaTypeWOZ
 {

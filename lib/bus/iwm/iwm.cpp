@@ -657,17 +657,23 @@ void IRAM_ATTR iwmBus::service()
 
     // FIXME - sometimes the D5 AA AD doesn't decode correctly
     if (!found_start && found_end) {
+      Debug_printf("\r\nDisk II no prologue found");
+#if 0
       sector_start = sector_end - 346;
       found_start = true;
+#endif
     }
 
     if (found_start && found_end && sector_end - sector_start == 346) {
       uint8_t sector_data[343]; // Need enough room to demap and de-xor
+      uint16_t checksum;
       const int phys2log[] = {0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15};
 
 
       Debug_printf("\r\nDisk II sector data: %i", sector_start + 3);
-      decode_6_and_2(sector_data, &decoded[sector_start + 3]);
+      checksum = decode_6_and_2(sector_data, &decoded[sector_start + 3]);
+      if ((checksum >> 8) != (checksum & 0xff))
+	Debug_printf("\r\nDisk II checksum mismatch: %04x", checksum);
       hexdump_slow(sector_data, 256);
 
       iwmDisk2 *disk_dev = IWM_ACTIVE_DISK2;
