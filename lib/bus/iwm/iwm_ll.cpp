@@ -20,6 +20,14 @@ volatile uint8_t _phases = 0;
 volatile sp_cmd_state_t sp_command_mode = sp_cmd_state_t::standby;
 volatile int isrctr = 0;
 
+#define IWM_NUMBYTES_FOR_BITS(bitcount, buffer) ({			\
+      size_t bufbits = sizeof(*(buffer)) * 8;				\
+      size_t blen = (bitcount) *					\
+	IWM_SAMPLES_PER_CELL(smartport.f_spirx);			\
+      blen = (blen + bufbits - 1) / bufbits;				\
+      blen;								\
+    })
+
 void IRAM_ATTR phi_isr_handler(void *arg)
 {
   // handle SP Command Packet or Disk ][ track changes
@@ -857,16 +865,24 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
   //Debug_printf("\r\nDisk II write state: %i", doCapture);
 
   if (doCapture) {
-    IWM_BIT_SET(SP_DEBUG);
-
     d2w_begin = track_location;
 
-    memset(d2w_buffer, 0xff, d2w_buflen);
-    memset(&rxtrans, 0, sizeof(spi_transaction_t));
-    rxtrans.rxlength = d2w_buflen;
-    rxtrans.rx_buffer = d2w_buffer;
+    //memset(d2w_buffer, 0xff, d2w_buflen);
+    //memset(&rxtrans, 0, sizeof(spi_transaction_t));
+    rxtrans = {
+      .flags = 0,
+      .cmd = 0,
+      .addr = 0,
+      .length = 0,
+      .rxlength = d2w_buflen,
+      .user = NULL,
+      .tx_buffer = NULL,
+      .rx_buffer = d2w_buffer,
+    };
     ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
     rx_enabled = true;
+    IWM_BIT_SET(SP_DEBUG);
+
     //IWM_BIT_CLEAR(SP_ACK);
   }
   else if (rx_enabled) {
@@ -883,8 +899,9 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 
     // FIXME - how to stop spi transfer in progress?
 
-    item.length = ((item.track_end + track_numbits - item.track_begin) % track_numbits)
-      * IWM_SAMPLES_PER_CELL(smartport.f_spirx);
+    item.length = (item.track_end + track_numbits - item.track_begin) % track_numbits;
+    item.length = IWM_NUMBYTES_FOR_BITS(item.length, item.buffer);
+    //item.length *= 2;
     item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
     if (!item.buffer)
       Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
@@ -1103,9 +1120,9 @@ void IRAM_ATTR iwm_diskii_ll::encode_rmt_bitstream(const void* src, rmt_item32_t
  */
 void iwm_diskii_ll::setup_rmt()
 {
-  iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
-  d2w_buflen = TRACK_LEN * IWM_SAMPLES_PER_CELL(smartport.f_spirx) * sizeof(*d2w_buffer);
+  d2w_buflen = IWM_NUMBYTES_FOR_BITS(TRACK_LEN * 8, d2w_buffer);
   d2w_buffer = (decltype(d2w_buffer)) heap_caps_malloc(d2w_buflen, MALLOC_CAP_DMA);
+  iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
 
   track_buffer = (uint8_t *)heap_caps_malloc(TRACK_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (track_buffer == NULL)

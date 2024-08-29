@@ -638,6 +638,7 @@ void IRAM_ATTR iwmBus::service()
     size_t used;
     decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[idx], item.length - idx,
 						decoded, &used);
+    Debug_printf("\r\nDisk II used: %u", used);
 
     // Find start of sector: D5 AA AD
     for (sector_start = 0; sector_start <= decode_len - 349; sector_start++)
