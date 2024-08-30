@@ -867,6 +867,22 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
   if (doCapture) {
     d2w_begin = track_location;
 
+    // Get current SPI position
+    {
+      // Access the current descriptor being used by DMA
+#if 1
+      d2w_spiaddr = (decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1;
+      Debug_printf("\r\nDisk II SPI offset: %u %u", d2w_spiaddr - d2w_buffer, d2w_begin);
+#else
+      lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
+
+      // Calculate the current position within the buffer
+      uint32_t bytes_received = SPI3.dma_in_suc_eof_des_addr - (uint32_t) current_desc;
+      Debug_printf("\r\nDisk II SPI offset: %u", current_desc);
+      d2w_spiaddr = d2w_buffer + bytes_received;
+#endif
+    }
+
 #if 0
     //memset(d2w_buffer, 0xff, d2w_buflen);
     //memset(&rxtrans, 0, sizeof(spi_transaction_t));
@@ -909,7 +925,9 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
 		   item.length, item.track_begin, item.track_end);
     else {
-      memcpy(item.buffer, d2w_buffer, item.length);
+      //memcpy(item.buffer, d2w_buffer, item.length);
+      // FIXME - handle wraparound
+      memcpy(item.buffer, d2w_spiaddr, item.length);
       xQueueSendFromISR(iwm_write_queue, &item, &woken);
     }
     rx_enabled = false;
@@ -926,16 +944,30 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     smartport.iwm_ack_clr();
     gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
 
-    memset(d2w_buffer, 0xff, d2w_buflen);
-    memset(&rxtrans, 0, sizeof(spi_transaction_t));
-    rxtrans.rxlength = d2w_buflen;
-    rxtrans.rx_buffer = d2w_buffer;
-    rxtrans.flags = SPI_TRANS_USE_RXDATA;
+#if 0
+    rxtrans = {
+      .flags = 0,
+      .cmd = 0,
+      .addr = 0,
+      .length = 0,
+      .rxlength = d2w_buflen,
+      .user = NULL,
+      .tx_buffer = NULL,
+      .rx_buffer = d2w_buffer,
+    };
     ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
-
-    // SPI3 since using VSPI_HOST
-    SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_OUT_DATA_BURST_EN | SPI_INDSCR_BURST_EN;
+#else
+    SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
+    SPI3.dma_in_link.start = 1;
+    SPI3.user.usr_miso = 1;
+    //SPI3.dma_inlink_dscr = (uint32_t) d2w_desc;
+    //SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_OUT_DATA_BURST_EN | SPI_INDSCR_BURST_EN;
+#endif
     SPI3.dma_conf.dma_continue = 1;
+#if 1
+    // Start the SPI transaction
+    SPI3.cmd.usr = 1;
+#endif
   }
 
   diskii_xface.set_output_to_rmt();
@@ -947,12 +979,9 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
 
 void iwm_diskii_ll::stop()
 {
-  spi_dev_t *spi_host;
-
-
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
-  SPI3.dma_conf.dma_continue = 0;
+  SPI3.dma_conf.dma_continue = 0; // FIXME - this permanently kills RMT and SPI
   smartport.iwm_ack_set();
   gpio_isr_handler_remove(SP_WREQ);
   fnLedManager.set(LED_BUS, false);
@@ -1140,6 +1169,35 @@ void iwm_diskii_ll::setup_rmt()
   d2w_buflen = IWM_NUMBYTES_FOR_BITS(TRACK_LEN * 8, d2w_buffer);
   d2w_buffer = (decltype(d2w_buffer)) heap_caps_malloc(d2w_buflen, MALLOC_CAP_DMA);
   iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
+  memset(d2w_buffer, 0xff, d2w_buflen);
+
+  // SPI continuous
+  {
+    // FIXME - for some reason SPI refuses to write more than 68 even
+    // though size allows up to 4095
+#define CHUNK_SIZE 64
+
+    uint32_t num_chunks, idx;
+    lldesc_t *desc_ptr;
+
+
+    num_chunks = (d2w_buflen + CHUNK_SIZE - 1) / CHUNK_SIZE;
+    d2w_desc = (lldesc_t *) heap_caps_malloc(sizeof(lldesc_t) * num_chunks, MALLOC_CAP_DMA);
+    if (!d2w_desc) {
+      ESP_LOGE("SPI_DMA", "Failed to allocate DMA descriptor");
+      return;
+    }
+
+    memset(d2w_desc, 0, sizeof(lldesc_t) * num_chunks);
+    for (idx = 0; idx < num_chunks; idx++) {
+      desc_ptr = &d2w_desc[idx];
+      desc_ptr->size = CHUNK_SIZE;
+      desc_ptr->owner = 1; // Owned by DMA hardware
+      desc_ptr->buf = &d2w_buffer[idx * CHUNK_SIZE];
+      desc_ptr->qe.stqe_next = &d2w_desc[(idx + 1) % num_chunks];
+    }
+    d2w_desc[num_chunks - 1].size = d2w_buflen % CHUNK_SIZE;
+  }
 
   track_buffer = (uint8_t *)heap_caps_malloc(TRACK_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (track_buffer == NULL)

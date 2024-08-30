@@ -5,6 +5,7 @@
 #include <queue>
 // #include <driver/gpio.h>
 #include <driver/gpio.h>
+#include <soc/lldesc.h>
 #include <esp_idf_version.h>
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include <hal/gpio_ll.h>
@@ -289,7 +290,9 @@ private:
   // write state
   bool rx_enabled = false;
   uint8_t *d2w_buffer;
+  lldesc_t *d2w_desc;
   size_t d2w_buflen, d2w_begin;
+  uint8_t *d2w_spiaddr;
   int d2w_tracknum; // FIXME - drive doesn't even know what track it's on?
 
 public:
