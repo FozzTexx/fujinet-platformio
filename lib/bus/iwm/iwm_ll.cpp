@@ -870,41 +870,16 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
     // Get current SPI position
     {
       // Access the current descriptor being used by DMA
-#if 1
-#if 0
-      lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
       d2w_spiaddr = (decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1;
+#if 1
+      lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
       Debug_printf("\r\nDisk II SPI offset: %u %u", d2w_spiaddr, current_desc->buf);
 #else
-      d2w_spiaddr = (decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1;
       Debug_printf("\r\nDisk II SPI offset: %x %x", d2w_spiaddr - d2w_buffer, d2w_begin);
 #endif
       strcpy((char *) d2w_spiaddr, "DISKIIMARKER");
-#else
-      lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
-
-      // Calculate the current position within the buffer
-      uint32_t bytes_received = SPI3.dma_in_suc_eof_des_addr - (uint32_t) current_desc;
-      Debug_printf("\r\nDisk II SPI offset: %u", current_desc);
-      d2w_spiaddr = d2w_buffer + bytes_received;
-#endif
     }
 
-#if 0
-    //memset(d2w_buffer, 0xff, d2w_buflen);
-    //memset(&rxtrans, 0, sizeof(spi_transaction_t));
-    rxtrans = {
-      .flags = 0,
-      .cmd = 0,
-      .addr = 0,
-      .length = 0,
-      .rxlength = d2w_buflen,
-      .user = NULL,
-      .tx_buffer = NULL,
-      .rx_buffer = d2w_buffer,
-    };
-    ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
-#endif
     rx_enabled = true;
     IWM_BIT_SET(SP_DEBUG);
 
@@ -922,17 +897,9 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       .length = 0,
     };
 
-    // FIXME - how to stop spi transfer in progress?
-
-#if 1
     //    item.length = (((decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1 + d2w_buflen)
     //		   - d2w_spiaddr) % d2w_buflen;
     item.length = d2w_buflen;
-#else
-    item.length = (item.track_end + track_numbits - item.track_begin) % track_numbits;
-    item.length = IWM_NUMBYTES_FOR_BITS(item.length, item.buffer);
-#endif
-    //item.length *= 2;
     item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
     if (!item.buffer)
       Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
@@ -1045,58 +1012,6 @@ void iwm_ll::disable_output()
     IWM_BIT_SET(SP_RD_BUFFER); // disable the tri-state buffer
 #endif
 }
-
-// KEEEEEEEEEEEEEEEEEEP FOR A WHILE UNTIL ALL TECHNIQUES LEARNED ARE USED OR NO LONGER NEEDED
-// void IRAM_ATTR iwm_diskii_ll::rmttest(void)
-// {
-//  iwm_rddata_clr(); // enable the tri-state buffer
-
-// size_t num_samples = 512*12;
-// uint8_t* sample = (uint8_t*)heap_caps_malloc(num_samples, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-// if (sample == NULL)
-//     Debug_println("could not allocate sample buffer");
-
-// memset(sample, 0xff, num_samples);
-// sample[1]=0;
-// sample[num_samples-2]=0;
-// sample[num_samples-1]=0b01111111;
-// copy_track(sample, num_samples, num_samples * 8 - 2);
-// Debug_printf("\nSending %d items", num_samples);//number_of_items);
-//   //ESP_ERROR_CHECK(fnRMT.rmt_write_sample(RMT_TX_CHANNEL, sample, num_samples, false));
-//   esp_rom_gpio_connect_out_signal(PIN_SD_HOST_MOSI, rmt_periph_signals.channels[0].tx_sig, false, false);
-  // ESP_ERROR_CHECK(fnRMT.rmt_write_bitstream(RMT_TX_CHANNEL, track_buffer, track_numbits));
-//   // fnSystem.delay(100);
-//   // fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
-//   // fnSystem.delay(50);
-//   // ESP_ERROR_CHECK(fnRMT.rmt_write_sample(RMT_TX_CHANNEL, sample, num_samples, false));
-// fnSystem.delay(2000);
-// Debug_printf ("\nSample transmission complete");
-// //gpio_set_direction(gpio_num_t(PIN_SD_HOST_MOSI),gpio_mode_t::GPIO_MODE_INPUT);
-// Debug_printf("\r\ngpio set to input");
-// GPIO.func_out_sel_cfg[PIN_SD_HOST_MOSI].oen_sel = 1; // let me control the enable register
-// GPIO.enable_w1tc = ((uint32_t)0x01 << PIN_SD_HOST_MOSI);
-
-//     // Ensure no other output signal is routed via GPIO matrix to this pin
-// // REG_WRITE(GPIO_FUNC0_OUT_SEL_CFG_REG + (SP_WRDATA * 4),SIG_GPIO_OUT_IDX);
-
-// // GPIO.func_out_sel_cfg[PIN_SD_HOST_MOSI].func_sel = .....;
-
-// fnSystem.delay(1000);
-// // gpio_matrix_out(gpio_num_t(SP_WRDATA), RMT_SIG_OUT0_IDX + RMT_TX_CHANNEL, 0, 0);
-// //gpio_set_direction(gpio_num_t(PIN_SD_HOST_MOSI),gpio_mode_t::GPIO_MODE_INPUT_OUTPUT);
-// //fnRMT.rmt_set_pin(RMT_TX_CHANNEL,RMT_MODE_TX, (gpio_num_t)SP_WRDATA );
-// GPIO.enable_w1ts = ((uint32_t)0x01 << PIN_SD_HOST_MOSI);
-// Debug_printf("\r\ngpio back to out");
-
-// fnSystem.delay(1000);
-// fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
-
-// //GPIO.func_out_sel_cfg[PIN_SD_HOST_MOSI].func_sel = 0;
-// esp_rom_gpio_connect_out_signal(PIN_SD_HOST_MOSI, spi_periph_signal[HSPI_HOST].spid_out, false, false);
-
-// Debug_printf("\r\nconnect to SPI");
-
-// }
 
 void IRAM_ATTR encode_rmt_bitstream_forwarder(const void* src, rmt_item32_t* dest,
 					      size_t src_size, size_t wanted_num,
