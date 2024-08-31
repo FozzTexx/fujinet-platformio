@@ -201,7 +201,8 @@ public:
   void setup_gpio();
   uint8_t iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int sample_frequency,
 			  int timeout, size_t *bit_offset, bool *more_avail);
-  size_t iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest, size_t *used);
+  size_t iwm_decode_buffer(uint8_t *src, size_t src_size, unsigned int sample_frequency,
+			   uint8_t *dest, size_t *used);
 };
 
 class iwm_sp_ll : public iwm_ll

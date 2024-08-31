@@ -606,7 +606,8 @@ void IRAM_ATTR iwmBus::service()
     bool more_data;
     size_t sector_start, sector_end;
     bool found_start, found_end;
-    size_t bitlen;
+    size_t bitlen, used;
+    unsigned int sample_freq;
 
 
     Debug_printf("\r\nDisk II iwm queue receive %u %u %u %u",
@@ -621,23 +622,35 @@ void IRAM_ATTR iwmBus::service()
 
     sector_num = (item.track_begin - 16 * 10) / 3102;
 
-    // FIXME - find start of write. SPI doesn't always start soon
-    //         enough and misses sync bytes so force sync to 0xff
-    for (idx = 0; idx < 8; idx++) {
-      offset = idx * 8;
-      byte = diskii_xface.iwm_decode_byte(item.buffer, item.length, smartport.f_spirx,
+    /* FIXME FIXME FIXME */
+    /* There's something bizarre going on with SPI continuous. It
+       always write 68 bytes and the last byte is always a zero. It
+       also captures at half the configured clock speed. */
+
+    sample_freq = smartport.f_spirx / 2;
+    // Cut out all the spurious 68th zero bytes
+    for (idx = 67; idx < item.length; idx += 67, item.length -= 1)
+      memcpy(&item.buffer[idx], &item.buffer[idx+1], item.length - idx - 1);
+
+    /* Find start of write. SPI position is difficult to synchronize
+       with WREQ signal. Buffer we receive has been rewound to some
+       point before WREQ was received and has random garbage at the
+       beginning. Look for sync byte. */
+    for (idx = 0; idx < 68 * 8; idx++) {
+      offset = idx;
+      byte = diskii_xface.iwm_decode_byte(item.buffer, item.length, smartport.f_spirx / 2,
                                           19, &offset, &more_data);
       if (byte == 0xff || byte == 0xd5)
         break;
     }
+    offset /= 8;
 
     bitlen = (item.track_end + item.track_numbits - item.track_begin) % item.track_numbits;
     Debug_printf("\r\nDisk II write Qtrack/sector: %i/%i  bit_len: %i",
                  item.quarter_track, sector_num, bitlen);
     decoded = (uint8_t *) malloc(item.length);
-    size_t used;
-    decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[idx], item.length - idx,
-						decoded, &used);
+    decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[offset], item.length - offset,
+						sample_freq, decoded, &used);
     Debug_printf("\r\nDisk II used: %u", used);
 
     // Find start of sector: D5 AA AD
@@ -685,9 +698,9 @@ void IRAM_ATTR iwmBus::service()
       Debug_printf("\r\nDisk II sector not found ################");
       hexdump_slow(decoded, decode_len);
       Debug_printf("\r\nDisk II spi capture");
-      hexdump_slow(item.buffer, std::min(item.length, (size_t) 512));
+      //hexdump_slow(item.buffer, std::min(item.length, (size_t) 512));
       //hexdump_slow(item.buffer, used);
-      //hexdump_slow(item.buffer, item.length);
+      hexdump_slow(item.buffer, item.length);
     }
 
     // FIXME - is there another sector to decode?

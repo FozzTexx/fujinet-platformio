@@ -299,7 +299,8 @@ uint8_t iwm_ll::iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int samp
   return byte;
 }
 
-size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest, size_t *used)
+size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, unsigned int sample_frequency,
+				 uint8_t *dest, size_t *used)
 {
   bool more_data = true;
   size_t offset = 0;
@@ -307,7 +308,7 @@ size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, uint8_t *dest, s
 
 
   for (output = dest, offset = 0; more_data; output++)
-    *output = iwm_decode_byte(src, src_size, smartport.f_spirx, 19, &offset, &more_data);
+    *output = iwm_decode_byte(src, src_size, sample_frequency, 19, &offset, &more_data);
 
   *used = (offset + 7) / 8;
   return output - dest;
@@ -900,6 +901,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
     };
 
     {
+      size_t offset;
       uint8_t *ptr1, *ptr2;
       lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
 
@@ -907,10 +909,15 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       ptr1 = (decltype(ptr1)) SPI3.dma_inlink_dscr_bf1;
       ptr2 = (decltype(ptr2)) current_desc->buf;
 
+      // Rewind pointer to make sure to get sync bytes
+      offset = d2w_spiaddr - d2w_buffer;
+      offset = (offset + d2w_buflen - /*128*/ 68*2) % d2w_buflen;
+      d2w_spiaddr = d2w_buffer + offset;
+
       item.length = (ptr2 + d2w_buflen - d2w_spiaddr) % d2w_buflen;
       //item.length = d2w_buflen;
     }
-    
+
     item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
     if (!item.buffer)
       Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
