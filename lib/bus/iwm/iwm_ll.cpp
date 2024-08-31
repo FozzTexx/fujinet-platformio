@@ -869,14 +869,16 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 
     // Get current SPI position
     {
-      // Access the current descriptor being used by DMA
-      d2w_spiaddr = (decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1;
-#if 1
+      uint8_t *ptr1, *ptr2;
       lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
-      Debug_printf("\r\nDisk II SPI offset: %u %u", d2w_spiaddr, current_desc->buf);
-#else
-      Debug_printf("\r\nDisk II SPI offset: %x %x", d2w_spiaddr - d2w_buffer, d2w_begin);
-#endif
+
+      // Access the current descriptor being used by DMA
+      ptr1 = (decltype(ptr1)) SPI3.dma_inlink_dscr_bf1;
+      ptr2 = (decltype(ptr2)) current_desc->buf;
+
+      d2w_spiaddr = ptr2;
+      Debug_printf("\r\nDisk II SPI buffer: %x %x offset: %x %x",
+		   ptr1, ptr2, d2w_spiaddr - d2w_buffer, d2w_begin);
       strcpy((char *) d2w_spiaddr, "DISKIIMARKER");
     }
 
@@ -897,17 +899,26 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       .length = 0,
     };
 
-    //    item.length = (((decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1 + d2w_buflen)
-    //		   - d2w_spiaddr) % d2w_buflen;
-    item.length = d2w_buflen;
+    {
+      uint8_t *ptr1, *ptr2;
+      lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
+
+      // Access the current descriptor being used by DMA
+      ptr1 = (decltype(ptr1)) SPI3.dma_inlink_dscr_bf1;
+      ptr2 = (decltype(ptr2)) current_desc->buf;
+
+      item.length = (ptr2 + d2w_buflen - d2w_spiaddr) % d2w_buflen;
+      //item.length = d2w_buflen;
+    }
+    
     item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
     if (!item.buffer)
       Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
 		   item.length, item.track_begin, item.track_end);
     else {
-      memcpy(item.buffer, d2w_buffer, item.length);
+      //memcpy(item.buffer, d2w_buffer, item.length);
       // FIXME - handle wraparound
-      //memcpy(item.buffer, d2w_spiaddr, item.length);
+      memcpy(item.buffer, d2w_spiaddr, item.length);
       xQueueSendFromISR(iwm_write_queue, &item, &woken);
     }
     rx_enabled = false;
@@ -1110,7 +1121,7 @@ void iwm_diskii_ll::setup_rmt()
   {
     // FIXME - for some reason SPI refuses to write more than 68 even
     // though size allows up to 4095
-#define CHUNK_SIZE 128
+#define CHUNK_SIZE 68
 
     uint32_t num_chunks, idx;
     lldesc_t *desc_ptr;
