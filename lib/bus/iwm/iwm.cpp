@@ -685,8 +685,9 @@ void IRAM_ATTR iwmBus::service()
       Debug_printf("\r\nDisk II sector not found ################");
       hexdump_slow(decoded, decode_len);
       Debug_printf("\r\nDisk II spi capture");
-      hexdump_slow(item.buffer, std::min(item.length, (size_t) 512));
+      //hexdump_slow(item.buffer, std::min(item.length, (size_t) 512));
       //hexdump_slow(item.buffer, used);
+      hexdump_slow(item.buffer, item.length);
     }
 
     // FIXME - is there another sector to decode?

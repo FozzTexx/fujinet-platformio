@@ -871,8 +871,15 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
     {
       // Access the current descriptor being used by DMA
 #if 1
+#if 0
+      lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
       d2w_spiaddr = (decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1;
-      Debug_printf("\r\nDisk II SPI offset: %u %u", d2w_spiaddr - d2w_buffer, d2w_begin);
+      Debug_printf("\r\nDisk II SPI offset: %u %u", d2w_spiaddr, current_desc->buf);
+#else
+      d2w_spiaddr = (decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1;
+      Debug_printf("\r\nDisk II SPI offset: %x %x", d2w_spiaddr - d2w_buffer, d2w_begin);
+#endif
+      strcpy((char *) d2w_spiaddr, "DISKIIMARKER");
 #else
       lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
 
@@ -917,17 +924,23 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 
     // FIXME - how to stop spi transfer in progress?
 
+#if 1
+    //    item.length = (((decltype(d2w_spiaddr)) SPI3.dma_inlink_dscr_bf1 + d2w_buflen)
+    //		   - d2w_spiaddr) % d2w_buflen;
+    item.length = d2w_buflen;
+#else
     item.length = (item.track_end + track_numbits - item.track_begin) % track_numbits;
     item.length = IWM_NUMBYTES_FOR_BITS(item.length, item.buffer);
+#endif
     //item.length *= 2;
     item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
     if (!item.buffer)
       Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
 		   item.length, item.track_begin, item.track_end);
     else {
-      //memcpy(item.buffer, d2w_buffer, item.length);
+      memcpy(item.buffer, d2w_buffer, item.length);
       // FIXME - handle wraparound
-      memcpy(item.buffer, d2w_spiaddr, item.length);
+      //memcpy(item.buffer, d2w_spiaddr, item.length);
       xQueueSendFromISR(iwm_write_queue, &item, &woken);
     }
     rx_enabled = false;
@@ -957,11 +970,17 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     };
     ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
 #else
+    SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
+    SPI3.dma_out_link.start  = 0;
+    SPI3.dma_in_link.start   = 0;
+    SPI3.dma_conf.val = SPI3.dma_conf.val & ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
+
     SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
-    SPI3.dma_in_link.start = 1;
+    SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
     SPI3.user.usr_miso = 1;
-    //SPI3.dma_inlink_dscr = (uint32_t) d2w_desc;
+    SPI3.dma_in_link.start = 1;
     //SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_OUT_DATA_BURST_EN | SPI_INDSCR_BURST_EN;
+
 #endif
     SPI3.dma_conf.dma_continue = 1;
 #if 1
@@ -981,7 +1000,8 @@ void iwm_diskii_ll::stop()
 {
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
-  SPI3.dma_conf.dma_continue = 0; // FIXME - this permanently kills RMT and SPI
+  SPI3.dma_conf.dma_continue = 0;
+  SPI3.dma_in_link.stop = 1;
   smartport.iwm_ack_set();
   gpio_isr_handler_remove(SP_WREQ);
   fnLedManager.set(LED_BUS, false);
@@ -1175,7 +1195,7 @@ void iwm_diskii_ll::setup_rmt()
   {
     // FIXME - for some reason SPI refuses to write more than 68 even
     // though size allows up to 4095
-#define CHUNK_SIZE 64
+#define CHUNK_SIZE 128
 
     uint32_t num_chunks, idx;
     lldesc_t *desc_ptr;
