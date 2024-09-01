@@ -654,7 +654,7 @@ void IRAM_ATTR iwmBus::service()
                  item.quarter_track, sector_num, bitlen);
     decoded = (uint8_t *) malloc(item.length);
     decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[idx], item.length - idx,
-						sample_freq, decoded, &used);
+						sample_freq, 100, decoded, &used);
     Debug_printf("\r\nDisk II used: %u", used);
 
     // Find start of sector: D5 AA AD

@@ -300,7 +300,7 @@ uint8_t iwm_ll::iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int samp
 }
 
 size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, unsigned int sample_frequency,
-				 uint8_t *dest, size_t *used)
+				 int timeout, uint8_t *dest, size_t *used)
 {
   bool more_data = true;
   size_t offset = 0;
@@ -308,7 +308,7 @@ size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, unsigned int sam
 
 
   for (output = dest, offset = 0; more_data; output++)
-    *output = iwm_decode_byte(src, src_size, sample_frequency, 19, &offset, &more_data);
+    *output = iwm_decode_byte(src, src_size, sample_frequency, timeout, &offset, &more_data);
 
   *used = (offset + 7) / 8;
   return output - dest;
@@ -923,9 +923,20 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       Debug_printf("\r\nDisk II unable to allocate buffer! %u %u %u",
 		   item.length, item.track_begin, item.track_end);
     else {
-      //memcpy(item.buffer, d2w_buffer, item.length);
-      // FIXME - handle wraparound
-      memcpy(item.buffer, d2w_spiaddr, item.length);
+      size_t end1, end2;
+
+
+      end1 = d2w_spiaddr - d2w_buffer + item.length;
+      end2 = 0;
+      if (end1 >= d2w_buflen) {
+	end2 = end1 - d2w_buflen;
+	end1 = d2w_buflen;
+      }
+
+      end1 -= d2w_spiaddr - d2w_buffer;
+      memcpy(item.buffer, d2w_spiaddr, end1);
+      if (end2)
+	memcpy(&item.buffer[end1], d2w_buffer, end2);
       xQueueSendFromISR(iwm_write_queue, &item, &woken);
     }
     rx_enabled = false;
