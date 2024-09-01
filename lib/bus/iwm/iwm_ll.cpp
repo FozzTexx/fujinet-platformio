@@ -1114,8 +1114,8 @@ void IRAM_ATTR iwm_diskii_ll::encode_rmt_bitstream(const void* src, rmt_item32_t
  * Initialize the RMT Tx channel and SPI Rx channel
  */
 
-/* For whatever reason no other size works. SPI continuous always
-   writes 67 bytes + null terminator. */
+/* For whatever reason no size other than 68 works. SPI continuous
+   always writes 67 bytes + null terminator. */
 #define SPI_CHUNK_SIZE 68
 
 void iwm_diskii_ll::setup_rmt()
