@@ -601,9 +601,8 @@ void IRAM_ATTR iwmBus::service()
   iwm_write_data item;
   if (xQueueReceive(diskii_xface.iwm_write_queue, &item, 0)) {
     int sector_num;
-    uint8_t byte1, byte2, *decoded;
-    size_t idx, offset, decode_len;
-    bool more_data;
+    uint8_t *decoded;
+    size_t idx, decode_len;
     size_t sector_start, sector_end;
     bool found_start, found_end;
     size_t bitlen, used;
@@ -632,28 +631,11 @@ void IRAM_ATTR iwmBus::service()
     for (idx = 67; idx < item.length; idx += 67, item.length -= 1)
       memcpy(&item.buffer[idx], &item.buffer[idx+1], item.length - idx - 1);
 
-    idx = 0;
-#if 0
-    /* Find start of write. SPI position is difficult to synchronize
-       with WREQ signal. Buffer we receive has been rewound to some
-       point before WREQ was received and has random garbage at the
-       beginning. Hunt for sync byte and first prologue byte. */
-    for (idx = 0; idx < 68 * 2; idx++) {
-      offset = idx * 8;
-      byte1 = diskii_xface.iwm_decode_byte(item.buffer, item.length, smartport.f_spirx / 2,
-					   19, &offset, &more_data);
-      byte2 = diskii_xface.iwm_decode_byte(item.buffer, item.length, smartport.f_spirx / 2,
-					   19, &offset, &more_data);
-      if (byte1 == 0xff && (byte2 == 0xff || byte2 == 0xd5))
-        break;
-    }
-#endif
-
     bitlen = (item.track_end + item.track_numbits - item.track_begin) % item.track_numbits;
     Debug_printf("\r\nDisk II write Qtrack/sector: %i/%i  bit_len: %i",
                  item.quarter_track, sector_num, bitlen);
     decoded = (uint8_t *) malloc(item.length);
-    decode_len = diskii_xface.iwm_decode_buffer(&item.buffer[idx], item.length - idx,
+    decode_len = diskii_xface.iwm_decode_buffer(item.buffer, item.length,
 						sample_freq, 100, decoded, &used);
     Debug_printf("\r\nDisk II used: %u", used);
 

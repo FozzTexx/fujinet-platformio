@@ -945,6 +945,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
   return;
 }
 
+#define SPI_RESET_MASK (SPI_OUT_RST | SPI_IN_RST | SPI_AHBM_RST | SPI_AHBM_FIFO_RST)
 void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
 {
   if (write_protect)
@@ -954,35 +955,19 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
 
 #if 0
-    rxtrans = {
-      .flags = 0,
-      .cmd = 0,
-      .addr = 0,
-      .length = 0,
-      .rxlength = d2w_buflen,
-      .user = NULL,
-      .tx_buffer = NULL,
-      .rx_buffer = d2w_buffer,
-    };
-    ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, portMAX_DELAY));
-#else
-    SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
+    SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_RESET_MASK;
     SPI3.dma_out_link.start  = 0;
     SPI3.dma_in_link.start   = 0;
-    SPI3.dma_conf.val = SPI3.dma_conf.val & ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
+    SPI3.dma_conf.val = SPI3.dma_conf.val & ~SPI_RESET_MASK;
+#endif
 
     SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
     SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
     SPI3.user.usr_miso = 1;
     SPI3.dma_in_link.start = 1;
-    //SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_OUT_DATA_BURST_EN | SPI_INDSCR_BURST_EN;
 
-#endif
     SPI3.dma_conf.dma_continue = 1;
-#if 1
-    // Start the SPI transaction
     SPI3.cmd.usr = 1;
-#endif
   }
 
   diskii_xface.set_output_to_rmt();
@@ -1128,24 +1113,27 @@ void IRAM_ATTR iwm_diskii_ll::encode_rmt_bitstream(const void* src, rmt_item32_t
 /*
  * Initialize the RMT Tx channel and SPI Rx channel
  */
+
+/* For whatever reason no other size works. SPI continuous always
+   writes 67 bytes + null terminator. */
+#define SPI_CHUNK_SIZE 68
+
 void iwm_diskii_ll::setup_rmt()
 {
-  d2w_buflen = IWM_NUMBYTES_FOR_BITS(TRACK_LEN * 8, d2w_buffer);
-  d2w_buffer = (decltype(d2w_buffer)) heap_caps_malloc(d2w_buflen, MALLOC_CAP_DMA);
-  iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
-  memset(d2w_buffer, 0xff, d2w_buflen);
-
   // SPI continuous
   {
-    // FIXME - for some reason SPI refuses to write more than 68 even
-    // though size allows up to 4095
-#define CHUNK_SIZE 68
-
     uint32_t num_chunks, idx;
     lldesc_t *desc_ptr;
 
 
-    num_chunks = (d2w_buflen + CHUNK_SIZE - 1) / CHUNK_SIZE;
+    d2w_buflen = IWM_NUMBYTES_FOR_BITS(TRACK_LEN * 8, d2w_buffer);
+    /* Make sure it's an even multiple of SPI_CHUNK_SIZE */
+    num_chunks = (d2w_buflen + SPI_CHUNK_SIZE - 1) / SPI_CHUNK_SIZE;
+    d2w_buflen = num_chunks * SPI_CHUNK_SIZE;
+    d2w_buffer = (decltype(d2w_buffer)) heap_caps_malloc(d2w_buflen, MALLOC_CAP_DMA);
+    iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
+    memset(d2w_buffer, 0xff, d2w_buflen);
+
     d2w_desc = (lldesc_t *) heap_caps_malloc(sizeof(lldesc_t) * num_chunks, MALLOC_CAP_DMA);
     if (!d2w_desc) {
       ESP_LOGE("SPI_DMA", "Failed to allocate DMA descriptor");
@@ -1155,12 +1143,11 @@ void iwm_diskii_ll::setup_rmt()
     memset(d2w_desc, 0, sizeof(lldesc_t) * num_chunks);
     for (idx = 0; idx < num_chunks; idx++) {
       desc_ptr = &d2w_desc[idx];
-      desc_ptr->size = CHUNK_SIZE;
+      desc_ptr->size = SPI_CHUNK_SIZE;
       desc_ptr->owner = 1; // Owned by DMA hardware
-      desc_ptr->buf = &d2w_buffer[idx * CHUNK_SIZE];
+      desc_ptr->buf = &d2w_buffer[idx * SPI_CHUNK_SIZE];
       desc_ptr->qe.stqe_next = &d2w_desc[(idx + 1) % num_chunks];
     }
-    d2w_desc[num_chunks - 1].size = d2w_buflen % CHUNK_SIZE;
   }
 
   track_buffer = (uint8_t *)heap_caps_malloc(TRACK_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
