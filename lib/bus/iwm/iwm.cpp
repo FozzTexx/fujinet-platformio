@@ -627,9 +627,12 @@ void IRAM_ATTR iwmBus::service()
        also captures at half the configured clock speed. */
 
     sample_freq = smartport.f_spirx / 2;
+#if SPI_CHUNK_SIZE == 68
     // Cut out all the spurious 68th zero bytes
-    for (idx = 67; idx < item.length; idx += 67, item.length -= 1)
+    for (idx = SPI_CHUNK_SIZE - 1; idx < item.length;
+	 idx += SPI_CHUNK_SIZE - 1, item.length -= 1)
       memcpy(&item.buffer[idx], &item.buffer[idx+1], item.length - idx - 1);
+#endif
 
     bitlen = (item.track_end + item.track_numbits - item.track_begin) % item.track_numbits;
     Debug_printf("\r\nDisk II write Qtrack/sector: %i/%i  bit_len: %i",

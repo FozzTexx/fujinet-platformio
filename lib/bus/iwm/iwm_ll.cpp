@@ -911,7 +911,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 
       // Rewind pointer to make sure to get sync bytes
       offset = d2w_spiaddr - d2w_buffer;
-      offset = (offset + d2w_buflen - /*128*/ 68*2) % d2w_buflen;
+      offset = (offset + d2w_buflen - SPI_CHUNK_SIZE * 2) % d2w_buflen;
       d2w_spiaddr = d2w_buffer + offset;
 
       item.length = (ptr2 + d2w_buflen - d2w_spiaddr) % d2w_buflen;
@@ -945,7 +945,6 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
   return;
 }
 
-#define SPI_RESET_MASK (SPI_OUT_RST | SPI_IN_RST | SPI_AHBM_RST | SPI_AHBM_FIFO_RST)
 void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
 {
   if (write_protect)
@@ -954,19 +953,12 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     smartport.iwm_ack_clr();
     gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
 
-#if 0
-    SPI3.dma_conf.val = SPI3.dma_conf.val | SPI_RESET_MASK;
-    SPI3.dma_out_link.start  = 0;
-    SPI3.dma_in_link.start   = 0;
-    SPI3.dma_conf.val = SPI3.dma_conf.val & ~SPI_RESET_MASK;
-#endif
-
     SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
     SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
-    SPI3.user.usr_miso = 1;
+    SPI3.dma_conf.dma_continue = 1;
     SPI3.dma_in_link.start = 1;
 
-    SPI3.dma_conf.dma_continue = 1;
+    // Start SPI receive
     SPI3.cmd.usr = 1;
   }
 
@@ -981,8 +973,10 @@ void iwm_diskii_ll::stop()
 {
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
+  SPI3.cmd.usr = 0;
   SPI3.dma_conf.dma_continue = 0;
-  SPI3.dma_in_link.stop = 1;
+  //SPI3.dma_in_link.stop = 1;
+  SPI3.dma_in_link.start = 0;
   smartport.iwm_ack_set();
   gpio_isr_handler_remove(SP_WREQ);
   fnLedManager.set(LED_BUS, false);
@@ -1113,10 +1107,6 @@ void IRAM_ATTR iwm_diskii_ll::encode_rmt_bitstream(const void* src, rmt_item32_t
 /*
  * Initialize the RMT Tx channel and SPI Rx channel
  */
-
-/* For whatever reason no size other than 68 works. SPI continuous
-   always writes 67 bytes + null terminator. */
-#define SPI_CHUNK_SIZE 68
 
 void iwm_diskii_ll::setup_rmt()
 {
