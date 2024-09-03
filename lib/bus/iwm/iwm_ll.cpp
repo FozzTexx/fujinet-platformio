@@ -4,8 +4,8 @@
 
 #include <string.h>
 
-#include "esp_rom_gpio.h"
-#include "soc/spi_periph.h"
+#include <esp_rom_gpio.h>
+#include <soc/spi_periph.h>
 
 #include "iwm_ll.h"
 #include "iwm.h"
@@ -858,6 +858,23 @@ void IRAM_ATTR diskii_write_handler_forwarder(void *arg)
   return;
 }
 
+size_t iwm_diskii_ll::cspi_current_pos()
+{
+  uint8_t *spi_rxbuf;
+  lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
+
+
+  // Access the current descriptor being used by DMA
+  spi_rxbuf = (decltype(spi_rxbuf)) current_desc->buf;
+
+#if 0
+  Debug_printf("\r\nDisk II SPI buffer: %x %x offset: %x %x",
+	       ptr1, ptr2, d2w_spiaddr - d2w_buffer, d2w_begin);
+  strcpy((char *) d2w_spiaddr, "DISKIIMARKER");
+#endif
+  return spi_rxbuf - d2w_buffer;
+}
+
 void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 {
   bool doCapture = !IWM_BIT(SP_WREQ);
@@ -867,22 +884,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 
   if (doCapture) {
     d2w_begin = track_location;
-
-    // Get current SPI position
-    {
-      uint8_t *ptr1, *ptr2;
-      lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
-
-      // Access the current descriptor being used by DMA
-      ptr1 = (decltype(ptr1)) SPI3.dma_inlink_dscr_bf1;
-      ptr2 = (decltype(ptr2)) current_desc->buf;
-
-      d2w_spiaddr = ptr2;
-      Debug_printf("\r\nDisk II SPI buffer: %x %x offset: %x %x",
-		   ptr1, ptr2, d2w_spiaddr - d2w_buffer, d2w_begin);
-      strcpy((char *) d2w_spiaddr, "DISKIIMARKER");
-    }
-
+    d2w_position = cspi_current_pos();
     rx_enabled = true;
     IWM_BIT_SET(SP_DEBUG);
 
@@ -902,19 +904,12 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 
     {
       size_t offset;
-      uint8_t *ptr1, *ptr2;
-      lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
-
-      // Access the current descriptor being used by DMA
-      ptr1 = (decltype(ptr1)) SPI3.dma_inlink_dscr_bf1;
-      ptr2 = (decltype(ptr2)) current_desc->buf;
 
       // Rewind pointer to make sure to get sync bytes
-      offset = d2w_spiaddr - d2w_buffer;
-      offset = (offset + d2w_buflen - SPI_CHUNK_SIZE * 2) % d2w_buflen;
-      d2w_spiaddr = d2w_buffer + offset;
+      d2w_position = (d2w_position + d2w_buflen - SPI_CHUNK_SIZE * 2) % d2w_buflen;
 
-      item.length = (ptr2 + d2w_buflen - d2w_spiaddr) % d2w_buflen;
+      offset = cspi_current_pos();
+      item.length = (offset + d2w_buflen - d2w_position) % d2w_buflen;
       //item.length = d2w_buflen;
     }
 
@@ -926,15 +921,15 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       size_t end1, end2;
 
 
-      end1 = d2w_spiaddr - d2w_buffer + item.length;
+      end1 = d2w_position + item.length;
       end2 = 0;
       if (end1 >= d2w_buflen) {
 	end2 = end1 - d2w_buflen;
 	end1 = d2w_buflen;
       }
 
-      end1 -= d2w_spiaddr - d2w_buffer;
-      memcpy(item.buffer, d2w_spiaddr, end1);
+      end1 -= d2w_position;
+      memcpy(item.buffer, &d2w_buffer[d2w_position], end1);
       if (end2)
 	memcpy(&item.buffer[end1], d2w_buffer, end2);
       xQueueSendFromISR(iwm_write_queue, &item, &woken);

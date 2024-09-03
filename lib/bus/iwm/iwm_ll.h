@@ -151,9 +151,9 @@ enum class sp_cmd_state_t
 extern volatile sp_cmd_state_t sp_command_mode;
 
 /** ACK and REQ
- * 
+ *
  * SmartPort ACK and REQ lines are used in a return-to-zero 4-phase handshake sequence.
- * 
+ *
  * how ACK works, my interpretation of the iigs firmware reference.
  * ACK is normally high-Z (deasserted) when device is ready to receive commands.
  * host will send (assert) REQ high to make a request and send a command.
@@ -161,27 +161,27 @@ extern volatile sp_cmd_state_t sp_command_mode;
  * host completes command handshake by sending REQ low (deassert).
  * device signals its ready for the next step (receive/send/status)
  * by sending ACK back high (deassert).
- * 
+ *
  * The sequence is:
- * 
+ *
  * step   REQ         ACK               smartport state
  * 0      deassert    deassert          idle
  * 1      assert      deassert          enabled, apple ii sending command or data to peripheral
  * 2      assert      assert            peripheral acknowledges it received data
  * 3      deassert    assert            apple ii does it's part to return to idle, peripheral is processing command or data
  * 0      deassert    deassert          peripheral returns to idle when it's ready for another command
- * 
+ *
  * Electrically, how ACK works with multiple devices on bus:
  * ACK is normally high-Z (pulled up?)
  * when a device receives a command addressed to it, and it is ready
  * to respond, it'll send ACK low. (To me, this seems like a perfect
  * scenario for open collector output but I think it's a 3-state line)
- * 
+ *
  * possible circuits:
  * Disk II physical interface - ACK uses the WPROT line, which is a tri-state ls125 buffer on the
- * Disk II analog card. There's no pull up/down/load resistor. This line drives the /SR input of the 
- * ls323 on the bus interface card. I surmise that WPROT goes low or is hi-z, which doesn't 
- * reset the ls125.  
+ * Disk II analog card. There's no pull up/down/load resistor. This line drives the /SR input of the
+ * ls323 on the bus interface card. I surmise that WPROT goes low or is hi-z, which doesn't
+ * reset the ls125.
  */
 
 class iwm_ll
@@ -196,7 +196,7 @@ protected:
   void iwm_extra_clr();
   void disable_output();
   void enable_output();
-  
+
 public:
   void setup_gpio();
   uint8_t iwm_decode_byte(uint8_t *src, size_t src_size, unsigned int sample_frequency,
@@ -207,7 +207,7 @@ public:
 
 class iwm_sp_ll : public iwm_ll
 {
-private:  
+private:
   void set_output_to_spi();
 
   // SPI data handling
@@ -217,7 +217,7 @@ private:
 
 public:
   // FIXME - move spirx & f_spirx back to private
-  /** SPI data clock 
+  /** SPI data clock
    * N  Clock MHz   /8 Bit rate (kHz)    Bit/Byte period (us)
    * 39	2.051282051	256.4102564	        3.9	31.2          256410 is only 0.3% faster than 255682
    * 40	2	          250.	                4.0	32
@@ -262,7 +262,7 @@ public:
 
   // hardware configuration setup
   void setup_spi();
-  
+
 };
 
 // TO DO - enable/disable output
@@ -278,7 +278,7 @@ private:
   fn_rmt_config_t config;
 
   // track bit information
-  uint8_t* track_buffer = nullptr; // 
+  uint8_t* track_buffer = nullptr; //
   size_t track_numbits = 6400 * 8;
   size_t track_numbytes = 6400;
   size_t track_location = 0;
@@ -293,8 +293,10 @@ private:
   uint8_t *d2w_buffer;
   lldesc_t *d2w_desc;
   size_t d2w_buflen, d2w_begin;
-  uint8_t *d2w_spiaddr;
+  size_t d2w_position;
   int d2w_tracknum; // FIXME - drive doesn't even know what track it's on?
+
+  size_t cspi_current_pos();
 
 public:
   QueueHandle_t iwm_write_queue;
@@ -308,6 +310,7 @@ public:
 			    size_t wanted_num, size_t* translated_size,
 			    size_t* item_num, int bit_period);
   void setup_rmt(); // install the RMT device
+  size_t xspi_current_pos(spi_device_handle_t handle);
   void diskii_write_handler();
   void start(uint8_t drive, bool write_protect);
   void stop();
