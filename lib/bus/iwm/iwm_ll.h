@@ -289,7 +289,7 @@ private:
   bool enabledD2 = true;
 
   // write state
-  bool rx_enabled = false;
+  bool d2w_writing = false, d2w_started = false;
   uint8_t *d2w_buffer;
   lldesc_t *d2w_desc;
   size_t d2w_buflen, d2w_begin;

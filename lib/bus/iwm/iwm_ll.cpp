@@ -885,12 +885,12 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
   if (doCapture) {
     d2w_begin = track_location;
     d2w_position = cspi_current_pos();
-    rx_enabled = true;
+    d2w_writing = true;
     IWM_BIT_SET(SP_DEBUG);
 
     //IWM_BIT_CLEAR(SP_ACK);
   }
-  else if (rx_enabled) {
+  else if (d2w_writing) {
     IWM_BIT_CLEAR(SP_DEBUG);
     BaseType_t woken;
     iwm_write_data item = {
@@ -934,7 +934,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 	memcpy(&item.buffer[end1], d2w_buffer, end2);
       xQueueSendFromISR(iwm_write_queue, &item, &woken);
     }
-    rx_enabled = false;
+    d2w_writing = false;
   }
 
   return;
@@ -948,14 +948,21 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     smartport.iwm_ack_clr();
     gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
 
-    spi_device_acquire_bus(smartport.spirx, portMAX_DELAY);
+    // This will capture with 2Mhz but all zero
+    //spi_device_acquire_bus(smartport.spirx, portMAX_DELAY);
+    //spi_device_release_bus(smartport.spirx);
     
     SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
     SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
     SPI3.dma_conf.dma_continue = 1;
 
+    // FIXME - this breaks being able to boot SmartPort but allows
+    // getting current SPI buffer position
+    SPI3.dma_in_link.start = 1;
+
     // Start SPI receive
     SPI3.cmd.usr = 1;
+    d2w_started = true;
   }
 
   diskii_xface.set_output_to_rmt();
@@ -969,10 +976,10 @@ void iwm_diskii_ll::stop()
 {
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
-  if (SPI3.dma_conf.dma_continue) {
+  if (d2w_started) {
     SPI3.cmd.usr = 0;
     SPI3.dma_conf.dma_continue = 0;
-    spi_device_release_bus(smartport.spirx);
+    d2w_started = false;
   }
   smartport.iwm_ack_set();
   gpio_isr_handler_remove(SP_WREQ);
