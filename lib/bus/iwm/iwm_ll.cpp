@@ -948,10 +948,11 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     smartport.iwm_ack_clr();
     gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
 
+    spi_device_acquire_bus(smartport.spirx, portMAX_DELAY);
+    
     SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
     SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
     SPI3.dma_conf.dma_continue = 1;
-    SPI3.dma_in_link.start = 1;
 
     // Start SPI receive
     SPI3.cmd.usr = 1;
@@ -968,10 +969,11 @@ void iwm_diskii_ll::stop()
 {
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
-  SPI3.cmd.usr = 0;
-  SPI3.dma_conf.dma_continue = 0;
-  //SPI3.dma_in_link.stop = 1;
-  SPI3.dma_in_link.start = 0;
+  if (SPI3.dma_conf.dma_continue) {
+    SPI3.cmd.usr = 0;
+    SPI3.dma_conf.dma_continue = 0;
+    spi_device_release_bus(smartport.spirx);
+  }
   smartport.iwm_ack_set();
   gpio_isr_handler_remove(SP_WREQ);
   fnLedManager.set(LED_BUS, false);
