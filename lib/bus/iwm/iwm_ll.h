@@ -344,7 +344,7 @@ typedef struct {
 
 /* For whatever reason no size other than 68 works. SPI continuous
    always writes 67 bytes + null terminator. */
-#define SPI_CHUNK_SIZE 68
+#define SPI_CHUNK_SIZE 128
 
 #endif // IWM_LL_H
 #endif // BUILD_APPLE

@@ -626,7 +626,8 @@ void IRAM_ATTR iwmBus::service()
        always write 68 bytes and the last byte is always a zero. It
        also captures at half the configured clock speed. */
 
-    sample_freq = smartport.f_spirx / 2;
+    //sample_freq = smartport.f_spirx / 2;
+    sample_freq = smartport.f_spirx;
 #if SPI_CHUNK_SIZE == 68
     // Cut out all the spurious 68th zero bytes
     for (idx = SPI_CHUNK_SIZE - 1; idx < item.length;

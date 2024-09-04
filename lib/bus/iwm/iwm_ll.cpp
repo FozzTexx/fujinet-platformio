@@ -383,6 +383,7 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
     return 1; // timeout waiting for REQ
   }
 
+
   esp_err_t ret = spi_device_polling_start(spirx, &rxtrans, portMAX_DELAY);
   assert(ret == ESP_OK);
   iwm_extra_clr();
@@ -496,7 +497,10 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
   }
 }
 
-void IRAM_ATTR iwm_sp_ll::spi_end() { spi_device_polling_end(spirx, portMAX_DELAY); };
+void IRAM_ATTR iwm_sp_ll::spi_end()
+{
+  spi_device_polling_end(spirx, portMAX_DELAY);
+};
 
 bool iwm_sp_ll::req_wait_for_falling_timeout(int t)
 {
@@ -860,6 +864,9 @@ void IRAM_ATTR diskii_write_handler_forwarder(void *arg)
 
 size_t iwm_diskii_ll::cspi_current_pos()
 {
+  //Debug_printf("\r\nD2 SPI3 %x", SPI3.dma_in_suc_eof_des_addr);
+  //Debug_printf("\r\nD2 SPI3 %x %x --", SPI3.dma_in_suc_eof_des_addr, d2w_buffer);
+  Debug_printf("\r\nD2 SPI3 %x %x --", SPI3.dma_inlink_dscr, d2w_buffer);
   uint8_t *spi_rxbuf;
   lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
 
@@ -948,10 +955,36 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     smartport.iwm_ack_clr();
     gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
 
-    // This will capture with 2Mhz but all zero
-    //spi_device_acquire_bus(smartport.spirx, portMAX_DELAY);
-    //spi_device_release_bus(smartport.spirx);
-    
+#if 1
+    // This will capture with 2Mhz but all zero with 68 byte problem
+    Debug_printf("\r\nDisk II acquiring bus");
+    ESP_ERROR_CHECK(spi_device_acquire_bus(smartport.spirx, portMAX_DELAY));
+    Debug_printf("\r\nDisk II acquired");
+
+    IWM_BIT_SET(SP_DEBUG);
+#if 0
+    // This will capture with 2Mhz with data except sometimes the
+    // polling_start gets stuck
+    memset(&rxtrans, 0, sizeof(spi_transaction_t));
+    rxtrans.rxlength = 1;
+    rxtrans.rx_buffer = d2w_buffer;
+    Debug_printf("\r\nDisk II polling");
+    ESP_ERROR_CHECK(spi_device_polling_start(smartport.spirx, &rxtrans, portMAX_DELAY));
+    spi_device_polling_end(smartport.spirx, portMAX_DELAY);
+    Debug_printf("\r\nDisk II polled");
+#else
+    // This will capture with 2Mhz with data except sometimes the
+    // queue_trans gets stuck
+    memset(&rxtrans, 0, sizeof(spi_transaction_t));
+    rxtrans.rxlength = 1;
+    rxtrans.rx_buffer = d2w_buffer;
+    Debug_printf("\r\nDisk II queuing");
+    ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, 1));
+    Debug_printf("\r\nDisk II queued");
+#endif
+    IWM_BIT_CLEAR(SP_DEBUG);
+#endif
+
     SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
     SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
     SPI3.dma_conf.dma_continue = 1;
@@ -977,9 +1010,14 @@ void iwm_diskii_ll::stop()
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
   if (d2w_started) {
-    SPI3.cmd.usr = 0;
     SPI3.dma_conf.dma_continue = 0;
+    SPI3.dma_in_link.stop = 1;
+    SPI3.cmd.usr = 0;
     d2w_started = false;
+
+    Debug_printf("\r\nDisk II releasing bus");
+    spi_device_release_bus(smartport.spirx);
+    Debug_printf("\r\nDisk II released");
   }
   smartport.iwm_ack_set();
   gpio_isr_handler_remove(SP_WREQ);
