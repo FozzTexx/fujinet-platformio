@@ -15,6 +15,7 @@
 #include "fnHardwareTimer.h"
 #include "../../include/debug.h"
 #include "led.h"
+#include "spi_continuous.h"
 
 volatile uint8_t _phases = 0;
 volatile sp_cmd_state_t sp_command_mode = sp_cmd_state_t::standby;
@@ -499,6 +500,7 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
 
 void IRAM_ATTR iwm_sp_ll::spi_end()
 {
+  Debug_printf("\r\nSPPE: %i", cspi_get_is_done(spirx));
   spi_device_polling_end(spirx, portMAX_DELAY);
 };
 
@@ -957,21 +959,23 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
 
 #if 1
     // This will capture with 2Mhz but all zero with 68 byte problem
+    Debug_printf("\r\nDisk II lock count: %i", cspi_get_count(smartport.spirx));
     Debug_printf("\r\nDisk II acquiring bus");
     ESP_ERROR_CHECK(spi_device_acquire_bus(smartport.spirx, portMAX_DELAY));
     Debug_printf("\r\nDisk II acquired");
 
     IWM_BIT_SET(SP_DEBUG);
-#if 0
+#if 1
     // This will capture with 2Mhz with data except sometimes the
     // polling_start gets stuck
     memset(&rxtrans, 0, sizeof(spi_transaction_t));
     rxtrans.rxlength = 1;
     rxtrans.rx_buffer = d2w_buffer;
-    Debug_printf("\r\nDisk II polling");
+    Debug_printf("\r\nDisk II polling: %i", cspi_get_is_done(smartport.spirx));
     ESP_ERROR_CHECK(spi_device_polling_start(smartport.spirx, &rxtrans, portMAX_DELAY));
+    Debug_printf("\r\nDisk II polled: %i", cspi_get_is_done(smartport.spirx));
     spi_device_polling_end(smartport.spirx, portMAX_DELAY);
-    Debug_printf("\r\nDisk II polled");
+    Debug_printf("\r\nDisk II poll ended");
 #else
     // This will capture with 2Mhz with data except sometimes the
     // queue_trans gets stuck
@@ -1010,14 +1014,12 @@ void iwm_diskii_ll::stop()
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
   if (d2w_started) {
-    SPI3.dma_conf.dma_continue = 0;
-    SPI3.dma_in_link.stop = 1;
-    SPI3.cmd.usr = 0;
-    d2w_started = false;
-
-    Debug_printf("\r\nDisk II releasing bus");
+    int ret;
+    ret = cspi_end_continuous(smartport.spirx);
+    Debug_printf("\r\nDisk II releasing bus: %i", ret);
     spi_device_release_bus(smartport.spirx);
     Debug_printf("\r\nDisk II released");
+    d2w_started = false;
   }
   smartport.iwm_ack_set();
   gpio_isr_handler_remove(SP_WREQ);
