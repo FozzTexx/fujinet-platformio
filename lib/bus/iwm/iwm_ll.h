@@ -212,7 +212,6 @@ private:
 
   // SPI data handling
   uint8_t *spi_buffer = nullptr; //[8 * (BLOCK_PACKET_LEN+2)]; //smartport packet buffer
-  uint16_t spi_len = 0;
   spi_device_handle_t spi;
 
 public:
@@ -225,7 +224,6 @@ public:
   **/
   // const int f_spirx = APB_CLK_FREQ / 39; // 2051282 Hz or 2052kHz or 2.052 MHz - works for NTSC but ...
   const int f_spirx = APB_CLK_FREQ / 40; // 2 MHz - need slower rate for PAL
-  const int pulsewidth = 8; // 8 samples per bit
   spi_device_handle_t spirx;
 
   //uint8_t packet_buffer[BLOCK_PACKET_LEN]; //smartport packet buffer
@@ -241,7 +239,7 @@ public:
   uint8_t iwm_phase_vector() { return IWM_PHASE_COMBINE(); };
 
   // Smartport Bus handling by SPI interface
-  void encode_spi_packet();
+  int encode_spi_packet();
   int iwm_send_packet_spi();
   int iwm_read_packet_spi(uint8_t *buffer, int packet_len);
   int iwm_read_packet_spi(int packet_len);

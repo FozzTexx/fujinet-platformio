@@ -21,12 +21,15 @@ volatile uint8_t _phases = 0;
 volatile sp_cmd_state_t sp_command_mode = sp_cmd_state_t::standby;
 volatile int isrctr = 0;
 
-#define IWM_NUMBYTES_FOR_BITS(bitcount, buffer) ({			\
-      size_t bufbits = sizeof(*(buffer)) * 8;				\
-      size_t blen = (bitcount) *					\
-	IWM_SAMPLES_PER_CELL(smartport.f_spirx);			\
-      blen = (blen + bufbits - 1) / bufbits;				\
-      blen;								\
+#define IWM_NUMBYTES_FOR_BITS(bitcount, buffer) ({	\
+      size_t bufbits = sizeof(*(buffer)) * 8;		\
+      size_t blen = (bitcount) *			\
+	IWM_SAMPLES_PER_CELL(smartport.f_spirx);	\
+      blen = (blen + bufbits - 1) / bufbits;		\
+      blen;						\
+    })
+#define IWM_BITLEN_FOR_BYTES(bytecount, freq, buffer) ({ \
+      (bytecount) * 8 * IWM_SAMPLES_PER_CELL(freq);	 \
     })
 
 void IRAM_ATTR phi_isr_handler(void *arg)
@@ -151,7 +154,7 @@ inline void iwm_ll::iwm_extra_clr()
 #endif
 }
 
-void IRAM_ATTR iwm_sp_ll::encode_spi_packet()
+int IRAM_ATTR iwm_sp_ll::encode_spi_packet()
 {
   // clear out spi buffer
   memset(spi_buffer, 0, SPI_SP_LEN);
@@ -179,7 +182,7 @@ void IRAM_ATTR iwm_sp_ll::encode_spi_packet()
     }
     i++;
   }
-  spi_len = --j;
+  return j - 1;
 }
 
 
@@ -197,15 +200,14 @@ int IRAM_ATTR iwm_sp_ll::iwm_send_packet_spi()
 
   portDISABLE_INTERRUPTS();
   set_output_to_spi();
-  encode_spi_packet();
+  int spi_len = encode_spi_packet();
 
   // send data stream using SPI
   esp_err_t ret;
   spi_transaction_t trans;
   memset(&trans, 0, sizeof(spi_transaction_t));
-  trans.tx_buffer = spi_buffer; // finally send the line data
+  trans.tx_buffer = spi_buffer;
   trans.length = spi_len * 8;   // Data length, in bits
-  trans.flags = 0;              // undo SPI_TRANS_USE_TXDATA flag
 
   iwm_ack_set(); // signal ready to send data
 
@@ -360,18 +362,15 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int packet_len)
 
   */
 
-  spi_len = packet_len * pulsewidth * 11 / 10 ; //add 10% for overhead to accomodate YS command packet
-
   // comment this out, trying to minimise the time from REQ interrupt to start the SPI polling
   // helps the IIgs get in sync to the bitstream quicker
   //memset(spi_buffer, 0xff, SPI_SP_LEN);
 
   memset(&rxtrans, 0, sizeof(spi_transaction_t));
-  rxtrans.flags = 0;
-  rxtrans.length = 0; //spi_len * 8;   // Data length, in bits
-  rxtrans.rxlength = spi_len * 8;   // Data length, in bits
-  rxtrans.tx_buffer = nullptr;
-  rxtrans.rx_buffer = spi_buffer; // finally send the line data
+  rxtrans.rx_buffer = spi_buffer;
+
+  // add 10% for overhead to accomodate YS command packet
+  rxtrans.rxlength = IWM_BITLEN_FOR_BYTES(packet_len * 11 / 10, f_spirx, spi_buffer);
 
   // setup a timeout counter to wait for REQ response
   if (req_wait_for_rising_timeout(10000))
