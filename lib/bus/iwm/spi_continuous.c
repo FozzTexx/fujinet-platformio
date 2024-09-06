@@ -128,9 +128,15 @@ int cspi_end_continuous(spi_device_handle_t handle)
 
 
   //hw->dma_in_link.stop = 1;
-  //hw->dma_conf.dma_continue = 0;
   hw->dma_conf.dma_rx_stop = 1;
+  hw->dma_conf.dma_tx_stop = 1;
 
+  // Wait for transaction to come to a full and complete stop
+  while (hw->ext2.st)
+    ;
+
+  hw->dma_conf.dma_continue = 0;
+  
 #if 0
   current_desc = (lldesc_t *) hw->dma_inlink_dscr;
   current_desc->eof = 1;

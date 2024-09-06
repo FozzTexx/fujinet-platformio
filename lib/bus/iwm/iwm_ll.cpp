@@ -974,7 +974,8 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     rxtrans.rx_buffer = d2w_buffer;
     Debug_printf("\r\nDisk II polling: %i", cspi_get_is_done(smartport.spirx));
     ESP_ERROR_CHECK(spi_device_polling_start(smartport.spirx, &rxtrans, portMAX_DELAY));
-    Debug_printf("\r\nDisk II polled: %i", cspi_get_is_done(smartport.spirx));
+    Debug_printf("\r\nDisk II polled: %i %i %x", cspi_get_is_done(smartport.spirx),
+		 SPI3.ext2.val, SPI3.dma_conf.dma_continue);
     //cspi_set_is_done(smartport.spirx, 1);
     spi_device_polling_end(smartport.spirx, portMAX_DELAY);
     Debug_printf("\r\nDisk II poll ended");
@@ -991,9 +992,9 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     IWM_BIT_CLEAR(SP_DEBUG);
 #endif
 
-    d2w_desc->eof = 0;
     SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
     SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
+    //SPI3.slave.trans_inten = 1; // Increase transaction intensity
     SPI3.dma_conf.dma_continue = 1;
 
     // FIXME - this breaks being able to boot SmartPort but allows
@@ -1003,6 +1004,8 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     // Start SPI receive
     SPI3.cmd.usr = 1;
     d2w_started = true;
+
+    Debug_printf("\r\nDisk II transaction intensity: %i", SPI3.slave.trans_inten);
   }
 
   diskii_xface.set_output_to_rmt();
@@ -1019,11 +1022,11 @@ void iwm_diskii_ll::stop()
   if (d2w_started) {
     int ret;
     ret = cspi_end_continuous(smartport.spirx);
-    Debug_printf("\r\nDisk II releasing bus: %i %i %i RUN: %x EOF: %i %x:%x",
+    Debug_printf("\r\nDisk II releasing bus: %i %i %i RUN: %x EOF: %i %x %x:%x",
 		 ret, cspi_get_is_done(smartport.spirx),
 		 cspi_get_bg_status(smartport.spirx),
 		 cspi_running_cmd(smartport.spirx),
-		 d2w_desc->eof,
+		 SPI3.ext2.val, SPI3.dma_rx_status,
 		 d2w_desc, cspi_lldesc(smartport.spirx));
     //spi_device_release_bus(smartport.spirx);
     Debug_printf("\r\nDisk II released");
