@@ -315,12 +315,12 @@ size_t iwm_ll::iwm_decode_buffer(uint8_t *src, size_t src_size, unsigned int sam
   return output - dest;
 }
 
-int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(int n)
+int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(int packet_len)
 {
-  return iwm_read_packet_spi(packet_buffer, n);
+  return iwm_read_packet_spi(packet_buffer, packet_len);
 }
 
-int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
+int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int packet_len)
 { // read data stream using SPI
 
   // these are for the on the fly checksum decode
@@ -360,7 +360,7 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
 
   */
 
-  spi_len = n * pulsewidth * 11 / 10 ; //add 10% for overhead to accomodate YS command packet
+  spi_len = packet_len * pulsewidth * 11 / 10 ; //add 10% for overhead to accomodate YS command packet
 
   // comment this out, trying to minimise the time from REQ interrupt to start the SPI polling
   // helps the IIgs get in sync to the bitstream quicker
@@ -475,9 +475,9 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
       idx = 5;
     }
     buffer[idx++] = rxbyte;
-    if (idx > n || !more_data)
+    if (idx > packet_len || !more_data)
       have_data = false;
-  } while (have_data); // while have_data
+  } while (have_data);
 
   // keep this so we can print them later for debug
   smartport.calc_checksum = checksum;

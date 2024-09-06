@@ -243,8 +243,8 @@ public:
   // Smartport Bus handling by SPI interface
   void encode_spi_packet();
   int iwm_send_packet_spi();
-  int iwm_read_packet_spi(uint8_t *buffer, int n);
-  int iwm_read_packet_spi(int n);
+  int iwm_read_packet_spi(uint8_t *buffer, int packet_len);
+  int iwm_read_packet_spi(int packet_len);
   void spi_end();
 
   size_t decode_data_packet(uint8_t* input_data, uint8_t* output_data); //decode smartport data packet
