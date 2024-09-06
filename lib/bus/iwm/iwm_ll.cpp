@@ -500,7 +500,6 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int n)
 
 void IRAM_ATTR iwm_sp_ll::spi_end()
 {
-  Debug_printf("\r\nSPPE: %i", cspi_get_is_done(spirx));
   spi_device_polling_end(spirx, portMAX_DELAY);
 };
 
@@ -864,6 +863,7 @@ void IRAM_ATTR diskii_write_handler_forwarder(void *arg)
   return;
 }
 
+#if 0
 size_t iwm_diskii_ll::cspi_current_pos()
 {
   //Debug_printf("\r\nD2 SPI3 %x", SPI3.dma_in_suc_eof_des_addr);
@@ -883,6 +883,7 @@ size_t iwm_diskii_ll::cspi_current_pos()
 #endif
   return spi_rxbuf - d2w_buffer;
 }
+#endif
 
 void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 {
@@ -893,7 +894,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 
   if (doCapture) {
     d2w_begin = track_location;
-    d2w_position = cspi_current_pos();
+    d2w_position = cspi_current_pos(smartport.spirx);
     d2w_writing = true;
     IWM_BIT_SET(SP_DEBUG);
 
@@ -917,7 +918,7 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
       // Rewind pointer to make sure to get sync bytes
       d2w_position = (d2w_position + d2w_buflen - SPI_CHUNK_SIZE * 2) % d2w_buflen;
 
-      offset = cspi_current_pos();
+      offset = cspi_current_pos(smartport.spirx);
       item.length = (offset + d2w_buflen - d2w_position) % d2w_buflen;
       //item.length = d2w_buflen;
     }
@@ -961,7 +962,7 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     // This will capture with 2Mhz but all zero with 68 byte problem
     Debug_printf("\r\nDisk II lock count: %i", cspi_get_count(smartport.spirx));
     Debug_printf("\r\nDisk II acquiring bus");
-    ESP_ERROR_CHECK(spi_device_acquire_bus(smartport.spirx, portMAX_DELAY));
+    //ESP_ERROR_CHECK(spi_device_acquire_bus(smartport.spirx, portMAX_DELAY));
     Debug_printf("\r\nDisk II acquired");
 
     IWM_BIT_SET(SP_DEBUG);
@@ -974,6 +975,7 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     Debug_printf("\r\nDisk II polling: %i", cspi_get_is_done(smartport.spirx));
     ESP_ERROR_CHECK(spi_device_polling_start(smartport.spirx, &rxtrans, portMAX_DELAY));
     Debug_printf("\r\nDisk II polled: %i", cspi_get_is_done(smartport.spirx));
+    //cspi_set_is_done(smartport.spirx, 1);
     spi_device_polling_end(smartport.spirx, portMAX_DELAY);
     Debug_printf("\r\nDisk II poll ended");
 #else
@@ -989,6 +991,7 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     IWM_BIT_CLEAR(SP_DEBUG);
 #endif
 
+    d2w_desc->eof = 0;
     SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
     SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
     SPI3.dma_conf.dma_continue = 1;
@@ -1016,8 +1019,13 @@ void iwm_diskii_ll::stop()
   if (d2w_started) {
     int ret;
     ret = cspi_end_continuous(smartport.spirx);
-    Debug_printf("\r\nDisk II releasing bus: %i", ret);
-    spi_device_release_bus(smartport.spirx);
+    Debug_printf("\r\nDisk II releasing bus: %i %i %i RUN: %x EOF: %i %x:%x",
+		 ret, cspi_get_is_done(smartport.spirx),
+		 cspi_get_bg_status(smartport.spirx),
+		 cspi_running_cmd(smartport.spirx),
+		 d2w_desc->eof,
+		 d2w_desc, cspi_lldesc(smartport.spirx));
+    //spi_device_release_bus(smartport.spirx);
     Debug_printf("\r\nDisk II released");
     d2w_started = false;
   }

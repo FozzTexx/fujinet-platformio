@@ -296,7 +296,9 @@ private:
   size_t d2w_position;
   int d2w_tracknum; // FIXME - drive doesn't even know what track it's on?
 
+#if 0
   size_t cspi_current_pos();
+#endif
 
 public:
   QueueHandle_t iwm_write_queue;

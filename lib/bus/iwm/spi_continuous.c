@@ -106,6 +106,14 @@ void cspi_enable_continuous(spi_device_handle_t handle, spi_transaction_t *trans
   return;
 }
 
+void *cspi_lldesc(spi_device_handle_t handle)
+{
+  spi_host_t *host = handle->host;
+
+
+  return (void *) host->hal.dmadesc_rx;
+}
+
 #define REQ_SHIFT       0
 #define MAX_DEV_NUM     10
 #define BIT1_MASK(high, low)   ((UINT32_MAX << (high)) ^ (UINT32_MAX << (low)))
@@ -113,36 +121,44 @@ void cspi_enable_continuous(spi_device_handle_t handle, spi_transaction_t *trans
 
 int cspi_end_continuous(spi_device_handle_t handle)
 {
+  lldesc_t *current_desc;
   spi_host_t *host = handle->host;
   spi_dev_t *hw = host->hal.hw;
-  int ret;
+  int ret = -1;
 
 
-  hw->dma_in_link.stop = 1;
-  hw->dma_conf.dma_continue = 0;
-  hw->cmd.usr = 0;
+  //hw->dma_in_link.stop = 1;
+  //hw->dma_conf.dma_continue = 0;
+  hw->dma_conf.dma_rx_stop = 1;
 
-  spi_ll_set_int_stat(hw);
+#if 0
+  current_desc = (lldesc_t *) hw->dma_inlink_dscr;
+  current_desc->eof = 1;
+#endif
+  
+  //hw->cmd.usr = 0;
 
+#if 0
   {
     spi_bus_lock_handle_t lock = host->bus_attr->lock;
     spi_bus_lock_dev_handle_t desired_dev;
     BaseType_t do_yield;
-    size_t size;
     int status;
     void* buffer;
 
 
     if (lock->acquiring_dev) {
-      status = cspi_get_lock(handle, &size);
+      status = cspi_get_bg_status(handle);
       if (status & (lock->acquiring_dev->mask & BG_MASK))
 	return -status;
     }
 
     do {
       spi_bus_lock_bg_check_dev_acq(lock, &desired_dev);
-      if (!desired_dev)
+      if (!desired_dev) {
+	ret = -2;
 	break;
+      }
       // Move REQ bits to PEND bits
       spi_bus_lock_bg_check_dev_req(desired_dev);
       // Clear PEND bits
@@ -155,34 +171,51 @@ int cspi_end_continuous(spi_device_handle_t handle)
     while (xQueueReceive(handle->trans_queue, &buffer, 0) == pdTRUE)
       ;
   }
-
-#if 0
-  {
-    spi_bus_lock_dev_t *lock = handle->dev_lock;
-
-
-    if (lock->parent->acquiring_dev == lock)
-      spi_device_release_bus(handle);
-  }
 #endif
 
-  return hw->slave.trans_done;
+  //spi_ll_enable_int(hw);
+  //spi_ll_set_int_stat(hw);
+  
   return ret;
 }
 
-uint32_t cspi_get_lock(spi_device_handle_t handle, size_t *size)
+#if 1
+// Get current SPI position
+size_t cspi_current_pos(spi_device_handle_t handle)
+{
+  spi_host_t *host = handle->host;
+  //spi_dev_t *hw = host->hal.hw;
+  spi_dev_t *hw = &SPI3;
+  uint8_t *ptr1, *ptr2, *ptr3;
+
+
+  // Access the current descriptor being used by DMA
+  ptr1 = (typeof(ptr1)) hw->dma_inlink_dscr_bf1;
+  lldesc_t *current_desc = (lldesc_t *) hw->dma_inlink_dscr;
+  ptr2 = (typeof(ptr2)) current_desc->buf;
+  ptr3 = (typeof(ptr3)) host->cur_trans_buf.buffer_to_rcv;
+
+  return ptr2 - ptr3;
+}
+#endif
+
+uint8_t *cspi_get_lock(spi_device_handle_t handle, size_t *size)
+{
+  spi_host_t *host = handle->host;
+  spi_bus_lock_handle_t lock = host->bus_attr->lock;
+
+
+  *size = sizeof(spi_bus_lock_t);
+  return (uint8_t *) lock;
+}
+
+uint32_t cspi_get_bg_status(spi_device_handle_t handle)
 {
   spi_host_t *host = handle->host;
   spi_bus_lock_handle_t lock = host->bus_attr->lock;
   uint32_t status = atomic_load(&lock->status);
 
 
-#if 0
-  *size = sizeof(spi_bus_lock_t);
-  return (uint8_t *) lock;
-#endif
-
-  *size = sizeof(status);
   return status & BG_MASK;
 }
 
@@ -199,8 +232,30 @@ int cspi_get_is_done(spi_device_handle_t handle)
   spi_host_t *host = handle->host;
 
 
-  //return spi_hal_usr_is_done(&host->hal);
-  return host->hal.hw->slave.trans_done;
+  return spi_hal_usr_is_done(&host->hal);
+}
+
+void cspi_set_is_done(spi_device_handle_t handle, int val)
+{
+  spi_host_t *host = handle->host;
+  spi_dev_t *hw = host->hal.hw;
+
+
+  if (val)
+    spi_ll_set_int_stat(hw);
+  else
+    spi_ll_clear_int_stat(hw);
+
+  return;
+}
+
+uint32_t cspi_running_cmd(spi_device_handle_t handle)
+{
+  spi_host_t *host = handle->host;
+  spi_dev_t *hw = host->hal.hw;
+
+
+  return spi_ll_get_running_cmd(hw);
 }
 
 #if 0
@@ -483,23 +538,4 @@ void cspi_end_trans(spi_device_handle_t handle)
   return;
 }
 
-#if 0
-// Get current SPI position
-size_t cspi_current_pos(spi_device_handle_t handle)
-{
-  spi_host_t *host = handle->host;
-  //spi_dev_t *hw = host->hal.hw;
-  spi_dev_t *hw = &SPI3;
-  uint8_t *ptr1, *ptr2, *ptr3;
-
-
-  // Access the current descriptor being used by DMA
-  ptr1 = (typeof(ptr1)) hw->dma_inlink_dscr_bf1;
-  lldesc_t *current_desc = (lldesc_t *) hw->dma_inlink_dscr;
-  ptr2 = (typeof(ptr2)) current_desc->buf;
-  ptr3 = (typeof(ptr3)) host->cur_trans_buf.buffer_to_rcv;
-
-  return ptr2 - ptr3;
-}
-#endif
 #endif
