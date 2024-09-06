@@ -320,6 +320,9 @@ public:
   // these things stay for the most part
   void setup();
   void service();
+  bool serviceSmartPort();
+  bool serviceDiskII();
+  bool serviceDiskIIWrite();
   void shutdown();
 
   int numDevices();
