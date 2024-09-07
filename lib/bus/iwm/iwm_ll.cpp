@@ -957,54 +957,8 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     smartport.iwm_ack_clr();
     gpio_isr_handler_add(SP_WREQ, diskii_write_handler_forwarder, (void *) this);
 
-#if 1
-    // This will capture with 2Mhz but all zero with 68 byte problem
-    Debug_printf("\r\nDisk II lock count: %i", cspi_get_count(smartport.spirx));
-    Debug_printf("\r\nDisk II acquiring bus");
-    //ESP_ERROR_CHECK(spi_device_acquire_bus(smartport.spirx, portMAX_DELAY));
-    Debug_printf("\r\nDisk II acquired");
-
-    IWM_BIT_SET(SP_DEBUG);
-#if 1
-    // This will capture with 2Mhz with data except sometimes the
-    // polling_start gets stuck
-    memset(&rxtrans, 0, sizeof(spi_transaction_t));
-    rxtrans.rxlength = 7;
-    rxtrans.rx_buffer = d2w_buffer;
-    Debug_printf("\r\nDisk II polling: %i", cspi_get_is_done(smartport.spirx));
-    ESP_ERROR_CHECK(spi_device_polling_start(smartport.spirx, &rxtrans, portMAX_DELAY));
-    Debug_printf("\r\nDisk II polled: %i %i %x", cspi_get_is_done(smartport.spirx),
-		 SPI3.ext2.val, SPI3.dma_conf.dma_continue);
-    //cspi_set_is_done(smartport.spirx, 1);
-    spi_device_polling_end(smartport.spirx, portMAX_DELAY);
-    Debug_printf("\r\nDisk II poll ended");
-#else
-    // This will capture with 2Mhz with data except sometimes the
-    // queue_trans gets stuck
-    memset(&rxtrans, 0, sizeof(spi_transaction_t));
-    rxtrans.rxlength = 1;
-    rxtrans.rx_buffer = d2w_buffer;
-    Debug_printf("\r\nDisk II queuing");
-    ESP_ERROR_CHECK(spi_device_queue_trans(smartport.spirx, &rxtrans, 1));
-    Debug_printf("\r\nDisk II queued");
-#endif
-    IWM_BIT_CLEAR(SP_DEBUG);
-#endif
-
-    SPI3.dma_in_link.addr = (uint32_t) d2w_desc;
-    SPI3.dma_inlink_dscr = SPI3.dma_in_link.addr;
-    //SPI3.slave.trans_inten = 1; // Increase transaction intensity
-    SPI3.dma_conf.dma_continue = 1;
-
-    // FIXME - this breaks being able to boot SmartPort but allows
-    // getting current SPI buffer position
-    SPI3.dma_in_link.start = 1;
-
-    // Start SPI receive
-    SPI3.cmd.usr = 1;
+    cspi_begin_continuous(smartport.spirx, d2w_desc);
     d2w_started = true;
-
-    Debug_printf("\r\nDisk II transaction intensity: %i", SPI3.slave.trans_inten);
   }
 
   diskii_xface.set_output_to_rmt();
@@ -1019,28 +973,7 @@ void iwm_diskii_ll::stop()
   fnRMT.rmt_tx_stop(RMT_TX_CHANNEL);
   diskii_xface.disable_output();
   if (d2w_started) {
-    int ret;
-    ret = cspi_end_continuous(smartport.spirx);
-
-    memset(&rxtrans, 0, sizeof(spi_transaction_t));
-    rxtrans.rxlength = 8;
-    rxtrans.rx_buffer = d2w_buffer;
-    Debug_printf("\r\nDisk II polling: %i", cspi_get_is_done(smartport.spirx));
-    ESP_ERROR_CHECK(spi_device_polling_start(smartport.spirx, &rxtrans, portMAX_DELAY));
-    Debug_printf("\r\nDisk II polled: %i %i %x", cspi_get_is_done(smartport.spirx),
-		 SPI3.ext2.val, SPI3.dma_conf.dma_continue);
-    //cspi_set_is_done(smartport.spirx, 1);
-    spi_device_polling_end(smartport.spirx, portMAX_DELAY);
-    Debug_printf("\r\nDisk II poll ended");
-    
-    Debug_printf("\r\nDisk II releasing bus: %i %i %i RUN: %x EOF: %i %x %x:%x",
-		 ret, cspi_get_is_done(smartport.spirx),
-		 cspi_get_bg_status(smartport.spirx),
-		 cspi_running_cmd(smartport.spirx),
-		 SPI3.ext2.val, SPI3.dma_rx_status,
-		 d2w_desc, cspi_lldesc(smartport.spirx));
-    //spi_device_release_bus(smartport.spirx);
-    Debug_printf("\r\nDisk II released");
+    cspi_end_continuous(smartport.spirx);
     d2w_started = false;
   }
   smartport.iwm_ack_set();
@@ -1177,34 +1110,9 @@ void IRAM_ATTR iwm_diskii_ll::encode_rmt_bitstream(const void* src, rmt_item32_t
 void iwm_diskii_ll::setup_rmt()
 {
   // SPI continuous
-  {
-    uint32_t num_chunks, idx;
-    lldesc_t *desc_ptr;
-
-
-    d2w_buflen = IWM_NUMBYTES_FOR_BITS(TRACK_LEN * 8, d2w_buffer);
-    /* Make sure it's an even multiple of SPI_CHUNK_SIZE */
-    num_chunks = (d2w_buflen + SPI_CHUNK_SIZE - 1) / SPI_CHUNK_SIZE;
-    d2w_buflen = num_chunks * SPI_CHUNK_SIZE;
-    d2w_buffer = (decltype(d2w_buffer)) heap_caps_malloc(d2w_buflen, MALLOC_CAP_DMA);
-    iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
-    memset(d2w_buffer, 0xff, d2w_buflen);
-
-    d2w_desc = (lldesc_t *) heap_caps_malloc(sizeof(lldesc_t) * num_chunks, MALLOC_CAP_DMA);
-    if (!d2w_desc) {
-      ESP_LOGE("SPI_DMA", "Failed to allocate DMA descriptor");
-      return;
-    }
-
-    memset(d2w_desc, 0, sizeof(lldesc_t) * num_chunks);
-    for (idx = 0; idx < num_chunks; idx++) {
-      desc_ptr = &d2w_desc[idx];
-      desc_ptr->size = SPI_CHUNK_SIZE;
-      desc_ptr->owner = 1; // Owned by DMA hardware
-      desc_ptr->buf = &d2w_buffer[idx * SPI_CHUNK_SIZE];
-      desc_ptr->qe.stqe_next = &d2w_desc[(idx + 1) % num_chunks];
-    }
-  }
+  d2w_buflen = cspi_alloc_continuous(IWM_NUMBYTES_FOR_BITS(TRACK_LEN * 8, d2w_buffer),
+				     SPI_CHUNK_SIZE, &d2w_buffer, &d2w_desc);
+  iwm_write_queue = xQueueCreate(10, sizeof(iwm_write_data));
 
   track_buffer = (uint8_t *)heap_caps_malloc(TRACK_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (track_buffer == NULL)
