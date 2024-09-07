@@ -623,110 +623,92 @@ bool IRAM_ATTR iwmBus::serviceDiskII()
 bool IRAM_ATTR iwmBus::serviceDiskIIWrite()
 {
   iwm_write_data item;
+  int sector_num;
+  uint8_t *decoded;
+  size_t decode_len;
+  size_t sector_start, sector_end;
+  bool found_start, found_end;
+  size_t bitlen, used;
 
 
-  if (xQueueReceive(diskii_xface.iwm_write_queue, &item, 0)) {
-    int sector_num;
-    uint8_t *decoded;
-    size_t idx, decode_len;
-    size_t sector_start, sector_end;
-    bool found_start, found_end;
-    size_t bitlen, used;
-    unsigned int sample_freq;
+  if (!xQueueReceive(diskii_xface.iwm_write_queue, &item, 0))
+    return false;
 
+  Debug_printf("\r\nDisk II iwm queue receive %u %u %u %u",
+	       item.length, item.track_begin, item.track_end, item.track_numbits);
+  // FIXME - terrible hack to guess sector based on how serialise_track() works
+  // gap 1            = 16 * 10
+  // sector header    = 10 * 8        [D5 AA 96] + 4 + [DE AA EB]
+  // gap 2            = 7 * 10
+  // sector data      = (6 + 343) * 8 [D5 AA AD] + 343 + [DE AA EB]
+  // gap 3            = 16 * 10
+  // per sector bits  = 3102
 
-    Debug_printf("\r\nDisk II iwm queue receive %u %u %u %u",
-		 item.length, item.track_begin, item.track_end, item.track_numbits);
-    // FIXME - terrible hack to guess sector based on how serialise_track() works
-    // gap 1            = 16 * 10
-    // sector header    = 10 * 8        [D5 AA 96] + 4 + [DE AA EB]
-    // gap 2            = 7 * 10
-    // sector data      = (6 + 343) * 8 [D5 AA AD] + 343 + [DE AA EB]
-    // gap 3            = 16 * 10
-    // per sector bits  = 3102
+  sector_num = (item.track_begin - 16 * 10) / 3102;
+  bitlen = (item.track_end + item.track_numbits - item.track_begin) % item.track_numbits;
+  Debug_printf("\r\nDisk II write Qtrack/sector: %i/%i  bit_len: %i",
+	       item.quarter_track, sector_num, bitlen);
+  decoded = (uint8_t *) malloc(item.length);
+  decode_len = diskii_xface.iwm_decode_buffer(item.buffer, item.length,
+					      smartport.f_spirx, 100, decoded, &used);
+  Debug_printf("\r\nDisk II used: %u", used);
 
-    sector_num = (item.track_begin - 16 * 10) / 3102;
+  // Find start of sector: D5 AA AD
+  for (sector_start = 0; sector_start <= decode_len - 349; sector_start++)
+    if (decoded[sector_start]      == 0xD5
+	&& decoded[sector_start+1] == 0xAA
+	&& decoded[sector_start+2] == 0xAD)
+      break;
+  found_start = sector_start <= decode_len - 349;
 
-    /* FIXME FIXME FIXME */
-    /* There's something bizarre going on with SPI continuous. It
-       always write 68 bytes and the last byte is always a zero. It
-       also captures at half the configured clock speed. */
+  // Find end of sector too: DE AA EB
+  for (sector_end = 0; sector_end <= decode_len - 3; sector_end++)
+    if (decoded[sector_end]      == 0xDE
+	&& decoded[sector_end+1] == 0xAA
+	&& decoded[sector_end+2] == 0xEB)
+      break;
+  found_end = sector_end <= decode_len - 3;
 
-    //sample_freq = smartport.f_spirx / 2;
-    sample_freq = smartport.f_spirx;
-#if SPI_CHUNK_SIZE == 68
-    // Cut out all the spurious 68th zero bytes
-    for (idx = SPI_CHUNK_SIZE - 1; idx < item.length;
-	 idx += SPI_CHUNK_SIZE - 1, item.length -= 1)
-      memcpy(&item.buffer[idx], &item.buffer[idx+1], item.length - idx - 1);
-#endif
-
-    bitlen = (item.track_end + item.track_numbits - item.track_begin) % item.track_numbits;
-    Debug_printf("\r\nDisk II write Qtrack/sector: %i/%i  bit_len: %i",
-                 item.quarter_track, sector_num, bitlen);
-    decoded = (uint8_t *) malloc(item.length);
-    decode_len = diskii_xface.iwm_decode_buffer(item.buffer, item.length,
-						sample_freq, 100, decoded, &used);
-    Debug_printf("\r\nDisk II used: %u", used);
-
-    // Find start of sector: D5 AA AD
-    for (sector_start = 0; sector_start <= decode_len - 349; sector_start++)
-      if (decoded[sector_start]      == 0xD5
-          && decoded[sector_start+1] == 0xAA
-          && decoded[sector_start+2] == 0xAD)
-        break;
-    found_start = sector_start <= decode_len - 349;
-
-    // Find end of sector too: DE AA EB
-    for (sector_end = 0; sector_end <= decode_len - 3; sector_end++)
-      if (decoded[sector_end]      == 0xDE
-          && decoded[sector_end+1] == 0xAA
-          && decoded[sector_end+2] == 0xEB)
-        break;
-    found_end = sector_end <= decode_len - 3;
-
-    // FIXME - sometimes the D5 AA AD doesn't decode correctly
-    if (!found_start && found_end) {
-      Debug_printf("\r\nDisk II no prologue found");
+  // FIXME - sometimes the D5 AA AD doesn't decode correctly
+  if (!found_start && found_end) {
+    Debug_printf("\r\nDisk II no prologue found");
 #if 0
-      sector_start = sector_end - 346;
-      found_start = true;
+    sector_start = sector_end - 346;
+    found_start = true;
 #endif
-    }
-
-    if (found_start && found_end && sector_end - sector_start == 346) {
-      uint8_t sector_data[343]; // Need enough room to demap and de-xor
-      uint16_t checksum;
-      const int phys2log[] = {0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15};
-
-
-      Debug_printf("\r\nDisk II sector data: %i", sector_start + 3);
-      checksum = decode_6_and_2(sector_data, &decoded[sector_start + 3]);
-      if ((checksum >> 8) != (checksum & 0xff))
-	Debug_printf("\r\nDisk II checksum mismatch: %04x", checksum);
-      hexdump_slow(sector_data, 256);
-
-      iwmDisk2 *disk_dev = IWM_ACTIVE_DISK2;
-      disk_dev->write_sector(item.quarter_track, phys2log[sector_num], sector_data);
-      disk_dev->change_track(0);
-    }
-    else {
-      Debug_printf("\r\nDisk II sector not found ################");
-      hexdump_slow(decoded, decode_len);
-      Debug_printf("\r\nDisk II spi capture");
-      //hexdump_slow(item.buffer, std::min(item.length, (size_t) 512));
-      hexdump_slow(item.buffer, used);
-      //hexdump_slow(item.buffer, item.length);
-    }
-
-    // FIXME - is there another sector to decode?
-
-    free(decoded);
-    free(item.buffer);
-    return true;
   }
 
-  return false;
+  if (found_start && found_end && sector_end - sector_start == 346) {
+    uint8_t sector_data[343]; // Need enough room to demap and de-xor
+    uint16_t checksum;
+    const int phys2log[] = {0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15};
+
+
+    Debug_printf("\r\nDisk II sector data: %i", sector_start + 3);
+    checksum = decode_6_and_2(sector_data, &decoded[sector_start + 3]);
+    if ((checksum >> 8) != (checksum & 0xff))
+      Debug_printf("\r\nDisk II checksum mismatch: %04x", checksum);
+    hexdump_slow(sector_data, 256);
+
+    iwmDisk2 *disk_dev = IWM_ACTIVE_DISK2;
+    disk_dev->write_sector(item.quarter_track, phys2log[sector_num], sector_data);
+    disk_dev->change_track(0);
+  }
+  else {
+    Debug_printf("\r\nDisk II sector not found ################");
+    hexdump_slow(decoded, decode_len);
+    Debug_printf("\r\nDisk II spi capture");
+    //hexdump_slow(item.buffer, std::min(item.length, (size_t) 512));
+    hexdump_slow(item.buffer, used);
+    //hexdump_slow(item.buffer, item.length);
+  }
+
+  // FIXME - is there another sector to decode?
+
+  free(decoded);
+  free(item.buffer);
+
+  return true;
 }
 
 #ifndef DEV_RELAY_SLIP

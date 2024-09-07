@@ -383,7 +383,6 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int packet_len)
     return 1; // timeout waiting for REQ
   }
 
-
   esp_err_t ret = spi_device_polling_start(spirx, &rxtrans, portMAX_DELAY);
   assert(ret == ESP_OK);
   iwm_extra_clr();
@@ -497,10 +496,7 @@ int IRAM_ATTR iwm_sp_ll::iwm_read_packet_spi(uint8_t* buffer, int packet_len)
   }
 }
 
-void IRAM_ATTR iwm_sp_ll::spi_end()
-{
-  spi_device_polling_end(spirx, portMAX_DELAY);
-};
+void IRAM_ATTR iwm_sp_ll::spi_end() { spi_device_polling_end(spirx, portMAX_DELAY); };
 
 bool iwm_sp_ll::req_wait_for_falling_timeout(int t)
 {
@@ -862,28 +858,6 @@ void IRAM_ATTR diskii_write_handler_forwarder(void *arg)
   return;
 }
 
-#if 0
-size_t iwm_diskii_ll::cspi_current_pos()
-{
-  //Debug_printf("\r\nD2 SPI3 %x", SPI3.dma_in_suc_eof_des_addr);
-  //Debug_printf("\r\nD2 SPI3 %x %x --", SPI3.dma_in_suc_eof_des_addr, d2w_buffer);
-  Debug_printf("\r\nD2 SPI3 %x %x --", SPI3.dma_inlink_dscr, d2w_buffer);
-  uint8_t *spi_rxbuf;
-  lldesc_t *current_desc = (lldesc_t *) SPI3.dma_inlink_dscr;
-
-
-  // Access the current descriptor being used by DMA
-  spi_rxbuf = (decltype(spi_rxbuf)) current_desc->buf;
-
-#if 0
-  Debug_printf("\r\nDisk II SPI buffer: %x %x offset: %x %x",
-	       ptr1, ptr2, d2w_spiaddr - d2w_buffer, d2w_begin);
-  strcpy((char *) d2w_spiaddr, "DISKIIMARKER");
-#endif
-  return spi_rxbuf - d2w_buffer;
-}
-#endif
-
 void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 {
   bool doCapture = !IWM_BIT(SP_WREQ);
@@ -919,7 +893,6 @@ void IRAM_ATTR iwm_diskii_ll::diskii_write_handler()
 
       offset = cspi_current_pos(smartport.spirx);
       item.length = (offset + d2w_buflen - d2w_position) % d2w_buflen;
-      //item.length = d2w_buflen;
     }
 
     item.buffer = (decltype(item.buffer)) heap_caps_malloc(item.length, MALLOC_CAP_8BIT);
