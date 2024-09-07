@@ -575,7 +575,8 @@ bool IRAM_ATTR iwmBus::serviceDiskII()
   switch (iwm_drive_enabled())
   {
   case iwm_enable_state_t::off:
-    break;
+    return false;
+
   case iwm_enable_state_t::off2on:
     // need to start a counter and wait to turn on enable output after 1 ms only iff enable state is on
     if (IWM_ACTIVE_DISK2->device_active)
@@ -594,7 +595,7 @@ bool IRAM_ATTR iwmBus::serviceDiskII()
       // alternative approach is to enable RMT to spit out PRN bits
     }
     // make sure the state machine moves on to iwm_enable_state_t::on
-    return true;
+    break;
 
   case iwm_enable_state_t::on:
 #ifdef DEBUG
@@ -605,17 +606,17 @@ bool IRAM_ATTR iwmBus::serviceDiskII()
       old_track = new_track;
     }
 #endif
-    return true;
+    break;
 
   case iwm_enable_state_t::on2off:
     fnSystem.delay(1); // need a better way to figure out persistence
     diskii_xface.stop();
     iwm_ack_deassert();
-    return true;
+    break;
   }
 #endif /* !SLIP */
 
-  return false;
+  return true;
 }
 
 // Returns true if a Disk II write was received
