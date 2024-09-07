@@ -969,7 +969,7 @@ void iwm_diskii_ll::start(uint8_t drive, bool write_protect)
     // This will capture with 2Mhz with data except sometimes the
     // polling_start gets stuck
     memset(&rxtrans, 0, sizeof(spi_transaction_t));
-    rxtrans.rxlength = 1;
+    rxtrans.rxlength = 7;
     rxtrans.rx_buffer = d2w_buffer;
     Debug_printf("\r\nDisk II polling: %i", cspi_get_is_done(smartport.spirx));
     ESP_ERROR_CHECK(spi_device_polling_start(smartport.spirx, &rxtrans, portMAX_DELAY));
@@ -1021,6 +1021,18 @@ void iwm_diskii_ll::stop()
   if (d2w_started) {
     int ret;
     ret = cspi_end_continuous(smartport.spirx);
+
+    memset(&rxtrans, 0, sizeof(spi_transaction_t));
+    rxtrans.rxlength = 8;
+    rxtrans.rx_buffer = d2w_buffer;
+    Debug_printf("\r\nDisk II polling: %i", cspi_get_is_done(smartport.spirx));
+    ESP_ERROR_CHECK(spi_device_polling_start(smartport.spirx, &rxtrans, portMAX_DELAY));
+    Debug_printf("\r\nDisk II polled: %i %i %x", cspi_get_is_done(smartport.spirx),
+		 SPI3.ext2.val, SPI3.dma_conf.dma_continue);
+    //cspi_set_is_done(smartport.spirx, 1);
+    spi_device_polling_end(smartport.spirx, portMAX_DELAY);
+    Debug_printf("\r\nDisk II poll ended");
+    
     Debug_printf("\r\nDisk II releasing bus: %i %i %i RUN: %x EOF: %i %x %x:%x",
 		 ret, cspi_get_is_done(smartport.spirx),
 		 cspi_get_bg_status(smartport.spirx),
