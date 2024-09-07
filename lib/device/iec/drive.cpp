@@ -262,6 +262,24 @@ void iecDrive::iec_close()
 void iecDrive::iec_reopen_load()
 {
     Debug_printv( "_base[%s] _last_file[%s]", _base->url.c_str(), _last_file.c_str() );
+
+    // if ( payload.length() )
+    // {
+    //     auto n = _base->cd( payload );
+    //     if ( n != nullptr )
+    //         _base.reset( n );
+
+    //     Debug_printv("_base[%s]", _base->url.c_str());
+    //     if ( !_base->isDirectory() )
+    //     {
+    //         if ( !registerStream(commanddata.channel) )
+    //         {
+    //             sendFileNotFound();
+    //             return;
+    //         }
+    //     }
+    // }
+
     if ( _base->isDirectory() ) 
     {
         sendListing();
@@ -610,7 +628,7 @@ void iecDrive::set_prefix()
     {
         if ( !registerStream(0) )
         {
-            Debug_printv("File Doesn't Exist [%s]", _base->url.c_str());
+            sendFileNotFound();
         }
     }
 }
@@ -780,7 +798,7 @@ uint16_t iecDrive::sendLine(uint16_t blocks, char *text)
 
     // Exit if ATN is PULLED while sending
     // Exit if there is an error while sending
-    if ( IEC.flags & ERROR ) return 0;
+    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
 
     // Get text length
     uint8_t len = strlen(text);
@@ -788,20 +806,26 @@ uint16_t iecDrive::sendLine(uint16_t blocks, char *text)
     // Send that pointer
     // No basic line pointer is used in the directory listing set to 0x0101
     IEC.sendByte(0x01);		// IEC.sendByte(basicPtr bitand 0xFF);
+    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
     IEC.sendByte(0x01);		// IEC.sendByte(basicPtr >> 8);
+    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
 
     // Send blocks
     IEC.sendByte(blocks bitand 0xFF);
+    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
     IEC.sendByte(blocks >> 8);
+    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
 
     // Send line contents
     for (uint8_t i = 0; i < len; i++)
     {
-        if ( !IEC.sendByte(text[i]) ) return 0;
+        IEC.sendByte(text[i]);
+        if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
     }
 
     // Finish line
     IEC.sendByte(0);
+    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
 
     Serial.println("");
     
@@ -926,11 +950,7 @@ void iecDrive::sendListing()
         }
         else
         {
-            Debug_printv("File Doesn't Exist [%s]", _base->url.c_str());
-            _last_file = "";
-            _base.reset( MFSOwner::File( _base->base() ) );
-            Debug_printv("_base[%s] reset", _base->url.c_str());
-            IEC.senderTimeout(); // File Not Found
+            sendFileNotFound();
         }
         
         return;
@@ -1005,7 +1025,7 @@ void iecDrive::sendListing()
             name = mstr::toPETSCII2( entry->name );
             extension = mstr::toPETSCII2(extension);
         }
-        mstr::rtrimA0(name);
+        //mstr::rtrimA0(name);
         mstr::replaceAll(name, "\\", "/");
 
         //uint32_t s = entry->size();
@@ -1085,10 +1105,7 @@ bool iecDrive::sendFile()
     auto istream = retrieveStream(commanddata.channel);
     if ( istream == nullptr )
     {
-        Serial.println("File/Stream not found!");
-        IEC.senderTimeout(); // File Not Found
-        _last_file = "";
-        _base.reset( MFSOwner::File( _base->base() ) );
+        sendFileNotFound();
         return false;
     }
 
@@ -1119,10 +1136,9 @@ bool iecDrive::sendFile()
 
     //fnLedStrip.startRainbow(300);
 
-    if( commanddata.channel == CHANNEL_LOAD )
+    if( commanddata.channel == CHANNEL_LOAD && istream->position() == 0 )
     {
         // Get/Send file load address
-        count = 2;
         istream->read(&b, 1);
         success_tx = IEC.sendByte(b);
         load_address = b & 0x00FF; // low byte
@@ -1139,9 +1155,6 @@ bool iecDrive::sendFile()
     Serial.printf("\r\nsendFile: [$%.4X] pos[%d]\r\n=================================\r\n", load_address, istream->position());
     while( success_rx && !istream->error() )
     {
-        count = istream->position();
-        avail = istream->available();
-
         //Debug_printv("b[%02X] nb[%02X] success_rx[%d] error[%d] count[%d] avail[%d]", b, nb, success_rx, istream->error(), count, avail);
 #ifdef DATA_STREAM
         if (bi == 0)
@@ -1155,6 +1168,9 @@ bool iecDrive::sendFile()
         success_rx = istream->read(&b, 1);
         //Debug_printv("b[%02X] success[%d]", b, success_rx);
 
+        count = istream->position();
+        avail = istream->available();
+
         if ( istream->error() )
         {
             Debug_printv("Error reading stream.");
@@ -1167,13 +1183,21 @@ bool iecDrive::sendFile()
 
         // Send Byte
         success_tx = IEC.sendByte(b, eoi);
+        if ( !success_tx )
+        {
+            Debug_printv("Error sending byte.")
+            break;
+        }
 
         // Exit if ATN is PULLED while sending
-        if ( IEC.status ( PIN_IEC_ATN ) == PULLED )
+        if ( !eoi && IEC.flags & ATN_PULLED )
         {
             //IEC.pull ( PIN_IEC_SRQ );
-            Serial.println();
-            Debug_printv("ATN pulled while sending. b[%.2X]", b);
+            //Serial.println();
+            //Debug_printv("ATN pulled while sending. b[%.2X]", b);
+#ifdef DATA_STREAM
+            Serial.printf("[atn]\r\n");
+#endif
 
             // Save file pointer position
             istream->seek( -1, SEEK_CUR);
@@ -1213,23 +1237,15 @@ bool iecDrive::sendFile()
         }
     }
 
-// #ifdef DATA_STREAM
-//     if ( size )
-//     {
-//         uint32_t t = (count * 100) / size;
-//         ba[bi++] = 0;
-//         Debug_printf(" %s (%d %d%%) [%d]\r\n", ba, count, t, avail);
-//     }
-// #endif
 
-    Serial.printf("\r\n=================================\r\n%d bytes sent of %d [SYS%d]\r\n\r\n", count, size, sys_address);
+    Serial.printf("=================================\r\n%d bytes sent of %d [SYS%d]\r\n\r\n", count, size, sys_address);
 
     //Debug_printv("len[%d] avail[%d] success_rx[%d]", len, avail, success_rx);
 
     //fnLedManager.set(eLed::LED_BUS, false);
     //fnLedStrip.stopRainbow();
 
-    if ( istream->error() )
+    if ( istream->error() || !success_tx )
     {
         Serial.println("sendFile: Transfer aborted!");
         IEC.senderTimeout();
@@ -1262,7 +1278,7 @@ bool iecDrive::saveFile()
 
     if ( ostream == nullptr ) {
         Serial.println("couldn't open a stream for writing");
-        IEC.senderTimeout(); // File Not Found
+        IEC.senderTimeout(); // Error
         return false;
     }
     else
@@ -1270,13 +1286,8 @@ bool iecDrive::saveFile()
          // Stream is open!  Let's save this!
 
         // wait - what??? If stream position == x you don't have to seek(x)!!!
-        // if ( ostream->position() > 0 )
-        // {
-        // 	// // Position file pointer
-        // 	// ostream->seek(currentStream.cursor);
-        // }
-        // else
-        //fnLedStrip.startRainbow(300);
+        i = ostream->position();
+        if ( i == 0 )
         {
             // Get file load address
             ll[0] = IEC.receiveByte();
@@ -1310,10 +1321,7 @@ bool iecDrive::saveFile()
 #endif
 
             b[0] = IEC.receiveByte();
-            // if(ostream->isText())
-            // 	ostream->putPetsciiAsUtf8(b[0]);
-            // else
-                ostream->write(b, b_len);
+            ostream->write(b, b_len);
             i++;
 
             uint16_t f = IEC.flags;
@@ -1341,24 +1349,25 @@ bool iecDrive::saveFile()
                 bi = 0;
             }
 #endif
-            // // Toggle LED
-            // if (0 == i % 50)
-            // {
-            // 	fnLedManager.toggle(eLed::LED_BUS);
-            // }
+
         } while (not done);
     }
-    // ostream->close(); // nor required, closes automagically
 
     Serial.printf("=================================\r\n%d bytes saved\r\n", i);
-    //fnLedManager.set(eLed::LED_BUS, false);
-    //fnLedStrip.stopRainbow();
 
     // TODO: Handle errorFlag
 
     return success;
 } // saveFile
 
-
+void iecDrive::sendFileNotFound()
+{
+    Debug_printv("File Doesn't Exist [%s]", _base->url.c_str());
+    _last_file = "";
+    _base.reset( MFSOwner::File( _base->base() ) );
+    Debug_printv("_base[%s] reset", _base->url.c_str());
+    IEC.senderTimeout(); // File Not Found
+    state = DEVICE_ERROR;
+} // sendFileNotFound
 
 #endif /* BUILD_IEC */

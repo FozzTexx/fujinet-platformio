@@ -51,6 +51,43 @@ void IECProtocol::timer_stop()
 }
 
 
+// int16_t IRAM_ATTR IECProtocol::timeoutWait(uint8_t pin, bool target_status, size_t wait_us, bool watch_atn)
+// {
+//     IEC.pull ( PIN_IEC_SRQ );
+//     uint64_t start = esp_timer_get_time();
+//     uint64_t current = 0;
+//     timer_start( wait_us );
+
+// #ifndef IEC_SPLIT_LINES
+//     IEC.release ( pin );
+// #endif
+
+//     while ( !timer_timedout )
+//     {
+//         IEC.pull ( PIN_IEC_SRQ );
+//         if ( IEC.status ( pin ) == target_status )
+//         {
+//             timer_stop();
+//             current = esp_timer_get_time();
+//             IEC.release ( PIN_IEC_SRQ );
+//             return ( current - start );
+//         }
+//         usleep( 2 );
+//         if ( watch_atn )
+//         {
+//             if ( IEC.status ( PIN_IEC_ATN ) )
+//             {
+//                 IEC.release ( PIN_IEC_SRQ );
+//                 return -1;
+//             }
+//         }
+//         IEC.release ( PIN_IEC_SRQ );
+//         usleep( 2 );
+//     }
+//     IEC.release ( PIN_IEC_SRQ );
+//     return wait_us;
+// }
+
 int16_t IRAM_ATTR IECProtocol::timeoutWait(uint8_t pin, bool target_status, size_t wait_us, bool watch_atn)
 {
     uint64_t start = 0;
@@ -76,9 +113,9 @@ int16_t IRAM_ATTR IECProtocol::timeoutWait(uint8_t pin, bool target_status, size
         IEC.release ( PIN_IEC_ATN );
 #endif
 
-        // Sample ATN and set flag to indicate COMMAND or DATA mode
-        atn_status = IEC.status ( PIN_IEC_ATN );
-        //if ( atn_status ) IEC.flags |= ATN_PULLED;
+        // // Sample ATN and set flag to indicate COMMAND or DATA mode
+        // atn_status = IEC.status ( PIN_IEC_ATN );
+        // if ( atn_status ) IEC.flags |= ATN_PULLED;
     }
 
     //IEC.pull ( PIN_IEC_SRQ );
@@ -97,20 +134,15 @@ int16_t IRAM_ATTR IECProtocol::timeoutWait(uint8_t pin, bool target_status, size
             return wait_us;
         }
 
-        if ( watch_atn )
+        if ( watch_atn && (IEC.flags & ATN_PULLED) )
         {
-            bool atn_check = IEC.status ( PIN_IEC_ATN );
-            if ( atn_check != atn_status )
-            {
-                //IEC.release ( PIN_IEC_SRQ );
-                //Debug_printv("pin[%d] state[%d] wait[%d] elapsed[%d]", pin, target_status, wait, elapsed);
-                return -1;
-            }
+            return -1;
         }
 
         if ( IEC.state < BUS_ACTIVE || elapsed > FOREVER )
         {
             // Something is messed up.  Get outta here.
+            // FOREVER really isn't forever
             Debug_printv("wth? bus_state[%d]", IEC.state);
             Debug_printv("pin[%d] target_status[%d] wait[%d] elapsed[%d]", pin, target_status, wait_us, elapsed);
             return -1;
@@ -136,10 +168,6 @@ bool IRAM_ATTR IECProtocol::wait(size_t wait_us, uint64_t start, bool watch_atn)
     if ( wait_us == 0 ) return true;
     wait_us--; // Shave 1us for overhead
 
-    // Sample ATN and set flag to indicate SELECT or DATA mode
-    bool atn_status = IEC.status ( PIN_IEC_ATN );
-//    if ( atn_status ) IEC.flags |= ATN_PULLED;
-
     //IEC.pull ( PIN_IEC_SRQ );
     if ( start == 0 ) start = esp_timer_get_time();
     while ( elapsed <= wait_us )
@@ -149,9 +177,9 @@ bool IRAM_ATTR IECProtocol::wait(size_t wait_us, uint64_t start, bool watch_atn)
 
         if ( watch_atn )
         {
-            bool atn_check = IEC.status ( PIN_IEC_ATN );
-            if ( atn_check != atn_status )
+            if ( IEC.status ( PIN_IEC_ATN ) )
             {
+                IEC.flags |= ATN_PULLED;
                 //IEC.release ( PIN_IEC_SRQ );
                 //Debug_printv("wait[%d] elapsed[%d] start[%d] current[%d]", wait, elapsed, start, current);
                 return false;
