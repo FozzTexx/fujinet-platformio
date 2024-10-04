@@ -75,9 +75,7 @@ void IRAM_ATTR phi_isr_handler(void *arg)
 
               if ((c == SP_CMD_WRITEBLOCK) ||
                   (c == SP_CMD_CONTROL) ||
-                  (c == SP_CMD_WRITE) ||
-                  (c == SP_CMD_UNKNOWN1) ||
-                  (c == SP_CMD_UNKNOWN2))
+                  (c == SP_CMD_WRITE))
               {
                 // Debug_printf("\nhello from ISR - control command!");
                 if (smartport.req_wait_for_falling_timeout(5500))

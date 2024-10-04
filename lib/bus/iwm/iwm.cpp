@@ -260,13 +260,9 @@ void iwmDevice::iwm_return_badcmd(iwm_decoded_cmd_t cmd)
     case SP_ECMD_WRITEBLOCK:
     case SP_ECMD_CONTROL:
     case SP_ECMD_WRITE:
-    case SP_ECMD_UNKNOWN1:
-    case SP_ECMD_UNKNOWN2:
     case SP_CMD_WRITEBLOCK:
     case SP_CMD_CONTROL:
     case SP_CMD_WRITE:
-    case SP_CMD_UNKNOWN1:
-    case SP_CMD_UNKNOWN2:
       data_len = 512;
       IWM.iwm_decode_data_packet((uint8_t *)data_buffer, data_len);
       Debug_printf("\r\nUnit %02x Bad Command with data packet %02x\r\n", id(), cmd.command);
@@ -300,13 +296,9 @@ void iwmDevice::iwm_return_device_offline(iwm_decoded_cmd_t cmd)
     case SP_ECMD_WRITEBLOCK:
     case SP_ECMD_CONTROL:
     case SP_ECMD_WRITE:
-    case SP_ECMD_UNKNOWN1:
-    case SP_ECMD_UNKNOWN2:
     case SP_CMD_WRITEBLOCK:
     case SP_CMD_CONTROL:
     case SP_CMD_WRITE:
-    case SP_CMD_UNKNOWN1:
-    case SP_CMD_UNKNOWN2:
       data_len = 512;
       IWM.iwm_decode_data_packet((uint8_t *)data_buffer, data_len);
       Debug_printf("\r\nUnit %02x Offline, Command with data packet %02x\r\n", id(), cmd.command);

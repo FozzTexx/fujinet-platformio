@@ -32,8 +32,6 @@ enum {
   SP_CMD_CLOSE          = 0x07,
   SP_CMD_READ           = 0x08,
   SP_CMD_WRITE          = 0x09,
-  SP_CMD_UNKNOWN1       = 0x0a,
-  SP_CMD_UNKNOWN2       = 0x0b,
   SP_ECMD_STATUS        = 0x40,
   SP_ECMD_READBLOCK     = 0x41,
   SP_ECMD_WRITEBLOCK    = 0x42,
@@ -44,8 +42,6 @@ enum {
   SP_ECMD_CLOSE         = 0x47,
   SP_ECMD_READ          = 0x48,
   SP_ECMD_WRITE         = 0x49,
-  SP_ECMD_UNKNOWN1      = 0x4a,
-  SP_ECMD_UNKNOWN2      = 0x4b,
 };
 
 // see page 81-82 in Apple IIc ROM reference and Table 7-5 in IIgs firmware ref
