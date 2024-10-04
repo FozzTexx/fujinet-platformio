@@ -7,7 +7,6 @@
 
 class iwmDisk2 : public iwmDisk
 {
-
 protected:
     MediaType *_disk = nullptr;
 
