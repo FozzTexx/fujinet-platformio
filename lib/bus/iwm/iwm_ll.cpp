@@ -1209,7 +1209,6 @@ uint8_t IRAM_ATTR iwm_diskii_ll::iwm_enable_states()
     return 0;
   }
 
-  d2_enable_seen |= states;
   return states;
 }
 
