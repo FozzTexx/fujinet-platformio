@@ -721,6 +721,7 @@ size_t IECLowLevel::write(int devnum, const uint8_t *buf, size_t count)
   /* FIXME - really only care about EOI unless minor is 0 and acting as master */
   /* FIXME - how to detect EOI? */
 
+  gpio_intr_disable(IEC_CLK);
   offset = 0;
   abort = 0;
   while (!abort && count > 0) {
@@ -768,6 +769,7 @@ size_t IECLowLevel::write(int devnum, const uint8_t *buf, size_t count)
     count -= len;
     offset += len;
   }
+  gpio_intr_enable(IEC_CLK);
 
   return offset;
 }
