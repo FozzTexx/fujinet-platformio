@@ -13,11 +13,16 @@ private:
     ModemSniffer* modemSniffer;
     FileSystem *activeFS;
     time_t _lasttime;
-    
+
+protected:
+    virtual bool openChannel(int chan, IECPayload &payload);
+    virtual bool closeChannel(int chan);
+    virtual bool readChannel(int chan);
+    virtual bool writeChannel(int chan, IECPayload &payload);
+
 public:
     iecModem(FileSystem *_fs, bool snifferEnable);
     virtual ~iecModem();
-    device_state_t process() override;
 
     ModemSniffer *get_modem_sniffer() { return modemSniffer; }
     time_t get_last_activity_time() { return _lasttime; } // timestamp of last input or output.

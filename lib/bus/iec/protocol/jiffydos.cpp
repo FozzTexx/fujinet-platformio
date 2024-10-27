@@ -1,3 +1,4 @@
+#if 0
 #ifdef BUILD_IEC
 // Meatloaf - A Commodore 64/128 multi-device emulator
 // https://github.com/idolpx/meatloaf
@@ -201,3 +202,4 @@ bool JiffyDOS::sendByte ( uint8_t data, bool signalEOI )
 } // sendByte
 
 #endif /* BUILD_IEC*/
+#endif

@@ -1,3 +1,4 @@
+#if 0
 #ifdef BUILD_IEC
 
 #include "_protocol.h"
@@ -195,3 +196,4 @@ bool IRAM_ATTR IECProtocol::wait(size_t wait_us, uint64_t start, bool watch_atn)
 }
 
 #endif /* BUILD_IEC */
+#endif

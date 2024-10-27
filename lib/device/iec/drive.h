@@ -13,9 +13,6 @@
 #include "../meatloaf/wrappers/iec_buffer.h"
 #include "../meatloaf/wrappers/directory_stream.h"
 
-//#include "dos/_dos.h"
-//#include "dos/cbmdos.2.5.h"
-
 #define PRODUCT_ID "MEATLOAF CBM"
 
 class iecDrive : public virtualDevice
@@ -46,11 +43,11 @@ protected:
     uint16_t sendLine(uint16_t blocks, char *text);
     uint16_t sendLine(uint16_t blocks, const char *format, ...);
     uint16_t sendFooter();
-    void sendListing();
+    void sendListing(int chan);
 
     // File
-    bool sendFile();
-    bool saveFile();
+    bool sendFile(int chan);
+    bool saveFile(int chan, IECPayload &payload);
     void sendFileNotFound();
 
     // Named Channel functions
@@ -74,81 +71,25 @@ protected:
     void format();
 
 protected:
-    /**
-     * @brief Process command fanned out from bus
-     * @return new device state
-     */
-    device_state_t process() override;
-
-    /**
-     * @brief process command for channel 0 (load)
-     */
-    void process_load();
-
-    /**
-     * @brief process command for channel 1 (save)
-     */
-    void process_save();
-
-    /**
-     * @brief process command channel
-     */
-    void process_command();
-
-    /**
-     * @brief process every other channel (2-14)
-     */
-    void process_channel();
+    virtual bool openChannel(int chan, IECPayload &payload) override;
+    virtual bool closeChannel(int chan) override;
+    virtual bool readChannel(int chan) override;
+    virtual bool writeChannel(int chan, IECPayload &payload) override;
 
     /**
      * @brief called to open a connection to a protocol
      */
-    void iec_open();
-
-    /**
-     * @brief called to close a connection.
-     */
-    void iec_close();
-    
-    /**
-     * @brief called when a TALK, then REOPEN happens on channel 0
-     */
-    void iec_reopen_load();
-
-    /**
-     * @brief called when TALK, then REOPEN happens on channel 1
-     */
-    void iec_reopen_save();
-
-    /**
-     * @brief called when REOPEN (to send/receive data)
-     */
-    void iec_reopen_channel();
-
-    /**
-     * @brief called when channel needs to listen for data from c=
-     */
-    void iec_reopen_channel_listen();
-
-    /**
-     * @brief called when channel needs to talk data to c=
-     */
-    void iec_reopen_channel_talk();
-
-    /**
-     * @brief called when LISTEN happens on command channel (15).
-     */
-    void iec_listen_command();
-
-    /**
-     * @brief called when TALK happens on command channel (15).
-     */
-    void iec_talk_command();
+    void iec_open(int chan, IECPayload &payload);
 
     /**
      * @brief called to process command either at open or listen
      */
-    void iec_command();
+    void iec_command(int chan, IECPayload &payload);
+
+    /**
+     * @brief If response queue is empty, Return 1 if ANY receive buffer has data in it, else 0
+     */
+    void iec_talk_command_buffer_status();
 
     /**
      * @brief Set device ID from dos command
@@ -158,17 +99,12 @@ protected:
     /**
      * @brief Set desired prefix for channel
      */
-    void set_prefix();
+    void set_prefix(std::string payload);
 
     /**
      * @brief Get prefix for channel
      */
     void get_prefix();
-
-    /**
-     * @brief If response queue is empty, Return 1 if ANY receive buffer has data in it, else 0
-     */
-    void iec_talk_command_buffer_status() override;
 
 public:
     iecDrive();

@@ -28,16 +28,39 @@
 
 iecNetwork::iecNetwork()
 {
+#if 0
     iecStatus.channel = CHANNEL_COMMAND;
     iecStatus.connected = 0;
     iecStatus.msg = "fujinet network device";
     iecStatus.error = NETWORK_ERROR_SUCCESS;
+#endif
 }
 
 iecNetwork::~iecNetwork()
 {
 }
 
+bool iecNetwork::openChannel(int chan, IECPayload &payload)
+{
+  assert(0);
+}
+
+bool iecNetwork::closeChannel(int chan)
+{
+  assert(0);
+}
+
+bool iecNetwork::readChannel(int chan)
+{
+  assert(0);
+}
+
+bool iecNetwork::writeChannel(int chan, IECPayload &payload)
+{
+  assert(0);
+}
+
+#if 0
 void iecNetwork::poll_interrupt(uint8_t c)
 {
     NetworkStatus ns;
@@ -1397,5 +1420,6 @@ void iecNetwork::process_command()
     }
 
 }
+#endif
 
 #endif /* BUILD_IEC */

@@ -1,3 +1,4 @@
+#if 0
 // Meatloaf - A Commodore 64/128 multi-device emulator
 // https://github.com/idolpx/meatloaf
 // Copyright(C) 2020 James Johnston
@@ -523,3 +524,4 @@ bool CPBStandardSerial::sendBits ( uint8_t data )
 } // sendBits
 
 #endif // BUILD_IEC
+#endif

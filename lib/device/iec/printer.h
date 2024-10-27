@@ -18,10 +18,13 @@ class iecPrinter : public virtualDevice
 protected:
     // SIO THINGS
     std::string buffer;
-    void write(uint8_t channel);
     void status();
-    device_state_t process() override;
     void shutdown() override;
+
+    virtual bool openChannel(int chan, IECPayload &payload);
+    virtual bool closeChannel(int chan);
+    virtual bool readChannel(int chan);
+    virtual bool writeChannel(int chan, IECPayload &payload);
 
     printer_emu *_pptr = nullptr;
     FileSystem *_storage = nullptr;

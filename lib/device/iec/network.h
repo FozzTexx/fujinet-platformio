@@ -64,18 +64,11 @@ public:
     // */
     // NetworkProtocol *protocol[NUM_CHANNELS];
 
-
-    /**
-     * @brief Process command fanned out from bus
-     * @return new device state
-     */
-    device_state_t process() override;
-
-    /**
-     * @brief Check to see if SRQ needs to be asserted.
-     * @param c Secondary channel # (0-15)
-     */
-    virtual void poll_interrupt(unsigned char c) override;
+protected:
+    virtual bool openChannel(int chan, IECPayload &payload);
+    virtual bool closeChannel(int chan);
+    virtual bool readChannel(int chan);
+    virtual bool writeChannel(int chan, IECPayload &payload);
 
 private:
     /**

@@ -200,7 +200,4 @@ typedef enum
 #define TIMED_OUT -1
 #define FOREVER 5000000 // 0
 
-#define IEC_ASSERTED  true
-#define IEC_RELEASED  false
-
 #endif // CBMDEFINES_H

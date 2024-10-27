@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <map>
 
 #include "bus.h"
 #include "network.h"
@@ -111,13 +112,13 @@ private:
     std::vector<uint8_t> responseV;
     bool is_raw_command;
 
-    void process_raw_cmd_data();
-    void process_immediate_raw_cmds();
+    void process_raw_cmd_data(IECPayload &payload);
+    void process_immediate_raw_cmds(IECPayload &payload);
 
-    void process_basic_commands();
+    void process_basic_commands(IECPayload &payload);
     vector<string> tokenize_basic_command(string command);
 
-    bool validate_parameters_and_setup(uint8_t& maxlen, uint8_t& addtlopts);
+    bool validate_parameters_and_setup(uint8_t& maxlen, uint8_t& addtlopts, std::vector<std::string> pt);
     bool validate_directory_slot();
     std::string process_directory_entry(uint8_t maxlen, uint8_t addtlopts);
 
@@ -149,12 +150,12 @@ protected:
     // 0xFC
     scan_result_t net_scan_result(int scan_num);
     void net_scan_result_basic();
-    void net_scan_result_raw();
+    void net_scan_result_raw(IECPayload &payload);
     
     // 0xFB
     void net_set_ssid(bool store, net_config_t& net_config);
-    void net_set_ssid_basic(bool store = true);
-    void net_set_ssid_raw(bool store = true);
+    void net_set_ssid_basic(IECPayload &payload, bool store = true);
+    void net_set_ssid_raw(IECPayload &payload, bool store = true);
 
     // 0xFA
     uint8_t net_get_wifi_status();
@@ -163,23 +164,23 @@ protected:
     
     // 0xF9
     bool mount_host(int hs);
-    void mount_host_basic();
-    void mount_host_raw();
+    void mount_host_basic(IECPayload &payload);
+    void mount_host_raw(IECPayload &payload);
 
     // 0xF8
     bool disk_image_mount(uint8_t ds, uint8_t mode);
-    void disk_image_mount_basic();
-    void disk_image_mount_raw();
+    void disk_image_mount_basic(IECPayload &payload);
+    void disk_image_mount_raw(IECPayload &payload);
 
     // 0xF7
     bool open_directory(uint8_t hs, std::string dirpath, std::string pattern);
-    void open_directory_basic();
-    void open_directory_raw();
+    void open_directory_basic(IECPayload &payload);
+    void open_directory_raw(IECPayload &payload);
 
     // 0xF6
     std::string read_directory_entry(uint8_t maxlen, uint8_t addtlopts);
-    void read_directory_entry_basic();
-    void read_directory_entry_raw();
+    void read_directory_entry_basic(IECPayload &payload);
+    void read_directory_entry_raw(IECPayload &payload);
 
     // 0xF5
     void close_directory();
@@ -188,23 +189,23 @@ protected:
 
     // 0xF4
     // void read_host_slots(); // all handled in the basic/raw versions as they differ in functionality
-    void read_host_slots_basic();
+    void read_host_slots_basic(IECPayload &payload);
     void read_host_slots_raw();
 
     // 0xF3
     // void write_host_slots(); // all handled in the basic/raw versions as they differ in functionality
-    void write_host_slots_basic();
-    void write_host_slots_raw();
+    void write_host_slots_basic(IECPayload &payload);
+    void write_host_slots_raw(IECPayload &payload);
 
     // 0xF2
     // void read_device_slots();  // all handled in the basic/raw versions as they differ in functionality
-    void read_device_slots_basic();
+    void read_device_slots_basic(IECPayload &payload);
     void read_device_slots_raw();
 
     // 0xF1
     void write_device_slots();
-    void write_device_slots_basic();
-    void write_device_slots_raw();
+    void write_device_slots_basic(IECPayload &payload);
+    void write_device_slots_raw(IECPayload &payload);
     
     // 0xF0
     void enable_udpstream();
@@ -215,8 +216,8 @@ protected:
     
     // 0xE9
     bool disk_image_umount(uint8_t deviceSlot);
-    void disk_image_umount_basic();
-    void disk_image_umount_raw();
+    void disk_image_umount_basic(IECPayload &payload);
+    void disk_image_umount_raw(IECPayload &payload);
     
     // 0xE8
     void get_adapter_config();
@@ -232,8 +233,8 @@ protected:
 
     // 0xE6
     bool unmount_host(uint8_t hs);
-    void unmount_host_basic();
-    void unmount_host_raw();
+    void unmount_host_basic(IECPayload &payload);
+    void unmount_host_raw(IECPayload &payload);
 
     // 0xE5
     uint16_t get_directory_position();
@@ -242,16 +243,16 @@ protected:
 
     // 0xE4
     bool set_directory_position(uint16_t pos);
-    void set_directory_position_basic();
-    void set_directory_position_raw();
+    void set_directory_position_basic(IECPayload &payload);
+    void set_directory_position_raw(IECPayload &payload);
 
     // 0xE3
     void set_hindex();
 
     // 0xE2
     void set_device_filename(uint8_t slot, uint8_t host, uint8_t mode, std::string filename);
-    void set_device_filename_basic();
-    void set_device_filename_raw();
+    void set_device_filename_basic(IECPayload &payload);
+    void set_device_filename_raw(IECPayload &payload);
 
     // 0xE1
     void set_host_prefix();
@@ -264,8 +265,8 @@ protected:
     
     // 0xDE
     int write_app_key(std::vector<uint8_t>&& value);
-    void write_app_key_basic();
-    void write_app_key_raw();
+    void write_app_key_basic(IECPayload &payload);
+    void write_app_key_raw(IECPayload &payload);
 
     // 0xDD
     int read_app_key(char *filename, std::vector<uint8_t>& file_data);
@@ -274,8 +275,8 @@ protected:
 
     // 0xDC
     void open_app_key(uint16_t creator, uint8_t app, uint8_t key, appkey_mode mode, uint8_t reserved);
-    void open_app_key_basic();
-    void open_app_key_raw();
+    void open_app_key_basic(IECPayload &payload);
+    void open_app_key_raw(IECPayload &payload);
 
     // 0xDB
     void close_app_key();
@@ -284,21 +285,21 @@ protected:
     
     // 0xDA
     std::string get_device_filename(uint8_t ds);
-    void get_device_filename_basic();
-    void get_device_filename_raw();
+    void get_device_filename_basic(IECPayload &payload);
+    void get_device_filename_raw(IECPayload &payload);
 
     // 0xD9
     void set_boot_config(bool should_boot_config);
-    void set_boot_config_basic();
-    void set_boot_config_raw();
+    void set_boot_config_basic(IECPayload &payload);
+    void set_boot_config_raw(IECPayload &payload);
 
     // 0xD8
     void copy_file();
 
     // 0xD6
     void set_boot_mode(uint8_t boot_device, bool should_boot_config);
-    void set_boot_mode_basic();
-    void set_boot_mode_raw();
+    void set_boot_mode_basic(IECPayload &payload);
+    void set_boot_mode_raw(IECPayload &payload);
 
     // 0x53 'S' Status
     void get_status_raw();
@@ -306,19 +307,19 @@ protected:
 
     // 0xC8
     void hash_input(std::string input);
-    void hash_input_raw();
+    void hash_input_raw(IECPayload &payload);
 
     // 0xC7, 0xC3
     void hash_compute(bool clear_data, Hash::Algorithm alg);
-    void hash_compute_raw(bool clear_data);
+    void hash_compute_raw(IECPayload &payload, bool clear_data);
 
     // 0xC6
     uint8_t hash_length(bool is_hex);
-    void hash_length_raw();
+    void hash_length_raw(IECPayload &payload);
 
     // 0xC5
     std::vector<uint8_t> hash_output(bool is_hex);
-    void hash_output_raw();
+    void hash_output_raw(IECPayload &payload);
 
     // 0xC2
     void hash_clear();
@@ -327,7 +328,10 @@ protected:
     // Commodore specific
     void local_ip();
 
-    device_state_t process() override;
+    virtual bool openChannel(int chan, IECPayload &payload) override;
+    virtual bool closeChannel(int chan) override;
+    virtual bool readChannel(int chan) override;
+    virtual bool writeChannel(int chan, IECPayload &payload) override;
 
     void shutdown() override;
 

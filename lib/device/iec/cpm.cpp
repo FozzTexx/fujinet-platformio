@@ -60,6 +60,27 @@ iecCpm::~iecCpm()
     vQueueDelete(txq);
 }
 
+bool iecCpm::openChannel(int chan, IECPayload &payload)
+{
+  assert(0);
+}
+
+bool iecCpm::closeChannel(int chan)
+{
+  assert(0);
+}
+
+bool iecCpm::readChannel(int chan)
+{
+  assert(0);
+}
+
+bool iecCpm::writeChannel(int chan, IECPayload &payload)
+{
+  assert(0);
+}
+
+#if 0
 void iecCpm::iec_open()
 {
     if (cpmTaskHandle != NULL)
@@ -169,5 +190,6 @@ device_state_t iecCpm::process()
 
     return state;
 }
+#endif
 
 #endif /* BUILD_IEC */

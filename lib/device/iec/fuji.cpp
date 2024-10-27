@@ -1,6 +1,7 @@
 #ifdef BUILD_IEC
 
 #include "fuji.h"
+#include "../../../include/cbm_defines.h"
 
 #include <driver/ledc.h>
 
@@ -28,6 +29,8 @@
 #define ADDITIONAL_DETAILS_BYTES 10
 #define FF_DIR 0x01
 #define FF_TRUNC 0x02
+
+#define DEVICE_ERROR -1
 
 iecFuji theFuji; // global fuji device object
 // iecNetwork sioNetDevs[MAX_NETWORK_DEVICES];
@@ -107,6 +110,96 @@ void iecFuji::setup(systemBus *bus)
     Serial.print("FujiNet "); bus->addDevice(this, 30);                 // 30    FujiNet
 }
 
+bool iecFuji::openChannel(int chan, IECPayload &payload)
+{
+  return writeChannel(chan, payload);
+}
+
+bool iecFuji::closeChannel(int chan)
+{
+  return true;
+}
+
+bool iecFuji::readChannel(int chan)
+{
+  if (chan != CHANNEL_COMMAND) {
+    Debug_printf("Meatloaf device only accepts on channel 15. Sending NOTFOUND.\r\n");
+    IEC.senderTimeout();
+    return false;
+  }
+
+  {
+    // Debug_printv("TALK/REOPEN:\r\ncurrent_fuji_cmd: %02x\r\n%s\r\n", current_fuji_cmd, util_hexdump(&payload.c_str()[0], payload.size()).c_str());
+
+#ifdef DEBUG
+    // if (!response.empty() && !is_raw_command) logResponse(response.data(), response.size());
+    // if (!responseV.empty() && is_raw_command) logResponse(responseV.data(), responseV.size());
+    // Debug_printf("\n");
+#endif
+
+    // only send raw back for a raw command, thus code can set "response", but we won't send it back as that's BASIC response
+    if (!responseV.empty() && is_raw_command) {
+      IEC.sendBytes(reinterpret_cast<char*>(responseV.data()), responseV.size());
+    }
+
+    // only send string response back for basic command
+    if(!response.empty() && !is_raw_command) {
+      IEC.sendBytes(const_cast<char*>(response.c_str()), response.size());
+    }
+
+    // ensure responses are cleared for next command in case they were set but didn't match the command type (i.e. basic or raw)
+    responseV.clear();
+    response = "";
+  }
+
+  return true;
+}
+
+bool iecFuji::writeChannel(int chan, IECPayload &payload)
+{
+  if (chan != CHANNEL_COMMAND) {
+    Debug_printf("Meatloaf device only accepts on channel 15. Sending NOTFOUND.\r\n");
+    IEC.senderTimeout();
+    return false;
+  }
+
+  {
+    // Debug_printv("UNLISTEN/(RE)OPEN:\r\ncurrent_fuji_cmd: %02x\r\n%s\r\n", current_fuji_cmd, util_hexdump(&payload.c_str()[0], payload.size()).c_str());
+
+    if (current_fuji_cmd == -1) {
+      // this is a new command being sent
+      is_raw_command = (payload.size() == 2 && payload[0] == 0x01); // marker byte
+      if (is_raw_command) {
+	if (!is_supported(payload[1])) {
+	  Debug_printv("ERROR: Unsupported cmd: x%02x, ignoring\n", payload[1]);
+	  last_command = payload[1];
+	  set_fuji_iec_status(DEVICE_ERROR, "Unrecognised command");
+	  // IEC.senderTimeout();
+	  return true;
+	}
+	// Debug_printf("RAW COMMAND - trying immediate action on it\r\n");
+	// if it is an immediate command (no parameters), current_fuji_cmd will be reset to -1,
+	// otherwise, it stays set until further data is received to process it
+	current_fuji_cmd = payload[1];
+	last_command = current_fuji_cmd;
+	process_immediate_raw_cmds(payload);
+      } else if (payload.size() > 0) {
+	// "IEC: [EF] (E0 CLOSE  15 CHANNEL)" happens with an UNLISTEN, which has no payload, so we can skip it to save trying BASIC commands
+	// Debug_printf("BASIC COMMAND\r\n");
+	process_basic_commands(payload);
+      }
+    }
+    else {
+      // we're in the middle of some data, let's continue
+      // Debug_printf("IN CMD, processing data\r\n");
+      process_raw_cmd_data(payload);
+    }
+
+  }
+
+  return true;
+}
+
 void logResponse(const void* data, size_t length)
 {
     // ensure we don't flood the logs with debug, and make it look pretty using util_hexdump
@@ -133,19 +226,26 @@ void logResponse(const void* data, size_t length)
 
 }
 
-device_state_t iecFuji::process()
+#if 0
+device_state_t iecFuji::process(IECPayload &payload)
 {
-    virtualDevice::process();
+    virtualDevice::process(record);
 
-    if (commanddata.channel != CHANNEL_COMMAND)
+    if (record.channel != CHANNEL_COMMAND)
     {
-        Debug_printf("Meatloaf device only accepts communications on channel 15.\r\n");
+        Debug_printf("Meatloaf device only accepts on channel 15. Sending NOTFOUND.\r\n");
+#if 0
         state = DEVICE_ERROR;
+        IEC.senderTimeout();
         return state;
+#else
+	return (device_state_t) 0;
+#endif
     }
 
+#if 0
     // Should this be using iec_talk_command_buffer_status instead?
-    if (commanddata.primary == IEC_TALK && commanddata.secondary == IEC_REOPEN)
+    if (record.command == IEC_TALK && record.subCommand == IEC_REOPEN)
     {
         // Debug_printv("TALK/REOPEN:\r\ncurrent_fuji_cmd: %02x\r\n%s\r\n", current_fuji_cmd, util_hexdump(&payload.c_str()[0], payload.size()).c_str());
 
@@ -160,7 +260,7 @@ device_state_t iecFuji::process()
             IEC.sendBytes(reinterpret_cast<char*>(responseV.data()), responseV.size());
         }
 
-        // only send string response back for basic command        
+        // only send string response back for basic command
         if(!response.empty() && !is_raw_command) {
             IEC.sendBytes(const_cast<char*>(response.c_str()), response.size());
         }
@@ -175,13 +275,16 @@ device_state_t iecFuji::process()
         // Debug_printv("UNLISTEN/(RE)OPEN:\r\ncurrent_fuji_cmd: %02x\r\n%s\r\n", current_fuji_cmd, util_hexdump(&payload.c_str()[0], payload.size()).c_str());
 
         if (current_fuji_cmd == -1) {
+	    auto payload = record.dataString();
             // this is a new command being sent
             is_raw_command = (payload.size() == 2 && payload[0] == 0x01); // marker byte
             if (is_raw_command) {
                 if (!is_supported(payload[1])) {
                     Debug_printv("ERROR: Unsupported cmd: x%02x, ignoring\n", payload[1]);
                     last_command = payload[1];
+#if 0
                     state = DEVICE_ERROR;
+#endif
                     set_fuji_iec_status(DEVICE_ERROR, "Unrecognised command");
                     // IEC.senderTimeout();
                     return state;
@@ -219,9 +322,11 @@ device_state_t iecFuji::process()
     {
         // Debug_printv("FALL THROUGH, primary:%02x, 2nd:%2x\r\ncurrent_fuji_cmd: %02x\r\n%s\r\n", commanddata.primary, commanddata.secondary, current_fuji_cmd, util_hexdump(&payload.c_str()[0], payload.size()).c_str());
     }
+#endif
 
-    return state;
+    return (device_state_t) 0;
 }
+#endif
 
 // COMMODORE SPECIFIC CONVENIENCE COMMANDS /////////////////////
 
@@ -234,17 +339,12 @@ void iecFuji::local_ip()
 }
 
 
-void iecFuji::process_basic_commands()
+void iecFuji::process_basic_commands(IECPayload &payload)
 {
-    // required for appkey in BASIC
-    payloadRaw = payload;
-    payload = mstr::toUTF8(payload);
-    pt = util_tokenize(payload, ',');
-
     if (payload.find("adapterconfig") != std::string::npos)
         get_adapter_config_basic();
     else if (payload.find("setssid") != std::string::npos)
-        net_set_ssid_basic();
+        net_set_ssid_basic(payload);
     else if (payload.find("getssid") != std::string::npos)
         net_get_ssid_basic();
     else if (payload.find("reset") != std::string::npos)
@@ -256,47 +356,47 @@ void iecFuji::process_basic_commands()
     else if (payload.find("wifistatus") != std::string::npos)
         net_get_wifi_status_basic();
     else if (payload.find("mounthost") != std::string::npos)
-        mount_host_basic();
+        mount_host_basic(payload);
     else if (payload.find("mountdrive") != std::string::npos)
-        disk_image_mount_basic();
+        disk_image_mount_basic(payload);
     else if (payload.find("unmountdrive") != std::string::npos)
-        disk_image_umount_basic();
+        disk_image_umount_basic(payload);
     else if (payload.find("opendir") != std::string::npos)
-        open_directory_basic();
+        open_directory_basic(payload);
     else if (payload.find("readdir") != std::string::npos)
-        read_directory_entry_basic();
+        read_directory_entry_basic(payload);
     else if (payload.find("closedir") != std::string::npos)
         close_directory_basic();
     else if (payload.find("gethost") != std::string::npos ||
              payload.find("flh") != std::string::npos)
-        read_host_slots_basic();
+        read_host_slots_basic(payload);
     else if (payload.find("puthost") != std::string::npos ||
              payload.find("fhost") != std::string::npos)
-        write_host_slots_basic();
+        write_host_slots_basic(payload);
     else if (payload.find("getdrive") != std::string::npos)
-        read_device_slots_basic();
+        read_device_slots_basic(payload);
     else if (payload.find("unmounthost") != std::string::npos)
-        unmount_host_basic();
+        unmount_host_basic(payload);
     else if (payload.find("getdirpos") != std::string::npos)
         get_directory_position_basic();
     else if (payload.find("setdirpos") != std::string::npos)
-        set_directory_position_basic();
+        set_directory_position_basic(payload);
     else if (payload.find("setdrivefilename") != std::string::npos)
-        set_device_filename_basic();
+        set_device_filename_basic(payload);
     else if (payload.find("writeappkey") != std::string::npos)
-        write_app_key_basic();
+        write_app_key_basic(payload);
     else if (payload.find("readappkey") != std::string::npos)
         read_app_key_basic();
     else if (payload.find("openappkey") != std::string::npos)
-        open_app_key_basic();
+        open_app_key_basic(payload);
     else if (payload.find("closeappkey") != std::string::npos)
         close_app_key_basic();
     else if (payload.find("drivefilename") != std::string::npos)
-        get_device_filename_basic();
+        get_device_filename_basic(payload);
     else if (payload.find("bootconfig") != std::string::npos)
-        set_boot_config_basic();
+        set_boot_config_basic(payload);
     else if (payload.find("bootmode") != std::string::npos)
-        set_boot_mode_basic();
+        set_boot_mode_basic(payload);
     else if (payload.find("mountall") != std::string::npos)
         mount_all();
     else if (payload.find("fujistatus") != std::string::npos)
@@ -305,7 +405,8 @@ void iecFuji::process_basic_commands()
         local_ip();
     else if (payload.find("bptiming") != std::string::npos)
     {
-        if ( pt.size() < 3 ) 
+        auto pt = payload.tokenize(',');
+        if ( pt.size() < 3 )
             return;
 
         IEC.setBitTiming(pt[1], atoi(pt[2].c_str()), atoi(pt[3].c_str()), atoi(pt[4].c_str()), atoi(pt[5].c_str()));
@@ -368,74 +469,74 @@ bool iecFuji::is_supported(uint8_t cmd)
  * During this phase, we will process any data sent to us in the follow up parameter data after the initial "open".
  * At the end, we can unset the current_fuji_cmd to show we have finished, and set any iecStatus value.
  */
-void iecFuji::process_raw_cmd_data()
+void iecFuji::process_raw_cmd_data(IECPayload &payload)
 {
     bool was_processed = true;
 
     switch (current_fuji_cmd)
     {
     case FUJICMD_GET_SCAN_RESULT:
-        net_scan_result_raw();
+        net_scan_result_raw(payload);
         break;
     case FUJICMD_SET_SSID:
-        net_set_ssid_raw();
+        net_set_ssid_raw(payload);
         break;
     case FUJICMD_MOUNT_HOST:
-        mount_host_raw();
+        mount_host_raw(payload);
         break;
     case FUJICMD_MOUNT_IMAGE:
-        disk_image_mount_raw();
+        disk_image_mount_raw(payload);
         break;
     case FUJICMD_OPEN_DIRECTORY:
-        open_directory_raw();
+        open_directory_raw(payload);
         break;
     case FUJICMD_READ_DIR_ENTRY:
-        read_directory_entry_raw();
+        read_directory_entry_raw(payload);
         break;
     case FUJICMD_WRITE_DEVICE_SLOTS:
-        write_device_slots_raw();
+        write_device_slots_raw(payload);
         break;
     case FUJICMD_UNMOUNT_IMAGE:
-        disk_image_umount_raw();
+        disk_image_umount_raw(payload);
         break;
     case FUJICMD_UNMOUNT_HOST:
-        unmount_host_raw();
+        unmount_host_raw(payload);
         break;
     case FUJICMD_SET_DIRECTORY_POSITION:
-        set_directory_position_raw();
+        set_directory_position_raw(payload);
         break;
     case FUJICMD_SET_DEVICE_FULLPATH:
-        set_device_filename_raw();
+        set_device_filename_raw(payload);
         break;
     case FUJICMD_WRITE_APPKEY:
-        write_app_key_raw();
+        write_app_key_raw(payload);
         break;
     case FUJICMD_OPEN_APPKEY:
-        open_app_key_raw();
+        open_app_key_raw(payload);
         break;
     case FUJICMD_GET_DEVICE_FULLPATH:
-        get_device_filename_raw();
+        get_device_filename_raw(payload);
         break;
     case FUJICMD_CONFIG_BOOT:
-        set_boot_config_raw();
+        set_boot_config_raw(payload);
         break;
     case FUJICMD_SET_BOOT_MODE:
-        set_boot_mode_raw();
+        set_boot_mode_raw(payload);
         break;
     case FUJICMD_HASH_COMPUTE_NO_CLEAR:
-        hash_compute_raw(false);
+        hash_compute_raw(payload, false);
         break;
     case FUJICMD_HASH_COMPUTE:
-        hash_compute_raw(true);
+        hash_compute_raw(payload, true);
         break;
     case FUJICMD_HASH_INPUT:
-        hash_input_raw();
+        hash_input_raw(payload);
         break;
     case FUJICMD_HASH_LENGTH:
-        hash_length_raw();
+        hash_length_raw(payload);
         break;
     case FUJICMD_HASH_OUTPUT:
-        hash_output_raw();
+        hash_output_raw(payload);
         break;
     default:
         was_processed = false;
@@ -455,7 +556,7 @@ void iecFuji::process_raw_cmd_data()
  * Immediate commands do not expect any further data as part of the command, so can execute immediately
  * Once complete, the current_fuji_cmd is then unset.
  */
-void iecFuji::process_immediate_raw_cmds()
+void iecFuji::process_immediate_raw_cmds(IECPayload &payload)
 {
     bool was_immediate_cmd = true;
 
@@ -483,7 +584,7 @@ void iecFuji::process_immediate_raw_cmds()
         read_host_slots_raw();
         break;
     case FUJICMD_WRITE_HOST_SLOTS:
-        write_host_slots_raw();
+        write_host_slots_raw(payload);
         break;
     case FUJICMD_READ_DEVICE_SLOTS:
         read_device_slots_raw();
@@ -539,7 +640,9 @@ void iecFuji::get_status_raw()
 void iecFuji::get_status_basic()
 {
     std::ostringstream oss;
+#if 0
     oss << "err=" << iecStatus.error << ",conn=" << iecStatus.connected << ",chan=" << iecStatus.channel << ",msg=" << iecStatus.msg;
+#endif
     response = oss.str();
     set_fuji_iec_status(0, response);
 }
@@ -566,6 +669,7 @@ void iecFuji::net_scan_networks_raw()
 
 void iecFuji::net_scan_result_basic()
 {
+#if 0
     if (pt.size() != 2) {
         state = DEVICE_ERROR;
         return;
@@ -574,10 +678,11 @@ void iecFuji::net_scan_result_basic()
     int i = atoi(pt[1].c_str());
     scan_result_t result = net_scan_result(i);
     response = std::to_string(result.rssi) + ",\"" + std::string(result.ssid) + "\"";
+#endif
     set_fuji_iec_status(0, "ok");
 }
 
-void iecFuji::net_scan_result_raw()
+void iecFuji::net_scan_result_raw(IECPayload &payload)
 {
     int n = payload[0];
     scan_result_t result = net_scan_result(n);
@@ -601,8 +706,9 @@ void iecFuji::net_get_ssid_raw()
 }
 
 
-void iecFuji::net_set_ssid_basic(bool store)
+void iecFuji::net_set_ssid_basic(IECPayload &payload, bool store)
 {
+    auto pt = payload.tokenize(',');
     if (pt.size() != 2)
     {
         Debug_printv("error: bad args");
@@ -640,8 +746,9 @@ void iecFuji::net_set_ssid_basic(bool store)
     net_set_ssid(store, net_config);
 }
 
-void iecFuji::net_set_ssid_raw(bool store)
+void iecFuji::net_set_ssid_raw(IECPayload &payload, bool store)
 {
+#if 0
     net_config_t net_config;
     memset(&net_config, 0, sizeof(net_config_t));
 
@@ -654,6 +761,9 @@ void iecFuji::net_set_ssid_raw(bool store)
     Debug_printv("ssid[%s] pass[%s]", net_config.ssid, net_config.password);
 
     net_set_ssid(store, net_config);
+#else
+#warning FIXME
+#endif
 }
 
 void iecFuji::net_get_wifi_status_raw()
@@ -679,8 +789,9 @@ uint8_t iecFuji::net_get_wifi_enabled()
     return Config.get_wifi_enabled() ? 1 : 0;
 }
 
-void iecFuji::unmount_host_basic()
+void iecFuji::unmount_host_basic(IECPayload &payload)
 {
+    auto pt = payload.tokenize(',');
     if (pt.size() < 2)
     {
         response = "invalid # of parameters";
@@ -709,7 +820,7 @@ void iecFuji::unmount_host_basic()
     set_fuji_iec_status(0, response);
 }
 
-void iecFuji::unmount_host_raw()
+void iecFuji::unmount_host_raw(IECPayload &payload)
 {
     uint8_t hs = payload[0];
     if (!_validate_host_slot(hs, "unmount_host"))
@@ -732,7 +843,7 @@ bool iecFuji::unmount_host(uint8_t hs)
     return _fnHosts[hs].umount();
 }
 
-void iecFuji::mount_host_raw()
+void iecFuji::mount_host_raw(IECPayload &payload)
 {
     int hs = payload[0];
     if (hs < 0 || hs >= MAX_HOSTS)
@@ -749,8 +860,9 @@ void iecFuji::mount_host_raw()
     }
 }
 
-void iecFuji::mount_host_basic()
+void iecFuji::mount_host_basic(IECPayload &payload)
 {
+    auto pt = payload.tokenize(',');
     if (pt.size() < 2)
     {
         response = "INVALID # OF PARAMETERS.";
@@ -777,11 +889,11 @@ void iecFuji::mount_host_basic()
     }
 }
 
-
-void iecFuji::disk_image_mount_basic()
+void iecFuji::disk_image_mount_basic(IECPayload &payload)
 {
+    auto pt = payload.tokenize(',');
     _populate_slots_from_config();
-    
+
     if (pt.size() < 3)
     {
         response = "invalid # of parameters";
@@ -802,7 +914,7 @@ void iecFuji::disk_image_mount_basic()
     set_fuji_iec_status(0, response);
 }
 
-void iecFuji::disk_image_mount_raw()
+void iecFuji::disk_image_mount_raw(IECPayload &payload)
 {
     _populate_slots_from_config();
     if (!disk_image_mount(payload[0], payload[1]))
@@ -814,8 +926,9 @@ void iecFuji::disk_image_mount_raw()
 }
 
 // Toggle boot config on/off, aux1=0 is disabled, aux1=1 is enabled
-void iecFuji::set_boot_config_basic()
+void iecFuji::set_boot_config_basic(IECPayload &payload)
 {
+    auto pt = payload.tokenize(',');
     if (pt.size() < 2)
     {
         Debug_printf("Invalid # of parameters.\r\n");
@@ -830,7 +943,7 @@ void iecFuji::set_boot_config_basic()
     set_fuji_iec_status(0, response);
 }
 
-void iecFuji::set_boot_config_raw()
+void iecFuji::set_boot_config_raw(IECPayload &payload)
 {
     set_boot_config(payload[0] != 0);
     set_fuji_iec_status(0, "");
@@ -918,8 +1031,9 @@ void iecFuji::mount_all()
 }
 
 // Set boot mode
-void iecFuji::set_boot_mode_basic()
+void iecFuji::set_boot_mode_basic(IECPayload &payload)
 {
+    auto pt = payload.tokenize(',');
     if (pt.size() < 2)
     {
         Debug_printf("SET BOOT CONFIG MODE - Invalid # of parameters.\r\n");
@@ -935,7 +1049,7 @@ void iecFuji::set_boot_mode_basic()
     set_fuji_iec_status(0, response);
 }
 
-void iecFuji::set_boot_mode_raw()
+void iecFuji::set_boot_mode_raw(IECPayload &payload)
 {
     set_boot_mode(payload[0], true);
     set_fuji_iec_status(0, "");
@@ -962,9 +1076,10 @@ char *_generate_appkey_filename(appkey *info)
  Requiring a separate OPEN command makes both the read and write commands behave similarly
  and leaves the possibity for a more robust/general file read/write function later.
 */
-void iecFuji::open_app_key_basic()
+void iecFuji::open_app_key_basic(IECPayload &payload)
 {
     unsigned int val;
+    auto pt = payload.tokenize(',');
 
     if (pt.size() < 5)
     {
@@ -1010,7 +1125,7 @@ void iecFuji::open_app_key_basic()
     set_fuji_iec_status(0, response);
 }
 
-void iecFuji::open_app_key_raw()
+void iecFuji::open_app_key_raw(IECPayload &payload)
 {
     Debug_print("Fuji cmd: OPEN APPKEY\r\n");
     if (!fnSDFAT.running())
@@ -1020,7 +1135,7 @@ void iecFuji::open_app_key_raw()
         IEC.senderTimeout();
         return;
     }
-    
+
     uint16_t creator = payload[0] | (payload[1] << 8);
     uint8_t app = payload[2];
     uint8_t key = payload[3];
@@ -1074,8 +1189,9 @@ bool iecFuji::check_appkey_creator(bool check_is_write)
     return !(_current_appkey.creator == 0 || (check_is_write && _current_appkey.mode != APPKEYMODE_WRITE));
 }
 
-void iecFuji::write_app_key_basic()
+void iecFuji::write_app_key_basic(IECPayload &payload)
 {
+    auto pt = payload.tokenize(',');
     // In BASIC, the key length is specified in the parameters.
     if (pt.size() <= 2)
     {
@@ -1103,13 +1219,14 @@ void iecFuji::write_app_key_basic()
         return;
     }
 
+#if 0
     // Tokenize the raw payload to save to the file - WE MAKE NO CHANGES TO DATA, the host sends raw values
     std::vector<std::string> ptRaw;
     ptRaw = tokenize_basic_command(payloadRaw);
 
     // do we need keylen anymore?
     int keylen = atoi(pt[1].c_str());
-    
+
     // Bounds check
     if (keylen > MAX_APPKEY_LEN)
         keylen = MAX_APPKEY_LEN;
@@ -1127,13 +1244,14 @@ void iecFuji::write_app_key_basic()
         IEC.senderTimeout();
         return;
     }
+#endif
 
     response = "ok";
     set_fuji_iec_status(0, response);
 
 }
 
-void iecFuji::write_app_key_raw()
+void iecFuji::write_app_key_raw(IECPayload &payload)
 {
     if (!check_appkey_creator(true))
     {
@@ -1159,7 +1277,8 @@ void iecFuji::write_app_key_raw()
         return;
     }
 
-    std::vector<uint8_t> key_data(payload.begin(), payload.end());
+    auto pstr = payload.string();
+    std::vector<uint8_t> key_data(pstr.begin(), pstr.end());
     Debug_printf("key_data: \r\n%s\r\n", util_hexdump(key_data.data(), key_data.size()).c_str());
     int count = write_app_key(std::move(key_data));
     if (count != write_size) {
@@ -1306,8 +1425,9 @@ int iecFuji::read_app_key(char *filename, std::vector<uint8_t>& file_data)
     return count;
 }
 
-void iecFuji::disk_image_umount_basic()
+void iecFuji::disk_image_umount_basic(IECPayload &payload)
 {
+    auto pt = payload.tokenize(',');
     uint8_t deviceSlot = atoi(pt[1].c_str());
     if (!disk_image_umount(deviceSlot)) {
         response = "invalid device slot";
@@ -1319,7 +1439,7 @@ void iecFuji::disk_image_umount_basic()
     }
 }
 
-void iecFuji::disk_image_umount_raw()
+void iecFuji::disk_image_umount_raw(IECPayload &payload)
 {
     uint8_t deviceSlot = payload[0];
     if (!disk_image_umount(deviceSlot)) {
@@ -1385,10 +1505,11 @@ std::pair<std::string, std::string> split_at_delim(const std::string& input, cha
     return {firstPart, secondPart};
 }
 
-void iecFuji::open_directory_basic()
+void iecFuji::open_directory_basic(IECPayload &payload)
 {
     Debug_println("Fuji cmd: OPEN DIRECTORY");
 
+    auto pt = payload.tokenize(',');
     if (pt.size() < 3)
     {
         response = "invalid # of parameters.";
@@ -1408,7 +1529,7 @@ void iecFuji::open_directory_basic()
     set_fuji_iec_status(0, "ok");
 }
 
-void iecFuji::open_directory_raw()
+void iecFuji::open_directory_raw(IECPayload &payload)
 {
     Debug_println("Fuji cmd: OPEN DIRECTORY");
     if (payload.size() < 1)
@@ -1420,7 +1541,7 @@ void iecFuji::open_directory_raw()
     }
 
     uint8_t host_slot = payload[0];
-    auto [dirpath, pattern] = split_at_delim(payload.substr(1),  '\0');
+    auto [dirpath, pattern] = split_at_delim(payload.string().substr(1),  '\0');
 
     if (!open_directory(host_slot, dirpath, pattern)) {
         set_fuji_iec_status(DEVICE_ERROR, "Failed to open directory");
@@ -1431,7 +1552,7 @@ void iecFuji::open_directory_raw()
 }
 
 
-bool iecFuji::validate_parameters_and_setup(uint8_t& maxlen, uint8_t& addtlopts) {
+bool iecFuji::validate_parameters_and_setup(uint8_t& maxlen, uint8_t& addtlopts, std::vector<std::string> pt) {
     if (pt.size() < 2) {
         return false;
     }
@@ -1444,9 +1565,10 @@ bool iecFuji::validate_directory_slot() {
     return _current_open_directory_slot != -1;
 }
 
-void iecFuji::read_directory_entry_basic() {
+void iecFuji::read_directory_entry_basic(IECPayload &payload) {
     uint8_t maxlen, addtlopts;
-    if (!validate_parameters_and_setup(maxlen, addtlopts)) {
+    auto pt = payload.tokenize(',');
+    if (!validate_parameters_and_setup(maxlen, addtlopts, pt)) {
         response = "invalid # of parameters";
         set_fuji_iec_status(DEVICE_ERROR, "Invalid parameters");
         IEC.senderTimeout();
@@ -1463,7 +1585,7 @@ void iecFuji::read_directory_entry_basic() {
     set_fuji_iec_status(0, "");
 }
 
-void iecFuji::read_directory_entry_raw() {
+void iecFuji::read_directory_entry_raw(IECPayload &payload) {
     if (!validate_directory_slot()) {
         set_fuji_iec_status(DEVICE_ERROR, "No current open directory");
         IEC.senderTimeout();
@@ -1525,10 +1647,11 @@ uint16_t iecFuji::get_directory_position()
     return _fnHosts[_current_open_directory_slot].dir_tell();
 }
 
-void iecFuji::set_directory_position_basic()
+void iecFuji::set_directory_position_basic(IECPayload &payload)
 {
     Debug_println("Fuji cmd: SET DIRECTORY POSITION");
     uint16_t pos = 0;
+    auto pt = payload.tokenize(',');
     if (pt.size() < 2)
     {
         response = "error: invalid directory position";
@@ -1560,7 +1683,7 @@ void iecFuji::set_directory_position_basic()
     set_fuji_iec_status(0, response);
 }
 
-void iecFuji::set_directory_position_raw()
+void iecFuji::set_directory_position_raw(IECPayload &payload)
 {
     Debug_println("Fuji cmd: SET DIRECTORY POSITION");
 
@@ -1698,9 +1821,10 @@ void iecFuji::new_disk()
     // media types.
 }
 
-void iecFuji::read_host_slots_basic()
+void iecFuji::read_host_slots_basic(IECPayload &payload)
 {
     Debug_println("Fuji cmd: READ HOST SLOTS");
+    auto pt = payload.tokenize(',');
 
     if (pt.size() < 2)
     {
@@ -1734,9 +1858,10 @@ void iecFuji::read_host_slots_raw()
 
 
 // Read and save host slot data from computer, again, BASIC differs from RAW by taking parameters for which one to save.
-void iecFuji::write_host_slots_basic()
+void iecFuji::write_host_slots_basic(IECPayload &payload)
 {
     Debug_println("FUJI CMD: WRITE HOST SLOTS");
+    auto pt = payload.tokenize(',');
     if (pt.size() < 2)
     {
         response = "no host slot #";
@@ -1766,7 +1891,7 @@ void iecFuji::write_host_slots_basic()
     set_fuji_iec_status(0, response);
 }
 
-void iecFuji::write_host_slots_raw()
+void iecFuji::write_host_slots_raw(IECPayload &payload)
 {
     if (payload.size() != MAX_HOSTS * MAX_HOSTNAME_LEN) {
         Debug_printv("Did not receive correct payload size, was %d, expected %d\r\n", payload.size(), MAX_HOSTS * MAX_HOSTNAME_LEN);
@@ -1779,7 +1904,7 @@ void iecFuji::write_host_slots_raw()
     {
         size_t offset = i * MAX_HOSTNAME_LEN;
         char hostnameBuffer[MAX_HOSTNAME_LEN] = {0};
-        std::copy(payload.begin() + offset, payload.begin() + offset + MAX_HOSTNAME_LEN - 1, hostnameBuffer);
+        std::copy(payload.string().begin() + offset, payload.string().begin() + offset + MAX_HOSTNAME_LEN - 1, hostnameBuffer);
         _fnHosts[i].set_hostname(hostnameBuffer);
     }
     _populate_config_from_slots();
@@ -1797,9 +1922,10 @@ void iecFuji::get_host_prefix()
     // TODO IMPLEMENT
 }
 
-void iecFuji::read_device_slots_basic()
+void iecFuji::read_device_slots_basic(IECPayload &payload)
 {
     Debug_println("Fuji cmd: READ DEVICE SLOT");
+    auto pt = payload.tokenize(',');
 
     if (pt.size() < 2)
     {
@@ -1842,9 +1968,10 @@ void iecFuji::read_device_slots_raw()
     set_fuji_iec_status(0, "");
 }
 
-void iecFuji::write_device_slots_basic()
+void iecFuji::write_device_slots_basic(IECPayload &payload)
 {
     Debug_println("Fuji cmd: WRITE DEVICE SLOTS");
+    auto pt = payload.tokenize(',');
 
     // from BASIC
     if (pt.size() < 4)
@@ -1888,7 +2015,7 @@ void iecFuji::write_device_slots_basic()
     set_fuji_iec_status(0, "ok");
 }
 
-void iecFuji::write_device_slots_raw()
+void iecFuji::write_device_slots_raw(IECPayload &payload)
 {
     union _diskSlots
     {
@@ -1901,7 +2028,7 @@ void iecFuji::write_device_slots_raw()
         char rawData[304]; // 38 * 8
     } diskSlots;
 
-    strncpy(diskSlots.rawData, &payload.c_str()[0], 304);
+    strncpy(diskSlots.rawData, &payload.string().c_str()[0], 304);
 
     // Load the data into our current device array
     for (int i = 0; i < MAX_DISK_DEVICES; i++) {
@@ -1964,7 +2091,7 @@ void iecFuji::_populate_config_from_slots()
         else
         {
             Config.store_host(
-                i, 
+                i,
                 hname,
                 htype == HOSTTYPE_TNFS ? fnConfig::host_types::HOSTTYPE_TNFS : fnConfig::host_types::HOSTTYPE_SD
             );
@@ -1981,8 +2108,9 @@ void iecFuji::_populate_config_from_slots()
     }
 }
 
-void iecFuji::set_device_filename_basic()
+void iecFuji::set_device_filename_basic(IECPayload &payload)
 {
+    auto pt = payload.tokenize(',');
     if (pt.size() < 4)
     {
         Debug_printf("not enough parameters.\n");
@@ -2025,14 +2153,15 @@ void iecFuji::set_device_filename_basic()
     set_fuji_iec_status(0, response);
 }
 
-void iecFuji::set_device_filename_raw()
+void iecFuji::set_device_filename_raw(IECPayload &payload)
 {
     Debug_print("Fuji cmd: SET DEVICE FILENAME\r\n");
+    auto pt = payload.tokenize(',');
 
     uint8_t slot = payload[0];
     uint8_t host = payload[1];
     uint8_t mode = payload[2];
-    std::string filename = payload.substr(3);
+    std::string filename = payload.string().substr(3);
 
     if (!_validate_device_slot(slot, "set_device_filename_raw")) {
         set_fuji_iec_status(DEVICE_ERROR, "invalid device slot");
@@ -2075,9 +2204,10 @@ void iecFuji::set_device_filename(uint8_t slot, uint8_t host, uint8_t mode, std:
     Config.save();
 }
 
-void iecFuji::get_device_filename_basic()
+void iecFuji::get_device_filename_basic(IECPayload &payload)
 {
     Debug_println("Fuji CMD: get device filename");
+    auto pt = payload.tokenize(',');
     if (pt.size() < 2)
     {
         Debug_printf("Incorrect # of parameters.\n");
@@ -2101,7 +2231,7 @@ void iecFuji::get_device_filename_basic()
     set_fuji_iec_status(0, "ok");
 }
 
-void iecFuji::get_device_filename_raw()
+void iecFuji::get_device_filename_raw(IECPayload &payload)
 {
     uint8_t ds = payload[0];
     if (!_validate_device_slot(ds, "get_device_filename"))
@@ -2162,13 +2292,13 @@ vector<string> iecFuji::tokenize_basic_command(string command)
 {
     Debug_printf("Tokenizing basic command: %s\n", command.c_str());
 
-    // Replace the first ":" with "," for easy tokenization. 
+    // Replace the first ":" with "," for easy tokenization.
     // Assume it is fine to change the payload at this point.
     // Technically, "COMMAND,Param1,Param2" will work the smae, if ":" is not in a param value
     size_t endOfCommand = command.find(':');
     if (endOfCommand != std::string::npos)
         command.replace(endOfCommand,1,",");
-    
+
     vector<string> result =  util_tokenize(command, ',');
     return result;
 
@@ -2458,12 +2588,12 @@ std::string iecFuji::process_directory_entry(uint8_t maxlen, uint8_t addtlopts) 
 }
 
 std::string iecFuji::read_directory_entry(uint8_t maxlen, uint8_t addtlopts) {
-    return process_directory_entry(maxlen, addtlopts);    
+    return process_directory_entry(maxlen, addtlopts);
 }
 
-void iecFuji::hash_input_raw()
+void iecFuji::hash_input_raw(IECPayload &payload)
 {
-    hash_input(payload);
+    hash_input(payload.string());
     set_fuji_iec_status(0, "");
 }
 
@@ -2473,7 +2603,7 @@ void iecFuji::hash_input(std::string input)
     hasher.add_data(input);
 }
 
-    void iecFuji::hash_compute_raw(bool clear_data)
+void iecFuji::hash_compute_raw(IECPayload &payload, bool clear_data)
     {
         Hash::Algorithm alg = Hash::to_algorithm(payload[0]);
         hash_compute(clear_data, alg);
@@ -2487,7 +2617,7 @@ void iecFuji::hash_input(std::string input)
         hasher.compute(algorithm, clear_data);
     }
 
-void iecFuji::hash_length_raw()
+void iecFuji::hash_length_raw(IECPayload &payload)
 {
     uint8_t is_hex = payload[0] == 1;
     uint8_t r = hash_length(is_hex);
@@ -2501,7 +2631,7 @@ uint8_t iecFuji::hash_length(bool is_hex)
     return hasher.hash_length(algorithm, is_hex);
 }
 
-void iecFuji::hash_output_raw()
+void iecFuji::hash_output_raw(IECPayload &payload)
 {
     if (payload.size() != 1) {
         std::string msg = "Input should be 1 byte, got " + std::to_string(payload.size());

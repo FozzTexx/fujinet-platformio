@@ -30,6 +30,336 @@ iecDrive::iecDrive()
     _last_file = "";
 }
 
+bool iecDrive::openChannel(int chan, IECPayload &payload)
+{
+  Debug_printv("channel: %i", chan);
+  if (chan == CHANNEL_COMMAND)
+    iec_command(chan, payload);
+  else
+    iec_open(chan, payload);
+
+  return true;
+}
+
+bool iecDrive::closeChannel(int chan)
+{
+  Debug_printv("channel: %i", chan);
+  if (_base == nullptr) {
+    IEC.senderTimeout();
+    return true; // Punch out.
+  }
+
+  closeStream(chan);
+  return true;
+}
+
+bool iecDrive::readChannel(int chan)
+{
+  Debug_printv("channel: %i", chan);
+  if (chan == CHANNEL_COMMAND)
+    iec_talk_command_buffer_status();
+  else {
+    Debug_printv( "_base[%s] _last_file[%s]", _base->url.c_str(), _last_file.c_str() );
+
+    if (chan == CHANNEL_LOAD && _base->isDirectory())
+      sendListing(chan);
+    else
+      sendFile(chan);
+  }
+
+  return true;
+}
+
+bool iecDrive::writeChannel(int chan, IECPayload &payload)
+{
+  Debug_printv("channel: %i", chan);
+  if (_base == nullptr) {
+    IEC.senderTimeout();
+    return true; // Punch out.
+  }
+  Debug_printv("url[%s]", _base->url.c_str());
+
+  saveFile(chan, payload);
+  return true;
+}
+
+void iecDrive::iec_open(int chan, IECPayload &payload)
+{
+    auto pt = payload.tokenize(',');
+    auto filename = payload.string();
+
+
+    if ( pt.size() > 1 )
+    {
+        filename = pt[0];
+        //Debug_printv("filename[%s] type[%s] mode[%s]", pt[0].c_str(), pt[1].c_str(), pt[2].c_str());
+    }
+
+    Debug_printv("_base[%s] payload[%s]", _base->url.c_str(), filename.c_str());
+
+    if ( mstr::startsWith(filename, "0:") )
+    {
+        // Remove media ID from command string
+        filename = mstr::drop(filename, 2);
+    }
+    if ( mstr::startsWith(filename, "CD") )
+    {
+        filename = mstr::drop(filename, 2);
+        if ( filename[0] == ':' || filename[0] == ' ' )
+            filename = mstr::drop(filename, 1);
+    }
+
+    if ( filename.length() )
+    {
+        if ( filename[0] == '$' )
+            filename.clear();
+
+        filename = mstr::toUTF8(filename);
+        auto n = _base->cd( filename );
+        if ( n != nullptr )
+            _base.reset( n );
+
+        Debug_printv("_base[%s]", _base->url.c_str());
+        if ( !_base->isDirectory() )
+        {
+            if ( !registerStream(chan) )
+            {
+                Debug_printv("File Doesn't Exist [%s]", _base->url.c_str());
+            }
+        }
+    }
+}
+
+void iecDrive::iec_command(int chan, IECPayload &payload)
+{
+    auto pstr = payload.string();
+    std::vector<uint8_t> pti;
+
+    Debug_printv("command[%s]", pstr.c_str());
+    if (!pstr.length()) {
+      iec_talk_command_buffer_status();
+      return;
+    }
+
+    // if (mstr::startsWith(payload, "cd"))
+    // 	set_prefix();
+    // else if (pt[0] == "pwd")
+    // 	get_prefix();
+    // else if (pt[0] == "id")
+    // 	set_device_id();
+
+    // Drive level commands
+    // CBM DOS 2.6
+    switch ( pstr[0] )
+    {
+        case 'B':
+            if (pstr[1] == '-')
+            {
+                // B-P buffer pointer
+                if (pstr[2] == 'P')
+                {
+                    pstr = mstr::drop(pstr, 3);
+                    mstr::trim(pstr);
+                    mstr::replaceAll(pstr, "  ", " ");
+                    pti = util_tokenize_uint8(pstr);
+                    Debug_printv("payload[%s] channel[%d] position[%d]", pstr.c_str(), pti[0], pti[1]);
+
+                    auto stream = retrieveStream( pti[0] );
+                    if ( stream )
+                    {
+                        stream->position( pti[1] );
+                    }
+                }
+                // B-A allocate bit in BAM not implemented
+                // B-F free bit in BAM not implemented
+                // B-E block execute impossible at this level of emulation!
+            }
+            //Error(ERROR_31_SYNTAX_ERROR);
+            Debug_printv( "block/buffer");
+        break;
+        case 'C':
+            if ( pstr[1] != 'D' && pstr[2] == ':')
+            {
+                //Copy(); // Copy File
+                Debug_printv( "copy file");
+            }
+        break;
+        case 'D':
+            Debug_printv( "duplicate disk");
+            //Error(ERROR_31_SYNTAX_ERROR);	// DI, DR, DW not implemented yet
+        break;
+        case 'I':
+            // Initialize
+            Debug_printv( "initialize");
+        break;
+        case 'M':
+            if ( pstr[1] == '-' ) // Memory
+            {
+                if (pstr[2] == 'R') // M-R memory read
+                {
+                    pstr = mstr::drop(pstr, 3);
+                    std::string code = mstr::toHex(pstr);
+                    uint16_t address = (pstr[0] | pstr[1] << 8);
+                    uint8_t size = pstr[2];
+                    Debug_printv("Memory Read [%s]", code.c_str());
+                    Debug_printv("address[%.4X] size[%d]", address, size);
+                }
+                else if (pstr[2] == 'W') // M-W memory write
+                {
+                    pstr = mstr::drop(pstr, 3);
+                    std::string code = mstr::toHex(pstr);
+                    uint16_t address = (pstr[0] | pstr[1] << 8);
+                    Debug_printv("Memory Write address[%.4X][%s]", address, code.c_str());
+                }
+                else if (pstr[2] == 'E') // M-E memory execute
+                {
+                    pstr = mstr::drop(pstr, 3);
+                    std::string code = mstr::toHex(pstr);
+                    uint16_t address = (pstr[0] | pstr[1] << 8);
+                    Debug_printv("Memory Execute address[%.4X][%s]", address, code.c_str());
+                }
+            }
+        break;
+        case 'N':
+            //New();
+            Debug_printv( "new (format)");
+        break;
+        case 'R':
+            if ( pstr[1] != 'D' && pstr[2] == ':' ) // Rename
+            {
+                Debug_printv( "rename file");
+                // Rename();
+            }
+        break;
+        case 'S':
+            if (pstr[2] == ':') // Scratch
+            {
+                Debug_printv( "scratch");
+                //Scratch();
+            }
+        break;
+        case 'U':
+            Debug_printv( "user 01a2b");
+            //User();
+            if (pstr[1] == '1') // User 1
+            {
+                pstr = mstr::drop(pstr, 3);
+                mstr::trim(pstr);
+                mstr::replaceAll(pstr, "  ", " ");
+                pti = util_tokenize_uint8(pstr);
+                Debug_printv("payload[%s] channel[%d] media[%d] track[%d] sector[%d]", pstr.c_str(), pti[0], pti[1], pti[2], pti[3]);
+
+                auto stream = retrieveStream( pti[0] );
+                if ( stream )
+                {
+                    stream->seekSector( pti[2], pti[3] );
+                    stream->reset();
+                }
+            }
+        break;
+        case 'V':
+            Debug_printv( "validate bam");
+        break;
+        default:
+            //Error(ERROR_31_SYNTAX_ERROR);
+        break;
+    }
+
+    // SD2IEC Commands
+    // http://www.n2dvm.com/UIEC.pdf
+    switch ( pstr[0] )
+    {
+        case 'C':
+            if ( pstr[1] == 'P') // Change Partition
+            {
+                Debug_printv( "change partition");
+                //ChangeDevice();
+            }
+            else if ( pstr[1] == 'D') // Change Directory
+            {
+                Debug_printv( "change directory");
+                set_prefix(pstr);
+            }
+        break;
+        case 'E':
+            if (pstr[1] == '-')
+            {
+                Debug_printv( "eeprom");
+            }
+        break;
+        case 'G':
+            Debug_printv( "get partition info");
+            //Error(ERROR_31_SYNTAX_ERROR);	// G-P not implemented yet
+        break;
+        case 'M':
+            if ( pstr[1] == 'D') // Make Directory
+            {
+                Debug_printv( "make directory");
+            }
+        break;
+        case 'P':
+            Debug_printv( "position");
+            //Error(ERROR_31_SYNTAX_ERROR);	// P not implemented yet
+        break;
+        case 'R':
+            if ( pstr[1] == 'D') // Remove Directory
+            {
+                Debug_printv( "remove directory");
+            }
+        break;
+        case 'S':
+            if (pstr[1] == '-')
+            {
+                // Swap drive number
+                Debug_printv( "swap drive number");
+                //Error(ERROR_31_SYNTAX_ERROR);
+                break;
+            }
+        break;
+        case 'T':
+            if (pstr[1] == '-')
+            {
+                Debug_printv( "time"); // RTC support
+                //Error(ERROR_31_SYNTAX_ERROR);	// T-R and T-W not implemented yet
+            }
+        break;
+        case 'W':
+            // Save out current options?
+            //OPEN1, 9, 15, "XW":CLOSE1
+            Debug_printv( "user 1a2b");
+        break;
+        case 'X':
+            Debug_printv( "xtended commands");
+            // X{0-4}
+            // XE+ / XE-
+            // XB+ / XB-
+            // X{0-7}={0-15}
+            // XD?
+            // XJ+ / XJ-
+            // X
+            // XS:{name} / XS
+            // XW
+            // X?
+            //Extended();
+        break;
+        case '/':
+
+        break;
+        default:
+            //Error(ERROR_31_SYNTAX_ERROR);
+        break;
+    }
+}
+
+void iecDrive::iec_talk_command_buffer_status()
+{
+    // std::ostringstream ss;
+    // ss << iecStatus.error << "," << "\"" << iecStatus.msg << "\"" << "," << iecStatus.connected << "," << iecStatus.channel;
+    // std::string s = ss.str();
+    std::string s = "00, OK,00,00\r";
+    IEC.sendBytes(s, true);
+}
+
 // Read disk data and send to computer
 void iecDrive::read()
 {
@@ -94,471 +424,7 @@ bool iecDrive::write_blank(FILE *f, uint16_t sectorSize, uint16_t numSectors)
     return false;
 }
 
-
-// Process command
-device_state_t iecDrive::process()
-{
-    virtualDevice::process();
-
-//    Debug_printv("channel[%d]", commanddata.channel);
-
-
-    switch (commanddata.channel)
-    {
-    case CHANNEL_LOAD: // LOAD
-        process_load();
-        break;
-    case CHANNEL_SAVE: // SAVE
-        process_save();
-        break;
-    case CHANNEL_COMMAND: // COMMAND
-        process_command();
-        break;
-    default: // Open files (2-14)
-        process_channel();
-        break;
-    }
-
-//    Debug_printv("url[%s] file[%s] state[%d]", _base->url.c_str(), _last_file.c_str(), state);
-    return state;
-}
-
-void iecDrive::process_load()
-{
-//    Debug_printv("secondary[%.2X]", commanddata.secondary);
-    switch (commanddata.secondary)
-    {
-    case IEC_OPEN:
-        iec_open();
-        break;
-    case IEC_CLOSE:
-        iec_close();
-        break;
-    case IEC_REOPEN:
-        iec_reopen_load();
-        break;
-    default:
-        break;
-    }
-}
-
-void iecDrive::process_save()
-{
-    Debug_printv("secondary[%.2X]", commanddata.secondary);
-    switch (commanddata.secondary)
-    {
-    case IEC_OPEN:
-        iec_open();
-        break;
-    case IEC_CLOSE:
-        iec_close();
-        break;
-    case IEC_REOPEN:
-        iec_reopen_save();
-        break;
-    default:
-        break;
-    }
-}
-
-void iecDrive::process_command()
-{
-//    Debug_printv("primary[%.2X] secondary[%.2X]", commanddata.primary, commanddata.secondary);
-    if (commanddata.primary == IEC_TALK) // && commanddata.secondary == IEC_REOPEN)
-    {
-        iec_talk_command();
-    }
-    else if (commanddata.primary == IEC_UNLISTEN)
-    {
-        if (commanddata.secondary == IEC_CLOSE)
-            iec_close();
-        else
-            iec_command();
-    }
-}
-
-void iecDrive::process_channel()
-{
-    //Debug_printv("secondary[%.2X]", commanddata.secondary);
-    switch (commanddata.secondary)
-    {
-    case IEC_OPEN:
-        iec_open();
-        break;
-    case IEC_CLOSE:
-        iec_close();
-        break;
-    case IEC_REOPEN:
-        iec_reopen_channel();
-        break;
-    default:
-        break;
-    }
-}
-
-
-void iecDrive::iec_open()
-{
-    if ( commanddata.primary == IEC_UNLISTEN )
-        return;
-
-    pt = util_tokenize(payload, ',');
-    if ( pt.size() > 1 )
-    {
-        payload = pt[0];
-        //Debug_printv("filename[%s] type[%s] mode[%s]", pt[0].c_str(), pt[1].c_str(), pt[2].c_str());
-    }
-
-    Debug_printv("_base[%s] payload[%s]", _base->url.c_str(), payload.c_str());
-
-    if ( mstr::startsWith(payload, "0:") )
-    {
-        // Remove media ID from command string
-        payload = mstr::drop(payload, 2);
-    }
-    if ( mstr::startsWith(payload, "CD") )
-    {
-        payload = mstr::drop(payload, 2);
-        if ( payload[0] == ':' || payload[0] == ' ' )
-            payload = mstr::drop(payload, 1);
-    }
-
-    if ( payload.length() )
-    {
-        if ( payload[0] == '$' ) 
-            payload.clear();
-
-        payload = mstr::toUTF8(payload);
-        auto n = _base->cd( payload );
-        if ( n != nullptr )
-            _base.reset( n );
-
-        Debug_printv("_base[%s]", _base->url.c_str());
-        if ( !_base->isDirectory() )
-        {
-            if ( !registerStream(commanddata.channel) )
-            {
-                Debug_printv("File Doesn't Exist [%s]", _base->url.c_str());
-            }
-        }
-    }
-}
-
-void iecDrive::iec_close()
-{
-    if (_base == nullptr)
-    {
-        IEC.senderTimeout();
-        return; // Punch out.
-    }
-//    Debug_printv("url[%s]", _base->url.c_str());
-
-    closeStream( commanddata.channel );
-    commanddata.init();
-    state = DEVICE_IDLE;
-//    Debug_printv("device init");
-}
-
-void iecDrive::iec_reopen_load()
-{
-    Debug_printv( "_base[%s] _last_file[%s]", _base->url.c_str(), _last_file.c_str() );
-
-    // if ( payload.length() )
-    // {
-    //     auto n = _base->cd( payload );
-    //     if ( n != nullptr )
-    //         _base.reset( n );
-
-    //     Debug_printv("_base[%s]", _base->url.c_str());
-    //     if ( !_base->isDirectory() )
-    //     {
-    //         if ( !registerStream(commanddata.channel) )
-    //         {
-    //             sendFileNotFound();
-    //             return;
-    //         }
-    //     }
-    // }
-
-    if ( _base->isDirectory() ) 
-    {
-        sendListing();
-    }
-    else
-    {
-        sendFile();
-    }
-}
-
-void iecDrive::iec_reopen_save()
-{
-    if (_base == nullptr)
-    {
-        IEC.senderTimeout();
-        return; // Punch out.
-    }
-    Debug_printv("url[%s]", _base->url.c_str());
-
-    saveFile();
-}
-
-void iecDrive::iec_reopen_channel()
-{
-    //Debug_printv("primary[%.2X]", commanddata.primary);
-    switch (commanddata.primary)
-    {
-    case IEC_LISTEN:
-        iec_reopen_channel_listen();
-        break;
-    case IEC_TALK:
-        iec_reopen_channel_talk();
-        break;
-    }
-}
-
-
-void iecDrive::iec_reopen_channel_listen()
-{
-    std::string s = IEC.receiveBytes();
-    Debug_printv("{%s}", s.c_str() );
-}
-
-void iecDrive::iec_reopen_channel_talk()
-{
-    //Debug_printv("here");
-    sendFile();
-}
-
-
-void iecDrive::iec_listen_command()
-{
-    Debug_printv("here");
-}
-
-void iecDrive::iec_talk_command()
-{
-    //Debug_printv("here");
-    if (response_queue.empty())
-        iec_talk_command_buffer_status();
-}
-
-void iecDrive::iec_talk_command_buffer_status()
-{
-    // std::ostringstream ss;
-    // ss << iecStatus.error << "," << "\"" << iecStatus.msg << "\"" << "," << iecStatus.connected << "," << iecStatus.channel;
-    // std::string s = ss.str();
-    std::string s = "00, OK,00,00\r";
-    IEC.sendBytes(s, true);
-}
-
-void iecDrive::iec_command()
-{
-    Debug_printv("command[%s]", payload.c_str());
-
-    // Drive level commands
-    // CBM DOS 2.6
-    switch ( payload[0] )
-    {
-        case 'B':
-            if (payload[1] == '-')
-            {
-                // B-P buffer pointer
-                if (payload[2] == 'P')
-                {
-                    payload = mstr::drop(payload, 3);
-                    mstr::trim(payload);
-                    mstr::replaceAll(payload, "  ", " ");
-                    pti = util_tokenize_uint8(payload);
-                    Debug_printv("payload[%s] channel[%d] position[%d]", payload.c_str(), pti[0], pti[1]);
-
-                    auto stream = retrieveStream( pti[0] );
-                    if ( stream )
-                    {
-                        stream->position( pti[1] );
-                    }
-                }
-                // B-A allocate bit in BAM not implemented
-                // B-F free bit in BAM not implemented
-                // B-E block execute impossible at this level of emulation!
-            }
-            //Error(ERROR_31_SYNTAX_ERROR);
-            Debug_printv( "block/buffer");
-        break;
-        case 'C':
-            if ( payload[1] != 'D' && payload[2] == ':')
-            {
-                //Copy(); // Copy File
-                Debug_printv( "copy file");
-            }
-        break;
-        case 'D':
-            Debug_printv( "duplicate disk");
-            //Error(ERROR_31_SYNTAX_ERROR);	// DI, DR, DW not implemented yet
-        break;
-        case 'I':
-            // Initialize
-            Debug_printv( "initialize");
-        break;
-        case 'M':
-            if ( payload[1] == '-' ) // Memory
-            {
-                if (payload[2] == 'R') // M-R memory read
-                {
-                    payload = mstr::drop(payload, 3);
-                    std::string code = mstr::toHex(payload);
-                    uint16_t address = (payload[0] | payload[1] << 8);
-                    uint8_t size = payload[2];
-                    Debug_printv("Memory Read [%s]", code.c_str());
-                    Debug_printv("address[%.4X] size[%d]", address, size);
-                }
-                else if (payload[2] == 'W') // M-W memory write
-                {
-                    payload = mstr::drop(payload, 3);
-                    std::string code = mstr::toHex(payload);
-                    uint16_t address = (payload[0] | payload[1] << 8);
-                    Debug_printv("Memory Write address[%.4X][%s]", address, code.c_str());
-                }
-                else if (payload[2] == 'E') // M-E memory execute
-                {
-                    payload = mstr::drop(payload, 3);
-                    std::string code = mstr::toHex(payload);
-                    uint16_t address = (payload[0] | payload[1] << 8);
-                    Debug_printv("Memory Execute address[%.4X][%s]", address, code.c_str());
-                }
-            }
-        break;
-        case 'N':
-            //New();
-            Debug_printv( "new (format)");
-        break;
-        case 'R':
-            if ( payload[1] != 'D' && payload[2] == ':' ) // Rename
-            {
-                Debug_printv( "rename file");
-                // Rename();
-            }
-        break;
-        case 'S':
-            if (payload[2] == ':') // Scratch
-            {
-                Debug_printv( "scratch");
-                //Scratch();
-            }
-        break;
-        case 'U':
-            Debug_printv( "user 01a2b");
-            //User();
-            if (payload[1] == '1') // User 1
-            {
-                payload = mstr::drop(payload, 3);
-                mstr::trim(payload);
-                mstr::replaceAll(payload, "  ", " ");
-                pti = util_tokenize_uint8(payload);
-                Debug_printv("payload[%s] channel[%d] media[%d] track[%d] sector[%d]", payload.c_str(), pti[0], pti[1], pti[2], pti[3]);
-
-                auto stream = retrieveStream( pti[0] );
-                if ( stream )
-                {
-                    stream->seekSector( pti[2], pti[3] );
-                    stream->reset();
-                }
-            }
-        break;
-        case 'V':
-            Debug_printv( "validate bam");
-        break;
-        default:
-            //Error(ERROR_31_SYNTAX_ERROR);
-        break;
-    }
-
-    // SD2IEC Commands
-    // http://www.n2dvm.com/UIEC.pdf
-    switch ( payload[0] )
-    {
-        case 'C':
-            if ( payload[1] == 'P') // Change Partition
-            {
-                Debug_printv( "change partition");
-                //ChangeDevice();
-            }
-            else if ( payload[1] == 'D') // Change Directory
-            {
-                Debug_printv( "change directory");
-                set_prefix();
-            }
-        break;
-        case 'E':
-            if (payload[1] == '-')
-            {
-                Debug_printv( "eeprom");
-            }
-        break;
-        case 'G':
-            Debug_printv( "get partition info");
-            //Error(ERROR_31_SYNTAX_ERROR);	// G-P not implemented yet
-        break;
-        case 'M':
-            if ( payload[1] == 'D') // Make Directory
-            {
-                Debug_printv( "make directory");
-            }
-        break;
-        case 'P':
-            Debug_printv( "position");
-            //Error(ERROR_31_SYNTAX_ERROR);	// P not implemented yet
-        break;
-        case 'R':
-            if ( payload[1] == 'D') // Remove Directory
-            {
-                Debug_printv( "remove directory");
-            }
-        break;
-        case 'S':
-            if (payload[1] == '-')
-            {
-                // Swap drive number 
-                Debug_printv( "swap drive number");
-                //Error(ERROR_31_SYNTAX_ERROR);
-                break;
-            }
-        break;
-        case 'T':
-            if (payload[1] == '-')
-            {
-                Debug_printv( "time"); // RTC support
-                //Error(ERROR_31_SYNTAX_ERROR);	// T-R and T-W not implemented yet
-            }
-        break;
-        case 'W':
-            // Save out current options?
-            //OPEN1, 9, 15, "XW":CLOSE1
-            Debug_printv( "user 1a2b");
-        break;
-        case 'X':
-            Debug_printv( "xtended commands");
-            // X{0-4}
-            // XE+ / XE-
-            // XB+ / XB-
-            // X{0-7}={0-15}
-            // XD?
-            // XJ+ / XJ-
-            // X
-            // XS:{name} / XS
-            // XW
-            // X?
-            //Extended();
-        break;
-        case '/':
-
-        break;
-        default:
-            //Error(ERROR_31_SYNTAX_ERROR);
-        break;
-    }
-}
-
-
+#if 0
 void iecDrive::set_device_id()
 {
     if (pt.size() < 2)
@@ -579,7 +445,9 @@ void iecDrive::set_device_id()
     iecStatus.connected = 0;
     iecStatus.channel = commanddata.channel;
 }
+#endif
 
+#if 0
 void iecDrive::get_prefix()
 {
     int channel = -1;
@@ -601,8 +469,9 @@ void iecDrive::get_prefix()
     iecStatus.connected = 0;
     iecStatus.channel = channel;
 }
+#endif
 
-void iecDrive::set_prefix()
+void iecDrive::set_prefix(std::string payload)
 {
     std::string path = payload;
 
@@ -625,7 +494,6 @@ void iecDrive::set_prefix()
         }
     }
 }
-
 
 
 // used to start working with a stream, registering it as underlying stream of some
@@ -697,7 +565,7 @@ bool iecDrive::registerStream ( uint8_t channel )
     //     return false;
     // }
 
-    // Add stream to streams 
+    // Add stream to streams
     auto newPair = std::make_pair ( channel, new_stream );
     streams.insert ( newPair );
 
@@ -767,16 +635,6 @@ uint16_t iecDrive::sendLine(uint16_t blocks, const char *format, ...)
 {
     // Debug_printv("bus[%d]", IEC.state);
 
-    // Exit if ATN is ASSERTED while sending
-    // Exit if there is an error while sending
-    if ( IEC.state == BUS_ERROR )
-    {
-        // Save file pointer position
-        //streamUpdate(basicPtr);
-        //setDeviceStatus(74);
-        return 0;
-    }
-
     // Format our string
     va_list args;
     va_start(args, format);
@@ -791,39 +649,26 @@ uint16_t iecDrive::sendLine(uint16_t blocks, char *text)
 {
     Serial.printf("%d %s ", blocks, text);
 
-    // Exit if ATN is ASSERTED while sending
-    // Exit if there is an error while sending
-    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
-
-    // Get text length
-    uint8_t len = strlen(text);
-
     // Send that pointer
     // No basic line pointer is used in the directory listing set to 0x0101
-    IEC.sendByte(0x01);		// IEC.sendByte(basicPtr bitand 0xFF);
-    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
-    IEC.sendByte(0x01);		// IEC.sendByte(basicPtr >> 8);
-    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
+    if (!IEC.sendByte(0x01)) {Debug_printv("line[%s]", text); return 0;}
+    if (!IEC.sendByte(0x01)) {Debug_printv("line[%s]", text); return 0;}
 
     // Send blocks
-    IEC.sendByte(blocks bitand 0xFF);
-    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
-    IEC.sendByte(blocks >> 8);
-    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
+    if (!IEC.sendByte(blocks bitand 0xFF)) {Debug_printv("line[%s]", text); return 0;}
+    if (!IEC.sendByte(blocks >> 8)) {Debug_printv("line[%s]", text); return 0;}
 
     // Send line contents
-    for (uint8_t i = 0; i < len; i++)
-    {
-        IEC.sendByte(text[i]);
-        if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
-    }
+    size_t written;
+    uint8_t len = strlen(text);
+    written = IEC.sendBytes(text, len, false);
+    if (written != len) {Debug_printv("line[%s]", text); return 0;}
 
     // Finish line
-    IEC.sendByte(0);
-    if ( IEC.flags & ERROR ) {Debug_printv("line[%s]", text); return 0;};
+    if (!IEC.sendByte(0)) {Debug_printv("line[%s]", text); return 0;}
 
     Serial.println("");
-    
+
     return len + 5;
 } // sendLine
 
@@ -849,8 +694,11 @@ uint16_t iecDrive::sendHeader(std::string header, std::string id)
 
     //Debug_printv("header[%s] id[%s] space_cnt[%d]", header.c_str(), id.c_str(), space_cnt);
 
-    byte_count += sendLine(0, CBM_REVERSE_ON "\"%*s%s%*s\" %s", space_cnt, "", header.c_str(), space_cnt, "", id.c_str());
-    if ( IEC.flags & ERROR ) return 0;
+    size_t written;
+
+    written = sendLine(0, CBM_REVERSE_ON "\"%*s%s%*s\" %s", space_cnt, "", header.c_str(), space_cnt, "", id.c_str());
+    if ( !written ) return 0;
+    byte_count += written;
 
     //byte_count += sendLine(basicPtr, 0, "\x12\"%*s%s%*s\" %.02d 2A", space_cnt, "", PRODUCT_ID, space_cnt, "", device_config.device());
     //byte_count += sendLine(basicPtr, 0, CBM_REVERSE_ON "%s", header.c_str());
@@ -858,47 +706,57 @@ uint16_t iecDrive::sendHeader(std::string header, std::string id)
     // Send Extra INFO
     if (url.size())
     {
-        byte_count += sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, "[URL]");
-        if ( IEC.flags & ERROR ) return 0;
-        byte_count += sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, url.c_str());
-        if ( IEC.flags & ERROR ) return 0;
+        written = sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, "[URL]");
+	if (!written) return 0;
+	byte_count += written;
+        written = sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, url.c_str());
+	if (!written) return 0;
+	byte_count += written;
         sent_info = true;
     }
     if (path.size() > 1)
     {
-        byte_count += sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, "[PATH]");
-        if ( IEC.flags & ERROR ) return 0;
-        byte_count += sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, path.c_str());
-        if ( IEC.flags & ERROR ) return 0;
+        written = sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, "[PATH]");
+	if (!written) return 0;
+	byte_count += written;
+        written = sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, path.c_str());
+	if (!written) return 0;
+	byte_count += written;
         sent_info = true;
     }
     if (archive.size() > 1)
     {
-        byte_count += sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, "[ARCHIVE]");
-        if ( IEC.flags & ERROR ) return 0;
-        byte_count += sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, archive.c_str());
-        if ( IEC.flags & ERROR ) return 0;
+        written = sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, "[ARCHIVE]");
+	if (!written) return 0;
+	byte_count += written;
+        written = sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, archive.c_str());
+	if (!written) return 0;
+	byte_count += written;
         sent_info = true;
     }
     if (image.size())
     {
-        byte_count += sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, "[IMAGE]");
-        if ( IEC.flags & ERROR ) return 0;
-        byte_count += sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, image.c_str());
-        if ( IEC.flags & ERROR ) return 0;
+        written = sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, "[IMAGE]");
+	if (!written) return 0;
+	byte_count += written;
+        written = sendLine(0, "%*s\"%-*s\" NFO", 0, "", 19, image.c_str());
+	if (!written) return 0;
+	byte_count += written;
         sent_info = true;
     }
     if (sent_info)
     {
-        byte_count += sendLine(0, "%*s\"-------------------\" NFO", 0, "");
-        if ( IEC.flags & ERROR ) return 0;
+        written = sendLine(0, "%*s\"-------------------\" NFO", 0, "");
+	if (!written) return 0;
+	byte_count += written;
     }
 
     // If SD Card is available ad we are at the root path show it as a directory at the top
     if (fnSDFAT.running() && _base->url.size() < 2)
     {
-        byte_count += sendLine(0, "%*s\"SD\"               DIR", 3, "");
-        if ( IEC.flags & ERROR ) return 0;
+        written = sendLine(0, "%*s\"SD\"               DIR", 3, "");
+	if (!written) return 0;
+	byte_count += written;
     }
 
     return byte_count;
@@ -926,7 +784,7 @@ uint16_t iecDrive::sendFooter()
     return byte_count;
 }
 
-void iecDrive::sendListing()
+void iecDrive::sendListing(int chan)
 {
     Serial.printf("sendListing: [%s]\r\n=================================\r\n", _base->url.c_str());
 
@@ -936,30 +794,31 @@ void iecDrive::sendListing()
     std::unique_ptr<MFile> entry = std::unique_ptr<MFile>( _base->getNextFileInDir() );
 
     if(entry == nullptr) {
-        closeStream( commanddata.channel );
+        closeStream( chan );
 
-        bool isOpen = registerStream(commanddata.channel);
-        if(isOpen) 
+        bool isOpen = registerStream(chan);
+        if(isOpen)
         {
-            sendFile();
+            sendFile(chan);
         }
         else
         {
             sendFileNotFound();
         }
-        
+
         return;
     }
 
     //fnLedStrip.startRainbow(300);
 
     // Send load address
-    IEC.sendByte(CBM_BASIC_START & 0xff);
-    IEC.sendByte((CBM_BASIC_START >> 8) & 0xff);
-    byte_count += 2;
+    size_t written = 0;
+    written += IEC.sendByte(CBM_BASIC_START & 0xff);
+    written += IEC.sendByte((CBM_BASIC_START >> 8) & 0xff);
+    byte_count += written;
 
     // If there has been a error don't try to send any more bytes
-    if ( IEC.flags & ERROR )
+    if (written != 2)
     {
         Debug_printv(":(");
         return;
@@ -972,9 +831,8 @@ void iecDrive::sendListing()
     {
         // Send device default listing header
         char buf[7] = { '\0' };
-        sprintf(buf, "%.02d 2A", IEC.data.device);
+        sprintf(buf, "%.02d 2A", _devnum);
         byte_count += sendHeader(PRODUCT_ID, buf);
-        if ( IEC.flags & ERROR ) return;
     }
     else
     {
@@ -983,7 +841,6 @@ void iecDrive::sendListing()
             _base->media_header = mstr::toPETSCII2( _base->media_header );
 
         byte_count += sendHeader(_base->media_header.c_str(), _base->media_id.c_str());
-        if ( IEC.flags & ERROR ) return;
     }
 
     // Send Directory Items
@@ -1044,18 +901,7 @@ void iecDrive::sendListing()
 
         if (name[0]!='.')
         {
-            // Exit if ATN is ASSERTED while sending
-            // Exit if there is an error while sending
-            if ( IEC.state == BUS_ERROR )
-            {
-                // Save file pointer position
-                // streamUpdate(byte_count);
-                //setDeviceStatus(74);
-                return;
-            }
-
             byte_count += sendLine(block_cnt, "%*s\"%s\"%*s %s", block_spc, "", name.c_str(), space_cnt, "", extension.c_str());
-            if ( IEC.flags & ERROR ) return;
         }
 
         entry.reset(_base->getNextFileInDir());
@@ -1065,7 +911,6 @@ void iecDrive::sendListing()
 
     // Send Listing Footer
     byte_count += sendFooter();
-    if ( IEC.flags & ERROR ) return;
 
     // End program with two zeros after last line. Last zero goes out as EOI.
     IEC.sendByte(0);
@@ -1078,18 +923,12 @@ void iecDrive::sendListing()
     //fnLedStrip.stopRainbow();
 } // sendListing
 
-
-bool iecDrive::sendFile()
+bool iecDrive::sendFile(int chan)
 {
     uint32_t count = 0;
     bool success_rx = true;
-    bool success_tx = true;
 
-    uint8_t b;  // byte
-//    uint8_t nb; // next byte
-#if 0
-    uint8_t bi = 0;
-#endif
+    uint8_t buf[128];
     uint16_t load_address = 0;
     uint16_t sys_address = 0;
 
@@ -1099,7 +938,7 @@ bool iecDrive::sendFile()
 #endif
 
     // std::shared_ptr<MStream> istream = std::static_pointer_cast<MStream>(currentStream);
-    auto istream = retrieveStream(commanddata.channel);
+    auto istream = retrieveStream(chan);
     if ( istream == nullptr )
     {
         sendFileNotFound();
@@ -1130,25 +969,23 @@ bool iecDrive::sendFile()
     bool eoi = false;
     uint32_t size = istream->size();
     uint32_t avail = istream->available();
+    size_t written = 0, len;
     uint64_t t_start = esp_timer_get_time(), t_end;
 
     //fnLedStrip.startRainbow(300);
 
-    if( commanddata.channel == CHANNEL_LOAD && istream->position() == 0 )
+    if( chan == CHANNEL_LOAD && istream->position() == 0 )
     {
         // Get/Send file load address
-        istream->read(&b, 1);
-        success_tx = IEC.sendByte(b);
-        load_address = b & 0x00FF; // low byte
-        istream->read(&b, 1);
-        success_tx = IEC.sendByte(b);
-        load_address = load_address | b << 8;  // high byte
+        istream->read(buf, 2);
+	written = IEC.sendBytes((const char *) buf, 2, size <= 2);
+        load_address = buf[0] & 0x00FF; // low byte
+        load_address = load_address | buf[1] << 8;  // high byte
         sys_address = load_address;
         Serial.printf( "load_address[$%.4X] sys_address[%d]", load_address, sys_address );
 
         // Get SYSLINE
     }
-
 
     Serial.printf("\r\nsendFile: [$%.4X] pos[%d]\r\n=================================\r\n", load_address, istream->position());
     while( success_rx && !istream->error() )
@@ -1162,10 +999,8 @@ bool iecDrive::sendFile()
         }
 #endif
 
-        // Read byte
-        success_rx = istream->read(&b, 1);
-        //Debug_printv("b[%02X] success[%d]", b, success_rx);
-
+        // Read bytes
+	len = istream->read(buf, sizeof(buf));
         count = istream->position();
         avail = istream->available();
 
@@ -1179,29 +1014,14 @@ bool iecDrive::sendFile()
             eoi = true;
         }
 
-        // Send Byte
-        success_tx = IEC.sendByte(b, eoi);
-        if ( !success_tx )
-        {
-            Debug_printv("Error sending byte.")
-            break;
-        }
-
-        // Exit if ATN is ASSERTED while sending
-        if ( !eoi && IEC.flags & ATN_ASSERTED )
-        {
-            //IEC_ASSERT( PIN_IEC_SRQ );
-            //Serial.println();
-            //Debug_printv("ATN asserted while sending. b[%.2X]", b);
-#ifdef DATA_STREAM
-            Serial.printf("[atn]\r\n");
-#endif
-
-            // Save file pointer position
-            istream->seek( -1, SEEK_CUR);
-            //IEC_RELEASE( PIN_IEC_SRQ );
-            break;
-        }
+        // Send Bytes
+	written = IEC.sendBytes((const char *) buf, len, eoi);
+	if (written != len) {
+	  Debug_printv("Short write: %i expected: %i cur: %i", written, len, count);
+	  count -= len - written;
+	  istream->seek(count, SEEK_SET);
+	  break;
+	}
 
         uint32_t t = 0;
         if ( size )
@@ -1235,7 +1055,6 @@ bool iecDrive::sendFile()
         }
     }
 
-
     t_end = esp_timer_get_time();
     t_end -= t_start;
     double seconds = t_end / 1000000.0;
@@ -1247,38 +1066,29 @@ bool iecDrive::sendFile()
     //fnLedManager.set(eLed::LED_BUS, false);
     //fnLedStrip.stopRainbow();
 
-    if ( istream->error() || !success_tx )
+    if ( istream->error() )
     {
         Serial.println("sendFile: Transfer aborted!");
         IEC.senderTimeout();
-        closeStream(commanddata.channel);
+        closeStream(chan);
     }
 
     return success_rx;
 } // sendFile
 
 
-bool iecDrive::saveFile()
+bool iecDrive::saveFile(int chan, IECPayload &payload)
 {
     size_t i = 0;
     bool success = true;
-    bool done = false;
-
-#if 0
-    size_t bi = 0;
-#endif
     size_t load_address = 0;
-    size_t b_len = 1;
-    uint8_t b[b_len];
-    uint8_t ll[b_len];
-    uint8_t lh[b_len];
 
 #ifdef DATA_STREAM
     char ba[9];
     ba[8] = '\0';
 #endif
 
-    auto ostream = retrieveStream(commanddata.channel);
+    auto ostream = retrieveStream(chan);
 
     if ( ostream == nullptr ) {
         Serial.println("couldn't open a stream for writing");
@@ -1294,70 +1104,16 @@ bool iecDrive::saveFile()
         if ( i == 0 )
         {
             // Get file load address
-            ll[0] = IEC.receiveByte();
-            load_address = *ll & 0x00FF; // low byte
-            lh[0] = IEC.receiveByte();
-            load_address = load_address | *lh << 8;  // high byte
+            load_address = (payload[1] << 8) | payload[0];
         }
 
 
         Serial.printf("saveFile: [$%.4X]\r\n=================================\r\n", load_address);
 
-        // Recieve bytes until a EOI is detected
-        do
-        {
-            // Save Load Address
-            if (i == 0)
-            {
-                Serial.print("[");
-                ostream->write(ll, b_len);
-                ostream->write(lh, b_len);
-                i += 2;
-                Serial.print("]");
-            }
-
-#ifdef DATA_STREAM
-            if (bi == 0)
-            {
-                Serial.printf(":%.4X ", load_address);
-                load_address += 8;
-            }
-#endif
-
-            b[0] = IEC.receiveByte();
-            ostream->write(b, b_len);
-            i++;
-
-            uint16_t f = IEC.flags;
-            done = (f & EOI_RECVD) or (f & ERROR);
-
-            // Exit if ATN is ASSERTED while sending
-            if ( f & ATN_ASSERTED )
-            {
-                // Save file pointer position
-                // streamUpdate(ostream->position());
-                //setDeviceStatus(74);
-                break;
-            }
-
-#ifdef DATA_STREAM
-            // Show ASCII Data
-            if (b[0] < 32 || b[0] >= 127)
-                ba[bi++] = 46;
-            else
-                ba[bi++] = b[0];
-
-            if(bi == 8)
-            {
-                Serial.printf(" %s (%d)\r\n", ba, i);
-                bi = 0;
-            }
-#endif
-
-        } while (not done);
+	ostream->write(payload.data(), payload.size());
     }
 
-    Serial.printf("=================================\r\n%d bytes saved\r\n", i);
+    Serial.printf("=================================\r\n%d bytes saved\r\n", ostream->position());
 
     // TODO: Handle errorFlag
 
@@ -1371,7 +1127,6 @@ void iecDrive::sendFileNotFound()
     _base.reset( MFSOwner::File( _base->base() ) );
     Debug_printv("_base[%s] reset", _base->url.c_str());
     IEC.senderTimeout(); // File Not Found
-    state = DEVICE_ERROR;
 } // sendFileNotFound
 
 #endif /* BUILD_IEC */

@@ -24,25 +24,15 @@ class iecCpm : public virtualDevice
      */
     ~iecCpm();
 
-    /**
-     * @brief Process command fanned out from bus
-     * @return new device state
-     */
-    device_state_t process() override;
-
     protected:
+    virtual bool openChannel(int chan, IECPayload &payload);
+    virtual bool closeChannel(int chan);
+    virtual bool readChannel(int chan);
+    virtual bool writeChannel(int chan, IECPayload &payload);
 
     private:
 
     TaskHandle_t cpmTaskHandle = NULL;    
-
-    virtual void poll_interrupt(unsigned char c) override;
-    
-    void iec_open();
-    void iec_close();
-    void iec_reopen();
-    void iec_reopen_talk();
-    void iec_reopen_listen();
 };
 
 #endif /* IECCPM_H */

@@ -2,6 +2,7 @@
 
 #include "clock.h"
 #include "string_utils.h"
+#include "../../../include/debug.h"
 
 iecClock::iecClock()
 {
@@ -15,7 +16,7 @@ iecClock::~iecClock()
 void iecClock::set_timestamp(std::string s)
 {
     Debug_printf("set_timestamp(%s)\n",s.c_str());
-    ts = atoi(payload.c_str());
+    ts = atoi(s.c_str());
 }
 
 void iecClock::set_timestamp_format(std::string s)
@@ -25,6 +26,27 @@ void iecClock::set_timestamp_format(std::string s)
     tf = s;
 }
 
+bool iecClock::openChannel(int chan, IECPayload &payload)
+{
+  assert(0);
+}
+
+bool iecClock::closeChannel(int chan)
+{
+  assert(0);
+}
+
+bool iecClock::readChannel(int chan)
+{
+  assert(0);
+}
+
+bool iecClock::writeChannel(int chan, IECPayload &payload)
+{
+  assert(0);
+}
+
+#if 0
 device_state_t iecClock::process()
 {
     virtualDevice::process();
@@ -115,5 +137,6 @@ void iecClock::iec_reopen_talk()
     
     IEC.sendBytes(s, true);
 }
+#endif
 
 #endif /* BUILD_IEC */

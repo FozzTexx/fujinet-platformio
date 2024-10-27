@@ -25,6 +25,7 @@ iecPrinter::~iecPrinter()
     _pptr = nullptr;
 }
 
+#if 0
 // write for W commands
 void iecPrinter::write(uint8_t channel)
 {
@@ -42,6 +43,7 @@ void iecPrinter::write(uint8_t channel)
         _last_ms = fnSystem.millis();
     }
 }
+#endif
 
 /**
  * Print from CP/M, which is one character...at...a...time...
@@ -140,6 +142,27 @@ iecPrinter::printer_type iecPrinter::match_modelname(std::string model_name)
     return (printer_type)i;
 }
 
+bool iecPrinter::openChannel(int chan, IECPayload &payload)
+{
+  assert(0);
+}
+
+bool iecPrinter::closeChannel(int chan)
+{
+  assert(0);
+}
+
+bool iecPrinter::readChannel(int chan)
+{
+  assert(0);
+}
+
+bool iecPrinter::writeChannel(int chan, IECPayload &payload)
+{
+  assert(0);
+}
+
+#if 0
 // Process command
 device_state_t iecPrinter::process()
 {
@@ -152,5 +175,6 @@ device_state_t iecPrinter::process()
 
     return state;
 }
+#endif
 
 #endif /* BUILD_IEC */

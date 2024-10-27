@@ -12,18 +12,16 @@ class iecClock : public virtualDevice
     time_t ts;
     std::string tf;
 
+    protected:
+    virtual bool openChannel(int chan, IECPayload &payload);
+    virtual bool closeChannel(int chan);
+    virtual bool readChannel(int chan);
+    virtual bool writeChannel(int chan, IECPayload &payload);
+
     public:
 
     iecClock();
     ~iecClock();
-
-    device_state_t process();
-
-    void iec_open();
-    void iec_close();
-    void iec_reopen();
-    void iec_reopen_talk();
-    void iec_reopen_listen();
 
     void set_timestamp(std::string s);
     void set_timestamp_format(std::string s);
