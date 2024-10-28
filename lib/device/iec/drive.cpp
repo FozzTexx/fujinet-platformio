@@ -925,7 +925,7 @@ void iecDrive::sendListing(int chan)
 
 bool iecDrive::sendFile(int chan)
 {
-    uint32_t count = 0;
+    uint32_t count = 0, startpos;
     bool success_rx = true;
 
     uint8_t buf[128];
@@ -987,7 +987,8 @@ bool iecDrive::sendFile(int chan)
         // Get SYSLINE
     }
 
-    Serial.printf("\r\nsendFile: [$%.4X] pos[%d]\r\n=================================\r\n", load_address, istream->position());
+    startpos = istream->position();
+    Serial.printf("\r\nsendFile: [$%.4X] pos[%d]\r\n=================================\r\n", load_address, startpos);
     while( success_rx && !istream->error() )
     {
         //Debug_printv("b[%02X] nb[%02X] success_rx[%d] error[%d] count[%d] avail[%d]", b, nb, success_rx, istream->error(), count, avail);
@@ -1058,7 +1059,7 @@ bool iecDrive::sendFile(int chan)
     t_end = esp_timer_get_time();
     t_end -= t_start;
     double seconds = t_end / 1000000.0;
-    double cps = count / seconds;
+    double cps = (count - startpos) / seconds;
     Serial.printf("=================================\r\n%d bytes sent of %d @ %0.2fcps[SYS%d]\r\n\r\n", count, size, cps, sys_address);
 
     //Debug_printv("len[%d] avail[%d] success_rx[%d]", len, avail, success_rx);

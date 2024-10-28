@@ -95,14 +95,16 @@ class IECRecord
 {
 public:
   IECCommand_t command;
+  uint8_t devnum;
   IECCommand_t subCommand;
   uint8_t channel;
   bool eoi;
   IECPayload payload;
 
   IECRecord(uint8_t cmd, uint8_t chan, bool eoiFlag, const uint8_t *buf, size_t len)
-    : command((IECCommand_t) (cmd & 0xe0)), subCommand((IECCommand_t) (chan & 0xf0)),
-      channel(chan & 0x0f), eoi(eoiFlag), payload(buf, len) {}
+    : command((IECCommand_t) (cmd & 0xe0)), devnum(cmd & 0x1f),
+      subCommand((IECCommand_t) (chan & 0xf0)), channel(chan & 0x0f),
+      eoi(eoiFlag), payload(buf, len) {}
 
   void debugPrint() const;
 };

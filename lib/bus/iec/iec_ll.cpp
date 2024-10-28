@@ -107,6 +107,7 @@ void IECLowLevel::handleCLK()
       (iec_state == IECWaitState || iec_state == IECOutputState || iec_state == IECTalkState)) {
     morse_code('S');
     morse_code(iec_state);
+    morse_code(iec_curDevice);
     goto done;
   }
 
@@ -132,8 +133,11 @@ void IECLowLevel::handleCLK()
       if ((cmd == IECListenCommand || cmd == IECTalkCommand) &&
 	  (dev == IEC_ALLDEV || !iec_openDevices[dev])) {
 	iec_atnState = IECAttentionIgnoreState;
-	if (dev == IEC_ALLDEV)
+	if (dev == IEC_ALLDEV) {
+	  morse_code('N');
+	  morse_code(cmd);
 	  iec_state = IECWaitState;
+	}
 	usleep(c64slowdown);
 	releaseBus();
       }
@@ -141,6 +145,7 @@ void IECLowLevel::handleCLK()
 
     iec_buffer[iec_inpos] = val;
     iec_inpos = (iec_inpos + 1) % IEC_BUFSIZE;
+    processData();
   }
 
  done:
@@ -646,8 +651,6 @@ size_t IECLowLevel::hasData(int devnum)
   iec_io *io;
 
 
-  processData();
-
   io = device->in.head;
   if (io && io != device->in.cur)
     avail = (io->header.len + sizeof(io->header)) - io->outpos;
@@ -662,8 +665,6 @@ size_t IECLowLevel::read(int devnum, uint8_t *buf, size_t count)
   iec_io *io;
   unsigned char *wbuf;
 
-
-  processData();
 
   do {
     io = device->in.head;

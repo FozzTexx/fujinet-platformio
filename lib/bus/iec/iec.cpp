@@ -233,8 +233,9 @@ void systemBus::senderTimeout()
 
 void IECRecord::debugPrint() const
 {
-  Debug_printf("\r\nIECRecord cmd: %02x  sub: %02x  chan: %02x  eoi: %i  length: %i",
-	       command, subCommand, channel, eoi, payload.size());
+  Debug_printf("\r\nIECRecord cmd: %02x  dev: %02x"
+	       "  sub: %02x  chan: %02x  eoi: %i  length: %i",
+	       command, devnum, subCommand, channel, eoi, payload.size());
   if (payload.size())
     Debug_printf("\r\n%s", util_hexdump(payload.data(), payload.size()).c_str());
 }
