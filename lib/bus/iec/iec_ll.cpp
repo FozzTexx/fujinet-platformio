@@ -247,6 +247,8 @@ int IECLowLevel::writeByte(int bits)
     return 1;
   }
 
+  portDISABLE_INTERRUPTS();
+
   IEC_RELEASE(IEC_CLK);
 
   if ((abort = waitForSignals(IEC_DATA, IEC_RELEASED, IEC_ATN, IEC_ASSERTED, 100000))) {
@@ -302,6 +304,7 @@ int IECLowLevel::writeByte(int bits)
       iec_atnState = IECAttentionState;
     }
   }
+  portENABLE_INTERRUPTS();
 
   usleep(c64slowdown);
 
