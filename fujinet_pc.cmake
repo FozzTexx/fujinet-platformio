@@ -166,6 +166,7 @@ set(SOURCES src/main.cpp
     lib/hardware/fnUARTUnix.cpp lib/hardware/fnUARTWindows.cpp
     lib/hardware/fnSystem.h lib/hardware/fnSystem.cpp lib/hardware/fnSystemNet.cpp
     lib/FileSystem/fnDirCache.h lib/FileSystem/fnDirCache.cpp
+    lib/FileSystem/fnFileCache.h lib/FileSystem/fnFileCache.cpp
     lib/FileSystem/fnFS.h lib/FileSystem/fnFS.cpp
     lib/FileSystem/fnFsSPIFFS.h lib/FileSystem/fnFsSPIFFS.cpp
     lib/FileSystem/fnFsSD.h lib/FileSystem/fnFsSD.cpp
@@ -267,7 +268,7 @@ if(FUJINET_TARGET STREQUAL "ATARI")
     lib/bus/sio/siocom/fnSioCom.h lib/bus/sio/siocom/fnSioCom.cpp
     lib/media/atari/diskType.h lib/media/atari/diskType.cpp
     lib/media/atari/diskTypeAtr.h lib/media/atari/diskTypeAtr.cpp
-    lib/media/atari/diskTypeAtx.h
+    lib/media/atari/diskTypeAtx.h lib/media/atari/diskTypeAtx.cpp
     lib/media/atari/diskTypeXex.h lib/media/atari/diskTypeXex.cpp
 
     lib/device/sio/disk.h lib/device/sio/disk.cpp
