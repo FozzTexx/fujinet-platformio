@@ -313,3 +313,8 @@ bool NetworkProtocolSMB::unlock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
 {
     return false;
 }
+
+off_t NetworkProtocolSMB::seek(off_t offset, int whence)
+{
+    return smb2_lseek(smb, fh, offset, whence, NULL);
+}

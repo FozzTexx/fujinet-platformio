@@ -341,3 +341,8 @@ void NetworkProtocol::errno_to_error()
         break;
     }
 }
+
+off_t NetworkProtocol::seek(off_t offset, int whence)
+{
+    return -1;
+}

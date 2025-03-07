@@ -363,3 +363,8 @@ bool NetworkProtocolSD::unlock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
     error = NETWORK_ERROR_NOT_IMPLEMENTED;
     return true;
 }
+
+off_t NetworkProtocolSD::seek(off_t offset, int whence)
+{
+    return ::fseek(fh, offset, whence);
+}
