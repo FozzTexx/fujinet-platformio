@@ -366,5 +366,15 @@ bool NetworkProtocolSD::unlock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
 
 off_t NetworkProtocolSD::seek(off_t offset, int whence)
 {
-    return ::fseek(fh, offset, whence);
+    off_t new_offset;
+
+
+    new_offset = ::fseek(fh, offset, whence);
+
+    // fileSize isn't fileSize, it's bytes remaining. Call stat() to fix fileSize
+    stat();
+    fileSize -= new_offset;
+    receiveBuffer->clear();
+
+    return new_offset;
 }
