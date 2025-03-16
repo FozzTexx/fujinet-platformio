@@ -39,14 +39,14 @@ bool NetworkProtocolFTP::open_file_handle()
 
     switch (aux1_open)
     {
-    case 4:
+    case RS232_OPEN_READ:
         stor = false;
         break;
-    case 8:
+    case RS232_OPEN_WRITE:
         stor = true;
         break;
-    case 9:
-    case 12:
+    case RS232_OPEN_APPEND:
+    case RS232_OPEN_READWRITE:
         error = NETWORK_ERROR_NOT_IMPLEMENTED;
         return true;
         break;
