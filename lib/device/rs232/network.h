@@ -28,9 +28,19 @@
 #define OUTPUT_BUFFER_SIZE 65535
 #define SPECIAL_BUFFER_SIZE 256
 
+#define DIRECTION_NONE    0x00
+#define DIRECTION_READ    0x40
+#define DIRECTION_WRITE   0x80
+
 enum {
+  CMD_RENAME            = 0x20,
+  CMD_DELETE            = 0x21,
+  CMD_LOCK              = 0x23,
+  CMD_UNLOCK            = 0x24,
   CMD_SEEK              = 0x25,
   CMD_TELL              = 0x26,
+  CMD_MKDIR             = 0x2a,
+  CMD_RMDIR             = 0x2b,
   CMD_CHDIR             = 0x2c,
   CMD_GETCWD            = 0x30,
   CMD_HIGHSPEED         = 0x3F,
@@ -41,6 +51,8 @@ enum {
   CMD_STATUS            = 'S',
   CMD_PARSE             = 'P',
   CMD_QUERY             = 'Q',
+  CMD_TRANSLATION       = 'T',
+  CMD_TIMER             = 'Z',
   CMD_APETIME_GETTIME   = 0x93,
   CMD_APETIME_SETTZ     = 0x99,
   CMD_APETIME_GETTZTIME = 0x9A,

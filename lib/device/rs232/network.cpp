@@ -610,15 +610,15 @@ void rs232Network::rs232_special()
 
     switch (inq_dstats)
     {
-    case 0x00: // No payload
+    case DIRECTION_NONE:  // No payload
         rs232_ack();
         rs232_special_00();
         break;
-    case 0x40: // Payload to Atari
+    case DIRECTION_READ:  // Payload to Atari
         rs232_ack();
         rs232_special_40();
         break;
-    case 0x80: // Payload to Peripheral
+    case DIRECTION_WRITE: // Payload to Peripheral
         rs232_ack();
         rs232_special_80();
         break;
@@ -661,34 +661,34 @@ void rs232Network::do_inquiry(unsigned char inq_cmd)
     {
         switch (inq_cmd)
         {
-        case 0x20:
-        case 0x21:
-        case 0x23:
-        case 0x24:
-        case 0x2A:
-        case 0x2B:
-        case 0x2C:
-        case 0xFD:
-        case 0xFE:
+        case CMD_RENAME:
+        case CMD_DELETE:
+        case CMD_LOCK:
+        case CMD_UNLOCK:
+        case CMD_MKDIR:
+        case CMD_RMDIR:
+        case CMD_CHDIR:
+        case CMD_USERNAME:
+        case CMD_PASSWORD:
             inq_dstats = 0x80;
             break;
-        case 0xFC:
+        case CMD_JSON:
             inq_dstats = 0x00;
             break;
-        case 0x30:
+        case CMD_GETCWD:
             inq_dstats = 0x40;
             break;
-        case 'Z': // Set interrupt rate
+        case CMD_TIMER: // Set interrupt rate
             inq_dstats = 0x00;
             break;
-        case 'T': // Set Translation
+        case CMD_TRANSLATION: // Set Translation
             inq_dstats = 0x00;
             break;
-        case 'P': // JSON Parse
+        case CMD_PARSE: // JSON Parse
             if (channelMode == JSON)
                 inq_dstats = 0x00;
             break;
-        case 'Q': // JSON Query
+        case CMD_QUERY: // JSON Query
             if (channelMode == JSON)
                 inq_dstats = 0x80;
             break;
@@ -711,17 +711,17 @@ void rs232Network::rs232_special_00()
     // Handle commands that exist outside of an open channel.
     switch (cmdFrame.comnd)
     {
-    case 'P':
+    case CMD_PARSE:
         if (channelMode == JSON)
             rs232_parse_json();
         break;
-    case 'T':
+    case CMD_TRANSLATION:
         rs232_set_translation();
         break;
-    case 'Z':
+    case CMD_TIMER:
         rs232_set_timer_rate();
         break;
-    case 0xFC: // SET CHANNEL MODE
+    case CMD_JSON: // SET CHANNEL MODE
         rs232_set_channel_mode();
         break;
     default:
@@ -743,7 +743,7 @@ void rs232Network::rs232_special_40()
     // Handle commands that exist outside of an open channel.
     switch (cmdFrame.comnd)
     {
-    case 0x30:
+    case CMD_GETCWD:
         rs232_get_prefix();
         return;
     }
@@ -766,25 +766,25 @@ void rs232Network::rs232_special_80()
     // Handle commands that exist outside of an open channel.
     switch (cmdFrame.comnd)
     {
-    case 0x20: // RENAME
-    case 0x21: // DELETE
-    case 0x23: // LOCK
-    case 0x24: // UNLOCK
-    case 0x2A: // MKDIR
-    case 0x2B: // RMDIR
+    case CMD_RENAME:
+    case CMD_DELETE:
+    case CMD_LOCK:
+    case CMD_UNLOCK:
+    case CMD_MKDIR:
+    case CMD_RMDIR:
         rs232_do_idempotent_command_80();
         return;
-    case 0x2C: // CHDIR
+    case CMD_CHDIR:
         rs232_set_prefix();
         return;
-    case 'Q':
+    case CMD_QUERY:
         if (channelMode == JSON)
             rs232_set_json_query();
         return;
-    case 0xFD: // LOGIN
+    case CMD_USERNAME:
         rs232_set_login();
         return;
-    case 0xFE: // PASSWORD
+    case CMD_PASSWORD:
         rs232_set_password();
         return;
     }

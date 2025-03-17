@@ -78,8 +78,6 @@ bool NetworkProtocolSMB::open_file_handle()
 
     offset = 0;
 
-    Debug_printf("DO WE FUCKING GET HERE?!\r\n");
-
     return false;
 }
 
@@ -154,11 +152,13 @@ bool NetworkProtocolSMB::umount()
         return true;
 
     smb2_disconnect_share(smb);
+    smb = nullptr;
 
     if (smb_url == nullptr)
         return true;
 
     smb2_destroy_url(smb_url);
+    smb_url = nullptr;
     return false;
 }
 
