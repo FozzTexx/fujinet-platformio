@@ -278,9 +278,8 @@ void systemBus::service()
     }
 #else /* !FUJINET_OVER_USB */
     // Go process a command frame if the RS232 CMD line is asserted
-    if (RS232.fnUartBUS.available())
+    if (fnUartBUS.available())
     {
-        Debug_printv("Thar's data in them thar buffers!");
         _rs232_process_cmd();
     }
 #endif /* FUJINET_OVER_USB */
