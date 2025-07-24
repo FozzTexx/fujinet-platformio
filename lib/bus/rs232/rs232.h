@@ -1,8 +1,8 @@
 #ifndef RS232_H
 #define RS232_H
 
-#include "SerialACM.h"
-#include "SerialUART.h"
+#include "ACMChannel.h"
+#include "UARTChannel.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -230,13 +230,13 @@ private:
     /* void _rs232_process_queue(); */
 
 public:
-    // FIXME - things should be calling the systemBus to use the bus,
-    //         not directly doing things behind its back
+    // Everybody thinks "oh I know how a serial port works, I'll just
+    // access it directly and bypass the bus!" ಠ_ಠ
     friend virtualDevice;
 #if FUJINET_OVER_USB
-    SerialACM fnUartBUS;
-#elif !defined(BUILD_COCO)
-    SerialUART fnUartBUS;
+    ACMChannel fnUartBUS;
+#else /* !FUJINET_OVER_USB */
+    UARTChannel fnUartBUS;
 #endif /* FUJINET_OVER_USB */
 
     void setup();
@@ -265,14 +265,11 @@ public:
     rs232Printer *getPrinter() { return _printerdev; }
     rs232CPM *getCPM() { return _cpmDev; }
 
-#ifdef KEEP_BUT_UNUSED
-    QueueHandle_t qRs232Messages = nullptr;
-#endif /* KEEP_BUT_UNUSED */
 
     bool shuttingDown = false;                                  // TRUE if we are in shutdown process
     bool getShuttingDown() { return shuttingDown; };
 };
 
-extern systemBus RS232;
+extern systemBus SYSTEM_BUS;
 
 #endif // guard

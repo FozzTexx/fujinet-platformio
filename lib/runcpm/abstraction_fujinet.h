@@ -17,7 +17,7 @@
 #include "fnWiFi.h"
 #include "fnFsSD.h"
 #ifdef ESP_PLATFORM
-#include "SerialInterface.h"
+#include "IOChannel.h"
 #endif
 #include "fnTcpServer.h"
 #include "fnTcpClient.h"

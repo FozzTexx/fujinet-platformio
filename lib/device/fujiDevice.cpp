@@ -29,6 +29,7 @@
 
 #include "utils.h"
 #include "directoryPageGroup.h"
+#include "compat_string.h"
 
 #include <endian.h>
 
@@ -243,11 +244,11 @@ void fujiDevice::fujicmd_image_rotate()
         {
             int swap = get_disk_dev(n - 1)->id();
             Debug_printf("setting slot %d to ID %hx\n", n, swap);
-            _bus->changeDeviceId(get_disk_dev(n), swap); // to do!
+            SYSTEM_BUS.changeDeviceId(get_disk_dev(n), swap); // to do!
         }
 
         // The first slot gets the device ID of the last slot
-        _bus->changeDeviceId(get_disk_dev(0), last_id);
+        SYSTEM_BUS.changeDeviceId(get_disk_dev(0), last_id);
 
 #if ENABLE_SPEECH
         // FIXME - make this work
@@ -417,6 +418,7 @@ bool fujiDevice::fujicmd_net_set_ssid_success(const char *ssid, const char *pass
 
     Debug_printf("Connecting to net: %s password: %s\n", ssid, password);
 
+#warning FIXME - why are not using transaction_get() to get ssid & password?
     if (fnWiFi.connect(ssid, password) != 0) {
         transaction_error();
         return false;
@@ -584,6 +586,7 @@ bool fujiDevice::fujicmd_open_directory_success(uint8_t hostSlot, char *dirpath,
         return false;
     }
 
+#warning FIXME - why can't we use transaction_get to get dirpath?
     if (_current_open_directory_slot != -1)
     {
         Debug_print("Directory was already open - closing it first\n");
@@ -1497,7 +1500,7 @@ void fujiDevice::fujicmd_write_app_key(uint16_t keylen)
     // Data for  FUJICMD_WRITE_APPKEY
     uint8_t value[MAX_APPKEY_LEN];
 
-    if (!transaction_get(value, sizeof(value)))
+    if (!transaction_get(value, keylen))
     {
         transaction_error();
         return;
@@ -1586,11 +1589,11 @@ void fujiDevice::fujicmd_set_sio_external_clock(uint16_t speed)
 
     if (speed == 0)
     {
-        _bus->setUltraHigh(false, 0);
+        SYSTEM_BUS.setUltraHigh(false, 0);
     }
     else
     {
-        _bus->setUltraHigh(true, baudRate);
+        SYSTEM_BUS.setUltraHigh(true, baudRate);
     }
 
     transaction_complete();
@@ -1617,6 +1620,6 @@ void fujiDevice::fujicmd_enable_udpstream(int port)
     transaction_complete();
 
     // Start the UDP Stream
-    _bus->setUDPHost(host, port);
+    SYSTEM_BUS.setUDPHost(host, port);
 }
 
