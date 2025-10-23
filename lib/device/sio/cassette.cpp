@@ -7,7 +7,6 @@
 #include "../../include/debug.h"
 
 #include "fnSystem.h"
-#include "fnUART.h"
 #include "fnFsSD.h"
 
 #include "led.h"

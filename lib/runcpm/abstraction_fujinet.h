@@ -16,9 +16,6 @@
 #include "fnSystem.h"
 #include "fnWiFi.h"
 #include "fnFsSD.h"
-#ifdef ESP_PLATFORM
-#include "fnUART.h"
-#endif
 #include "fnTcpServer.h"
 #include "fnTcpClient.h"
 

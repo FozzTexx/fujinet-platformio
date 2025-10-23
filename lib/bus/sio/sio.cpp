@@ -15,6 +15,12 @@
 #include "led.h"
 #include "utils.h"
 
+#ifdef ESP_PLATFORM
+#define SIO_UART_DEVICE FN_UART_BUS
+#else /* !ESP_PLATFORM */
+#define SIO_UART_DEVICE Config.get_serial_port()
+#endif /* ESP_PLATFORM */
+
 // Helper functions outside the class defintions
 
 // Get requested buffer length from command frame
@@ -487,7 +493,11 @@ void systemBus::setup()
 
 #ifdef ESP_PLATFORM
     // Set up UART
-    _port.begin(_sioBaud);
+    _port.begin(ChannelConfig()
+                .baud(_sioBaud)
+                .deviceID(SIO_UART_DEVICE)
+                .readTimeout(500)
+                );
 
     // INT PIN
     fnSystem.set_pin_mode(PIN_INT, gpio_mode_t::GPIO_MODE_OUTPUT_OD, SystemManager::pull_updown_t::PULL_UP);
@@ -518,7 +528,7 @@ void systemBus::setup()
     else
         setHighSpeedIndex(_sioHighSpeedIndex);
 
-    _port.flush_input();
+    _port.discardInput();
 #else
     // Setup SIO ports: serial UART and NetSIO
     _port.set_serial_port(Config.get_serial_port().c_str(), Config.get_serial_command(), Config.get_serial_proceed()); // UART
@@ -641,7 +651,7 @@ void systemBus::toggleBaudrate()
     // hmm, calling flush() may not be enough to empty TX buffer
     fnSystem.delay_microseconds(2000);
 #endif
-    _port.set_baudrate(_sioBaud);
+    _port.setBaudrate(_sioBaud);
 }
 
 int systemBus::getBaudrate()
@@ -659,7 +669,7 @@ void systemBus::setBaudrate(int baud)
 
     Debug_printf("Changing baudrate from %d to %d\n", _sioBaud, baud);
     _sioBaud = baud;
-    _port.set_baudrate(baud);
+    _port.setBaudrate(baud);
 }
 
 // Set HSIO index. Sets high speed SIO baud and also returns that value.
@@ -829,7 +839,7 @@ void systemBus::setUltraHigh(bool _enable, int _ultraHighBaud)
         ledc_channel_config(&ledc_channel_sio_ckin);
         ledc_timer_config(&ledc_timer);
 #endif
-        _port.set_baudrate(_sioBaudUltraHigh);
+        _port.setBaudrate(_sioBaudUltraHigh);
     }
     else
     {
@@ -839,7 +849,7 @@ void systemBus::setUltraHigh(bool _enable, int _ultraHighBaud)
         ledc_stop(LEDC_ESP32XX_HIGH_SPEED, LEDC_CHANNEL_1, 0);
         ledc_stop(LEDC_SPEED_MODE_MAX, LEDC_CHANNEL_1, 0);
 #endif
-        _port.set_baudrate(SIO_STANDARD_BAUDRATE);
+        _port.setBaudrate(SIO_STANDARD_BAUDRATE);
     }
 }
 

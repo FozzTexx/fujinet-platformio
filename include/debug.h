@@ -23,7 +23,7 @@
 #ifdef DEBUG
 #ifdef ESP_PLATFORM
     // Use FujiNet debug serial output
-    #include "../lib/hardware/fnUART.h"
+    #include "../lib/hardware/ESP32UARTChannel.h"
     #define Serial fnDebugConsole
 #if defined(PINMAP_RS232_S3) /*|| defined(PINMAP_ESP32S3_XDRIVE)*/
     #define Debug_print(...) printf( __VA_ARGS__ )

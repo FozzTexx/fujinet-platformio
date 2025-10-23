@@ -11,8 +11,8 @@
 #endif
 
 #ifdef ESP_PLATFORM
-#include "fnUART.h"
-#define MODEM_UART_T UARTManager
+#include "UARTChannel.h"
+#define MODEM_UART_T UARTChannel
 #else
 // fnSioCom.h is included from bus.h
 #define MODEM_UART_T SioCom
@@ -282,11 +282,7 @@ private:
 
     bool useUltraHigh = false; // Use fujinet derived clock.
 
-#ifdef ESP_PLATFORM
-    MODEM_UART_T _port = MODEM_UART_T(FN_UART_BUS);
-#else
     MODEM_UART_T _port;
-#endif
 
 #ifndef ESP_PLATFORM
     bool _command_processed = false;
@@ -340,13 +336,13 @@ public:
 
     // Everybody thinks "oh I know how a serial port works, I'll just
     // access it directly and bypass the bus!" ಠ_ಠ
-    size_t read(void *buffer, size_t length) { return _port.readBytes((uint8_t *) buffer, length); }
+    size_t read(void *buffer, size_t length) { return _port.read((uint8_t *) buffer, length); }
     size_t read() { return _port.read(); }
     size_t write(const void *buffer, size_t length) { return _port.write((uint8_t *) buffer, length); }
     size_t write(int n) { return _port.write(n); }
     size_t available() { return _port.available(); }
-    void flush() { _port.flush(); }
-    void discardInput() { _port.flush_input(); }
+    void flush() { _port.flushOutput(); }
+    void discardInput() { _port.discardInput(); }
     size_t print(int n, int base = 10) { return _port.print(n, base); }
     size_t print(const char *str) { return _port.print(str); }
     size_t print(const std::string &str) { return _port.print(str); }
