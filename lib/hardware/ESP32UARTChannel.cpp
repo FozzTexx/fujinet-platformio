@@ -87,8 +87,8 @@ void ESP32UARTChannel::updateFIFO()
     }
 #else
     size_t old_len = _fifo.size();
-    _fifo.resize(old_len + 256);
-    int result = uart_read_bytes(_uart_num, &_fifo[old_len], 256,
+    _fifo.resize(old_len + 1);
+    int result = uart_read_bytes(_uart_num, &_fifo[old_len], 1,
                                  pdMS_TO_TICKS(read_timeout_ms));
     Debug_printv("result %d\n", result);
     if (result < 0)

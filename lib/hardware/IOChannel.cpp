@@ -4,8 +4,8 @@
 
 size_t IOChannel::available()
 {
-    updateFIFO();
-    //Debug_printf("FN AVAIL: %i\r\n", _fifo.size());
+    if (!_fifo.size())
+        updateFIFO();
     return _fifo.size();
 }
 
