@@ -70,6 +70,7 @@ void ESP32UARTChannel::end()
 
 void ESP32UARTChannel::updateFIFO()
 {
+#if 1
     uart_event_t event;
 
     while (xQueueReceive(_uart_q, &event, 1))
@@ -84,6 +85,16 @@ void ESP32UARTChannel::updateFIFO()
             _fifo.resize(old_len + result);
         }
     }
+#else
+    size_t old_len = _fifo.size();
+    _fifo.resize(old_len + 256);
+    int result = uart_read_bytes(_uart_num, &_fifo[old_len], 256,
+                                 pdMS_TO_TICKS(read_timeout_ms));
+    Debug_printv("result %d\n", result);
+    if (result < 0)
+        result = 0;
+    _fifo.resize(old_len + result);
+#endif // 0
 
     return;
 }

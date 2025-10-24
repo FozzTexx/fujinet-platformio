@@ -465,7 +465,7 @@ void systemBus::service()
     {
         // flush UART input
 #ifdef ESP_PLATFORM
-        SYSTEM_BUS.discardInput();
+        _port.discardInput();
 #else
         if (_port.get_sio_mode() == SioCom::sio_mode::SERIAL)
             _port.flush_input();
@@ -496,7 +496,8 @@ void systemBus::setup()
     _port.begin(ChannelConfig()
                 .baud(_sioBaud)
                 .deviceID(SIO_UART_DEVICE)
-                .readTimeout(500)
+                .readTimeout(pdTICKS_TO_MS(200))
+                .discardTimeout(0)
                 );
 
     // INT PIN

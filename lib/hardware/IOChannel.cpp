@@ -41,12 +41,12 @@ void IOChannel::discardInput()
 {
     uint64_t now, start;
 
+    _fifo.clear();
     now = start = GET_TIMESTAMP();
     while (now - start < discard_timeout_ms * 1000)
     {
         now = GET_TIMESTAMP();
-        updateFIFO();
-        if (_fifo.size())
+        if (available())
         {
             _fifo.clear();
             start = now;
