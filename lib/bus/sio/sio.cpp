@@ -521,9 +521,13 @@ void systemBus::setup()
     _port.flush_input();
 #else
     // Setup SIO ports: serial UART and NetSIO
+#ifdef OBSOLETE
     _port.set_serial_port(Config.get_serial_port().c_str(), Config.get_serial_command(), Config.get_serial_proceed()); // UART
-    _port.set_netsio_host(Config.get_boip_host().c_str(), Config.get_boip_port()); // NetSIO
+#endif /* OBSOLETE */
+    _port.set_host(Config.get_boip_host().c_str(), Config.get_boip_port()); // NetSIO
+#ifdef OBSOLETE
     _port.set_sio_mode(Config.get_boip_enabled() ? SioCom::sio_mode::NETSIO : SioCom::sio_mode::SERIAL);
+#endif /* OBSOLETE */
     _port.begin(_sioBaud);
 
     _port.set_interrupt(false);
@@ -737,7 +741,7 @@ void systemBus::sio_empty_ack()
 {
     if (_port.get_sio_mode() == SioCom::sio_mode::NETSIO)
     {
-        _port.netsio_empty_sync();
+        _port.send_empty_sync();
     }
 }
 #endif

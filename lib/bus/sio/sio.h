@@ -7,7 +7,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #else
-#include "sio/siocom/fnSioCom.h"
+#include "sio/siocom/netsio.h"
 #endif
 
 #ifdef ESP_PLATFORM
@@ -15,7 +15,7 @@
 #define MODEM_UART_T UARTManager
 #else
 // fnSioCom.h is included from bus.h
-#define MODEM_UART_T SioCom
+#define MODEM_UART_T NetSioPort
 #endif
 
 #define DELAY_T4 850
@@ -340,7 +340,7 @@ public:
 
     // Everybody thinks "oh I know how a serial port works, I'll just
     // access it directly and bypass the bus!" ಠ_ಠ
-    size_t read(void *buffer, size_t length) { return _port.readBytes((uint8_t *) buffer, length); }
+    size_t read(void *buffer, size_t length) { return _port.read((uint8_t *) buffer, length); }
     size_t read() { return _port.read(); }
     size_t write(const void *buffer, size_t length) { return _port.write((uint8_t *) buffer, length); }
     size_t write(int n) { return _port.write(n); }
@@ -353,16 +353,16 @@ public:
 
 #ifndef ESP_PLATFORM
     // specific to NetSioPort
-    void set_netsio_host(const char *host, int port) { _port.set_netsio_host(host, port); }
-    const char* get_netsio_host(int &port) { return _port.get_netsio_host(port); }
-    void netsio_late_sync(uint8_t c) { _port.netsio_late_sync(c); }
-    void netsio_empty_sync() { _port.netsio_empty_sync(); }
-    void netsio_write_size(int write_size) { _port.netsio_write_size(write_size); }
+    void set_netsio_host(const char *host, int port) { _port.set_host(host, port); }
+    const char* get_netsio_host(int &port) { return _port.get_host(port); }
+    void netsio_late_sync(uint8_t c) { _port.set_sync_ack_byte(c); }
+    void netsio_empty_sync() { _port.send_empty_sync(); }
+    void netsio_write_size(int write_size) { _port.set_sync_write_size(write_size); }
 
     // get/set SIO mode
-    SioCom::sio_mode get_sio_mode() { return _port.get_sio_mode(); }
-    void set_sio_mode(SioCom::sio_mode mode) { _port.set_sio_mode(mode); }
-    void reset_sio_port(SioCom::sio_mode mode) { _port.reset_sio_port(mode); }
+    SioCom::sio_mode get_sio_mode() { return SioCom::NETSIO; } // _port.get_sio_mode(); }
+    void set_sio_mode(SioCom::sio_mode mode) {} //_port.set_sio_mode(mode); }
+    void reset_sio_port(SioCom::sio_mode mode) {} // _port.reset_sio_port(mode); }
 
     void set_proceed(bool level) { _port.set_proceed(level); }
     bool poll(int ms) { return _port.poll(ms); }

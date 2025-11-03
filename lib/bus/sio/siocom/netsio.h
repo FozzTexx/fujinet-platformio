@@ -2,10 +2,20 @@
 #define NETSIO_H
 
 #include <sys/time.h>
-#include "sioport.h"
+//#include "sioport.h"
 #include "fnDNS.h"
+#include <string.h>
+#include <string>
 
-class NetSioPort : public SioPort
+namespace SioCom {
+    enum sio_mode
+    {
+        SERIAL = 0,
+        NETSIO
+    };
+}
+
+class NetSioPort // : public SioPort
 {
 private:
     char _host[64];
@@ -36,6 +46,8 @@ private:
     // flow control
     int _credit;
 
+    size_t _print_number(unsigned long n, uint8_t base);
+
 protected:
     void suspend(int ms=5000);
     bool resume_test();
@@ -60,34 +72,39 @@ protected:
 public:
     NetSioPort();
     virtual ~NetSioPort();
-    virtual void begin(int baud) override;
-    virtual void end() override;
-    virtual bool poll(int ms) override;
+    void begin(int baud);
+    void end();
+    bool poll(int ms);
 
-    virtual void set_baudrate(uint32_t baud) override;
-    virtual uint32_t get_baudrate() override;
+    void set_baudrate(uint32_t baud);
+    uint32_t get_baudrate();
 
-    virtual bool command_asserted() override;
-    virtual bool motor_asserted() override;
-    virtual void set_proceed(bool level) override;
-    virtual void set_interrupt(bool level) override;
+    bool command_asserted();
+    bool motor_asserted();
+    void set_proceed(bool level);
+    void set_interrupt(bool level);
 
-    virtual void bus_idle(uint16_t ms) override;
+    void bus_idle(uint16_t ms);
 
-    virtual int available() override;
-    virtual void flush() override;
-    virtual void flush_input() override;
+    int available();
+    void flush();
+    void flush_input();
 
     // read single byte
-    virtual int read() override;
+    int read();
     // read bytes into buffer
-    virtual size_t read(uint8_t *buffer, size_t length) override;
+    size_t read(uint8_t *buffer, size_t length);
 
     // write single byte
-    virtual ssize_t write(uint8_t b) override;
+    ssize_t write(uint8_t b);
     // write buffer
-    virtual ssize_t write(const uint8_t *buffer, size_t size) override;
+    ssize_t write(const uint8_t *buffer, size_t size);
 
+    size_t print(long n, int base = 10);
+    size_t print(int n, int base = 10) { return print((long) n, base); }
+    size_t print(const char *str) { return write((const uint8_t *) str, strlen(str)); }
+    size_t print(const std::string &str) { return print(str.c_str()); }
+    
     // specific to NetSioPort
     void set_host(const char *host, int port);
     const char* get_host(int &port);
@@ -97,6 +114,8 @@ public:
     void set_sync_write_size(int write_size);
     ssize_t send_sync_response(uint8_t response_type, uint8_t ack_byte=0, uint16_t sync_write_size=0);
     void send_empty_sync();
+
+    SioCom::sio_mode get_sio_mode() { return SioCom::NETSIO; }
 };
 
 #endif // NETSIO_H

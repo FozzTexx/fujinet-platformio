@@ -19,6 +19,7 @@
 #include "fnSystem.h"
 #include "fnWiFi.h"
 
+# define SIOPORT_DEFAULT_BAUD   19200
 
 /* alive response timeout in seconds
  *  device sends in regular intervals (2 s) alive messages (NETSIO_ALIVE_REQUEST) to NetSIO HUB
@@ -881,6 +882,44 @@ void NetSioPort::send_empty_sync()
 {
     if (_sync_request_num >= 0)
         send_sync_response(NETSIO_EMPTY_SYNC);
+}
+
+size_t NetSioPort::_print_number(unsigned long n, uint8_t base)
+{
+    char buf[8 * sizeof(long) + 1]; // Assumes 8-bit chars plus zero byte.
+    char *str = &buf[sizeof(buf) - 1];
+
+    *str = '\0';
+
+    // prevent crash if called with base == 1
+    if(base < 2)
+        base = 10;
+
+    do {
+        unsigned long m = n;
+        n /= base;
+        char c = m - base * n;
+        *--str = c < 10 ? c + '0' : c + 'A' - 10;
+    } while(n);
+
+    return write((const uint8_t *) str, strlen(str));
+}
+
+size_t NetSioPort::print(long n, int base)
+{
+    if(base == 0) {
+        return write(n);
+    } else if(base == 10) {
+        if(n < 0) {
+            // int t = print('-');
+            int t = print("-");
+            n = -n;
+            return _print_number(n, 10) + t;
+        }
+        return _print_number(n, 10);
+    } else {
+        return _print_number(n, base);
+    }
 }
 
 #endif // BUILD_ATARI

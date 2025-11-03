@@ -7,6 +7,7 @@
 
 #include "fnSystem.h"
 #include "utils.h"
+#include <string.h>
 
 void sioUDPStream::sio_enable_udpstream()
 {
