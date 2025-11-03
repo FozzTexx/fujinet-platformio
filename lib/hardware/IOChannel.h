@@ -16,13 +16,18 @@
 #include <string.h>
 #include <string>
 
-#if defined(ESP_PLATFORM)
+#ifdef ESP_PLATFORM
 #include <esp_timer.h>
 #define GET_TIMESTAMP() esp_timer_get_time()
-#elif defined(ITS_A_UNIX_SYSTEM_I_KNOW_THIS)
-#include <sys/time.h>
-#define GET_TIMESTAMP() ({ struct timeval _tv; gettimeofday(&_tv, NULL); \
-            _tv.tv_sec * ((uint64_t) 1000000) + _tv.tv_usec; })
+#else /* ! ESP_PLATFORM */
+#include <chrono>
+
+inline uint64_t GET_TIMESTAMP() {
+    auto now = std::chrono::steady_clock::now();
+    auto micros =
+        std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch());
+    return micros.count();
+}
 #endif /* ESP_PLATFORM */
 
 class IOChannel
@@ -48,6 +53,7 @@ public:
 
     virtual void flushOutput() = 0;
 
+#ifdef RS232_THINGS
     virtual uint32_t getBaudrate() = 0;
     virtual void setBaudrate(uint32_t baud) = 0;
 
@@ -55,6 +61,7 @@ public:
     virtual void setDSR(bool state) = 0;
     virtual bool getRTS() = 0;
     virtual void setCTS(bool state) = 0;
+#endif /* RS232_THINGS */
 
     // Handled by IOChannel, not implemented by subclass
     size_t available();

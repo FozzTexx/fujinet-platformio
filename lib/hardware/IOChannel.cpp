@@ -1,5 +1,9 @@
 #include "IOChannel.h"
 
+#ifdef HELLO_IM_A_PC
+#include "asprintf.h" // use asprintf from libsmb2
+#endif /* HELLO_IM_A_PC */
+
 #include <stdarg.h>
 
 size_t IOChannel::available()
@@ -17,18 +21,17 @@ size_t IOChannel::dataIn(void *buffer, size_t length)
 
     ptr = (uint8_t *) buffer;
     now = start = GET_TIMESTAMP();
-    while (length)
+    while (length - total)
     {
         now = GET_TIMESTAMP();
         if (now - start > read_timeout_ms * 1000)
             break;
-        rlen = std::min(length, available());
+        rlen = std::min(length - total, available());
         if (!rlen)
             continue;
         memcpy(&ptr[total], _fifo.data(), rlen);
         _fifo.erase(0, rlen);
         total += rlen;
-        length -= rlen;
 
         // We received data, reset timeout
         start = now;

@@ -2,6 +2,7 @@
 #define ESP32UARTCHANNEL_H
 
 #include "IOChannel.h"
+#include "RS232ChannelProtocol.h"
 
 #ifdef ESP_PLATFORM
 
@@ -64,7 +65,7 @@ struct ChannelConfig
     }
 };
 
-class ESP32UARTChannel : public IOChannel
+class ESP32UARTChannel : public IOChannel, public RS232ChannelProtocol
 {
 private:
     uart_port_t _uart_num;
@@ -85,10 +86,11 @@ public:
 
     // FujiNet acts as modem (DCE), computer serial ports are DTE.
     // API names follow the modem (DCE) view, but the actual RS-232 pin differs.
-    bool getDTR();           // modem DTR input  → actually reads RS-232 DSR pin
-    void setDSR(bool state); // modem DSR output → actually drives RS-232 DTR pin
-    bool getRTS();           // modem RTS input  → actually reads RS-232 CTS pin
-    void setCTS(bool state); // modem CTS output → actually drives RS-232 RTS pin
+    bool getDTR() override;              // modem DTR input  → actually reads RS-232 DSR pin
+    void setDSR(bool state) override;    // modem DSR output → actually drives RS-232 DTR pin
+    bool getRTS() override;              // modem RTS input  → actually reads RS-232 CTS pin
+    void setCTS(bool state) override;    // modem CTS output → actually drives RS-232 RTS pin
+    bool getRI() override { return 0; }; // Ring Indicator is only an input on DTE
 };
 
 extern ESP32UARTChannel fnDebugConsole;
