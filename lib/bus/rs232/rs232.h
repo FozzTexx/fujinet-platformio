@@ -226,7 +226,7 @@ private:
     bool useUltraHigh = false; // Use fujinet derived clock.
 
     IOChannel *_port;
-    UARTChannel _uart;
+    UARTChannel _serial;
     BeckerSocket _becker;
 
     void _rs232_process_cmd();

@@ -185,7 +185,7 @@ void systemBus::_rs232_process_cmd()
     {
         _modemDev->modemActive = false;
         Debug_println("Modem was active - resetting RS232 baud");
-        _uart.setBaudrate(_rs232Baud);
+        _serial.setBaudrate(_rs232Baud);
     }
 
     // Read CMD frame
@@ -193,7 +193,7 @@ void systemBus::_rs232_process_cmd()
     int val, count;
     for (count = 0; count < 2; )
     {
-        val = _port.read();
+        val = _port->read();
         if (val < 0)
             break;
         packet.push_back(val);
@@ -263,7 +263,7 @@ void systemBus::service()
         return; // break!
     }
 
-    if (_port.available())
+    if (_port->available())
     {
         _rs232_process_cmd();
     }
@@ -303,12 +303,12 @@ void systemBus::setup()
         _port = &_becker;
     }
     else {
-        _uart.begin(ChannelConfig()
+        _serial.begin(ChannelConfig()
                     .baud(Config.get_rs232_baud())
                     .readTimeout(200)
                     .deviceID(SERIAL_DEVICE))
             ;
-        _port = &_uart;
+        _port = &_serial;
     }
 
 #ifdef ESP_PLATFORM
@@ -335,8 +335,8 @@ void systemBus::setup()
     fnSystem.digital_write(PIN_RS232_DSR,DIGI_LOW);
 #endif /* ESP_PLATFORM */
 #else /* FUJINET_OVER_USB */
-    _uart.begin();
-    _port = &_uart;
+    _serial.begin();
+    _port = &_serial;
 #endif /* FUJINET_OVER_USB */
 
     Debug_println("RS232 Setup Flush");
@@ -436,7 +436,7 @@ void systemBus::toggleBaudrate()
 
     // Debug_printf("Toggling baudrate from %d to %d\n", _rs232Baud, baudrate);
     _rs232Baud = baudrate;
-    _uart.setBaudrate(_rs232Baud);
+    _serial.setBaudrate(_rs232Baud);
 }
 #endif /* OBSOLETE */
 
@@ -455,7 +455,7 @@ void systemBus::setBaudrate(int baud)
 
     Debug_printf("Changing baudrate from %d to %d\n", _rs232Baud, baud);
     _rs232Baud = baud;
-    _uart.setBaudrate(baud);
+    _serial.setBaudrate(baud);
 }
 
 #ifdef OBSOLETE
@@ -489,7 +489,7 @@ void systemBus::sendReplyPacket(FujiDeviceID source, bool ack, void *data, size_
     FujiBusPacket packet(source, ack ? FUJICMD_ACK : FUJICMD_NAK,
                          ack ? std::string(static_cast<const char*>(data), length) : nullptr);
     std::string encoded = packet.serialize();
-    _port.write(encoded.data(), encoded.size());
+    _port->write(encoded.data(), encoded.size());
     return;
 }
 
@@ -497,55 +497,55 @@ void systemBus::sendReplyPacket(FujiDeviceID source, bool ack, void *data, size_
 size_t systemBus::read(void *buffer, size_t length)
 {
     abort();
-    return _port.read(buffer, length);
+    return _port->read(buffer, length);
 }
 
 size_t systemBus::read()
 {
     abort();
-    return _port.read();
+    return _port->read();
 }
 
 size_t systemBus::write(const void *buffer, size_t length)
 {
     abort();
-    return _port.write(buffer, length);
+    return _port->write(buffer, length);
 }
 
 size_t systemBus::write(int n)
 {
     abort();
-    return _port.write(n);
+    return _port->write(n);
 }
 
 size_t systemBus::available()
 {
     abort();
-    return _port.available();
+    return _port->available();
 }
 
 void systemBus::flushOutput()
 {
     abort();
-    _port.flushOutput();
+    _port->flushOutput();
 }
 
 size_t systemBus::print(int n, int base)
 {
     abort();
-    return _port.print(n, base);
+    return _port->print(n, base);
 }
 
 size_t systemBus::print(const char *str)
 {
     abort();
-    return _port.print(str);
+    return _port->print(str);
 }
 
 size_t systemBus::print(const std::string &str)
 {
     abort();
-    return _port.print(str);
+    return _port->print(str);
 }
 
 #endif /* BUILD_RS232 */
