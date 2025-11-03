@@ -383,7 +383,7 @@ size_t sioCassette::send_tape_block(size_t offset)
     SYSTEM_BUS.write(atari_sector_buffer, BLOCK_LEN + 3);
     //USART_Transmit_Byte(get_checksum(atari_sector_buffer, BLOCK_LEN + 3));
     SYSTEM_BUS.write(sio_checksum(atari_sector_buffer, BLOCK_LEN + 3));
-    SYSTEM_BUS.flush(); // wait for all data to be sent just like a tape
+    SYSTEM_BUS.flushOutput(); // wait for all data to be sent just like a tape
     // _delay_ms(300); //PRG(0-N) + PRWT(0.25s) delay
     fnSystem.delay(300);
     return (offset);
@@ -523,7 +523,7 @@ size_t sioCassette::send_FUJI_tape_block(size_t offset)
             for (int i = 0; i < buflen; i++)
                 Debug_printf("%02x ", atari_sector_buffer[i]);
             SYSTEM_BUS.write(atari_sector_buffer, buflen);
-            SYSTEM_BUS.flush(); // wait for all data to be sent just like a tape
+            SYSTEM_BUS.flushOutput(); // wait for all data to be sent just like a tape
             Debug_printf("\r\n");
 
             if (first && atari_sector_buffer[2] == 0xfe)

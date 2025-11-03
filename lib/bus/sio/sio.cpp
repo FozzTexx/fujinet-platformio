@@ -68,7 +68,7 @@ void virtualDevice::bus_to_computer(uint8_t *buf, uint16_t len, bool err)
     // Write checksum
     SYSTEM_BUS.write(sio_checksum(buf, len));
 
-    SYSTEM_BUS.flush();
+    SYSTEM_BUS.flushOutput();
 }
 
 // TODO apc: change return type to indicate valid/invalid checksum
@@ -126,7 +126,7 @@ uint8_t virtualDevice::bus_to_peripheral(uint8_t *buf, unsigned short len)
 void virtualDevice::sio_nak()
 {
     SYSTEM_BUS.write('N');
-    SYSTEM_BUS.flush();
+    SYSTEM_BUS.flushOutput();
 #ifndef ESP_PLATFORM
     SYSTEM_BUS.set_command_processed(true);
 #endif
@@ -138,7 +138,7 @@ void virtualDevice::sio_ack()
 {
     SYSTEM_BUS.write('A');
     fnSystem.delay_microseconds(DELAY_T5); //?
-    SYSTEM_BUS.flush();
+    SYSTEM_BUS.flushOutput();
 #ifndef ESP_PLATFORM
     SYSTEM_BUS.set_command_processed(true);
 #endif

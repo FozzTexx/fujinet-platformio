@@ -360,7 +360,7 @@ void sioFuji::sio_set_baudrate()
     // send complete with current baudrate
     sio_complete();
 
-    SYSTEM_BUS.flush();
+    SYSTEM_BUS.flushOutput();
 #ifndef ESP_PLATFORM
     fnSystem.delay_microseconds(2000);
 #endif

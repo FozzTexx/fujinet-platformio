@@ -2542,7 +2542,7 @@ pclink_write(uint8_t *buf, int len)
     // Write checksum
     SYSTEM_BUS.write(sio_checksum(buf, len));
 
-    SYSTEM_BUS.flush();
+    SYSTEM_BUS.flushOutput();
 }
 
 

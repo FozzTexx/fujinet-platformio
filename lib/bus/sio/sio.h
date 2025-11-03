@@ -341,7 +341,7 @@ public:
     size_t write(const void *buffer, size_t length) { return _port.write((uint8_t *) buffer, length); }
     size_t write(int n) { return _port.write(n); }
     size_t available() { return _port.available(); }
-    void flush() { _port.flushOutput(); }
+    void flushOutput() { _port.flushOutput(); }
     void discardInput() { _port.discardInput(); }
     size_t print(int n, int base = 10) { return _port.print(n, base); }
     size_t print(const char *str) { return _port.print(str); }
