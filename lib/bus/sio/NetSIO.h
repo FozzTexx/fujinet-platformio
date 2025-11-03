@@ -1,11 +1,10 @@
 #ifndef NETSIO_H
 #define NETSIO_H
 
-#include <sys/time.h>
-//#include "sioport.h"
 #include "fnDNS.h"
 #include <string.h>
 #include <string>
+#include <sys/time.h>
 
 namespace SioCom {
     enum sio_mode
@@ -15,7 +14,7 @@ namespace SioCom {
     };
 }
 
-class NetSioPort // : public SioPort
+class NetSIO // : public SioPort
 {
 private:
     char _host[64];
@@ -70,8 +69,8 @@ protected:
     void rxbuffer_flush();
 
 public:
-    NetSioPort();
-    virtual ~NetSioPort();
+    NetSIO();
+    virtual ~NetSIO();
     void begin(int baud);
     void end();
     bool poll(int ms);

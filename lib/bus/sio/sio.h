@@ -7,7 +7,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #else
-#include "sio/siocom/netsio.h"
+#include "NetSIO.h"
 #endif
 
 #ifdef ESP_PLATFORM
@@ -15,7 +15,7 @@
 #define MODEM_UART_T UARTManager
 #else
 // fnSioCom.h is included from bus.h
-#define MODEM_UART_T NetSioPort
+#define MODEM_UART_T NetSIO
 #endif
 
 #define DELAY_T4 850
