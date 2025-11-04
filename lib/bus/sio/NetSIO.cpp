@@ -571,6 +571,7 @@ void NetSIO::flush()
     }
 }
 
+#ifdef OBSOLETE
 /* Returns number of bytes available in receive buffer or -1 on error
 */
 int NetSIO::available()
@@ -579,6 +580,7 @@ int NetSIO::available()
         handle_netsio();
     return _fifo.size();
 }
+#endif /* OBSOLETE */
 
 /* Changes baud rate
 */
@@ -665,7 +667,24 @@ void NetSIO::bus_idle(uint16_t ms)
     write_sock(cmd, sizeof(cmd));
 }
 
+void NetSIO::updateFIFO()
+{
+    if (!_fifo.size()) {
+        handle_netsio();
 
+        if (_sync_request_num >= 0 && _sync_write_size >= 0)
+        {
+            // handle pending sync request
+            // send late ACK byte
+            send_sync_response(NETSIO_ACK_SYNC, _sync_ack_byte, _sync_write_size);
+            // no delay here, emulator is not running
+            // 850 us pre-ACK delay will be added by netsio.atdevice
+        }
+    }
+    return;
+}
+
+#ifdef OBSOLETE
 /* Returns a single byte from the incoming stream
 */
 int NetSIO::read(void)
@@ -725,7 +744,9 @@ size_t NetSIO::read(uint8_t *buffer, size_t length)
     }
     return rxbytes;
 }
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
 /* write single byte via NetSIO */
 ssize_t NetSIO::write(uint8_t c)
 {
@@ -765,8 +786,13 @@ ssize_t NetSIO::write(uint8_t c)
 
     return (result > 0) ? 1 : 0; // amount of data bytes written
 }
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
 ssize_t NetSIO::write(const uint8_t *buffer, size_t size)
+#else
+size_t NetSIO::dataOut(const void *buffer, size_t size)
+#endif /* OBSOLETE */
 {
     int result;
     int to_send;
@@ -781,7 +807,7 @@ ssize_t NetSIO::write(const uint8_t *buffer, size_t size)
         // send block
         to_send = ((size-txbytes) > sizeof(txbuf)-1) ? sizeof(txbuf)-1 : (size-txbytes);
         txbuf[0] = NETSIO_DATA_BLOCK;
-        memcpy(txbuf+1, buffer+txbytes, to_send);
+        memcpy(txbuf+1, ((uint8_t *)buffer)+txbytes, to_send);
         // ? calculate credit based on amount of data ?
         if (!wait_for_credit(1))
             break;
@@ -849,6 +875,7 @@ void NetSIO::send_empty_sync()
         send_sync_response(NETSIO_EMPTY_SYNC);
 }
 
+#ifdef OBSOLETE
 size_t NetSIO::_print_number(unsigned long n, uint8_t base)
 {
     char buf[8 * sizeof(long) + 1]; // Assumes 8-bit chars plus zero byte.
@@ -886,6 +913,7 @@ size_t NetSIO::print(long n, int base)
         return _print_number(n, base);
     }
 }
+#endif /* OBSOLETE */
 
 #endif // BUILD_ATARI
 

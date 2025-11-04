@@ -1,6 +1,7 @@
 #ifndef NETSIO_H
 #define NETSIO_H
 
+#include "IOChannel.h"
 #include "fnDNS.h"
 #include <string.h>
 #include <string>
@@ -17,7 +18,7 @@ namespace SioCom {
     };
 }
 
-class NetSIO // : public SioPort
+class NetSIO : public IOChannel
 {
 private:
     char _host[64] = {0};
@@ -31,7 +32,7 @@ private:
     bool _command_asserted = false;
     bool _motor_asserted = false;
 
-    std::string _fifo;
+    //std::string _fifo;
 
     int _sync_request_num = -1;  // 0..255 sync request sequence number, -1 if sync is not requested
     uint8_t _sync_ack_byte = -1; // ACK byte to send with sync response
@@ -45,9 +46,14 @@ private:
     // flow control
     int _credit = 3;
 
+#ifdef OBSOLETE
     size_t _print_number(unsigned long n, uint8_t base);
+#endif /* OBSOLETE */
 
 protected:
+    void updateFIFO() override;
+    size_t dataOut(const void *buffer, size_t length) override;
+
     void suspend(int ms=5000);
     bool resume_test();
     bool keep_alive();
@@ -68,6 +74,8 @@ public:
     void end();
     bool poll(int ms);
 
+    void flushOutput() override { flush(); }
+
     void set_baudrate(uint32_t baud);
     uint32_t get_baudrate();
 
@@ -78,15 +86,20 @@ public:
 
     void bus_idle(uint16_t ms);
 
+#ifdef OBSOLETE
     int available();
+#endif /* OBSOLETE */
     void flush();
     void flush_input();
 
+#ifdef OBSOLETE
     // read single byte
     int read();
     // read bytes into buffer
     size_t read(uint8_t *buffer, size_t length);
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
     // write single byte
     ssize_t write(uint8_t b);
     // write buffer
@@ -96,6 +109,7 @@ public:
     size_t print(int n, int base = 10) { return print((long) n, base); }
     size_t print(const char *str) { return write((const uint8_t *) str, strlen(str)); }
     size_t print(const std::string &str) { return print(str.c_str()); }
+#endif /* OBSOLETE */
 
     // specific to NetSioPort
     void set_host(const char *host, int port);
