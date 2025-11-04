@@ -10,8 +10,6 @@
 
 #include "../../include/debug.h"
 
-# define SIOPORT_DEFAULT_BAUD   19200
-
 #define NETSIO_DATA_BYTE        0x01
 #define NETSIO_DATA_BLOCK       0x02
 
@@ -50,8 +48,6 @@
 #define NETSIO_EMPTY_SYNC       0x00
 #define NETSIO_ACK_SYNC         0x01
 
-#define NETSIO_PORT             9997
-
 /* alive response timeout in seconds
  *  device sends in regular intervals (2 s) alive messages (NETSIO_ALIVE_REQUEST) to NetSIO HUB
  *  if the device will not receive alive response (NETSIO_ALIVE_RESPONSE) within ALIVE_TIMEOUT period
@@ -64,26 +60,6 @@
 // #define ALIVE_RATE_MS       200000
 // #define ALIVE_TIMEOUT_MS    600000
 
-// Constructor
-NetSIO::NetSIO() :
-    _host{0},
-    _ip(IPADDR_NONE),
-    _port(NETSIO_PORT),
-    _baud(SIOPORT_DEFAULT_BAUD),
-    _baud_peer(SIOPORT_DEFAULT_BAUD),
-    _fd(-1),
-    _initialized(false),
-    _command_asserted(false),
-    _motor_asserted(false),
-    _rxhead(0),
-    _rxtail(0),
-    _rxfull(false),
-    _sync_request_num(-1),
-    _sync_write_size(-1),
-    _errcount(0),
-    _credit(3)
-{}
-
 NetSIO::~NetSIO()
 {
     end();
@@ -91,7 +67,7 @@ NetSIO::~NetSIO()
 
 void NetSIO::begin(int baud)
 {
-    if (_initialized) 
+    if (_initialized)
     {
         end();
     }
@@ -110,8 +86,8 @@ void NetSIO::begin(int baud)
         Debug_println("NetSIO: No WiFi!");
         _errcount++;
         suspend(suspend_ms);
-		return;
-	}
+                return;
+        }
 
     //
     // Connect to hub
@@ -123,20 +99,20 @@ void NetSIO::begin(int baud)
 
     if (_fd < 0)
     {
-        Debug_printf("Failed to create NetSIO socket: %d, \"%s\"\n", 
+        Debug_printf("Failed to create NetSIO socket: %d, \"%s\"\n",
             compat_getsockerr(), compat_sockstrerror(compat_getsockerr()));
         _errcount++;
         suspend(suspend_ms);
-		return;
-	}
-    
+                return;
+        }
+
     _ip = get_ip4_addr_by_name(_host);
     if (_ip == IPADDR_NONE)
     {
         Debug_println("Failed to resolve NetSIO host name");
         _errcount++;
         suspend(suspend_ms);
-		return;
+                return;
     }
 
     // Set remote IP address (no real connection is created for UDP socket)
@@ -148,11 +124,11 @@ void NetSIO::begin(int baud)
     if (connect(_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
         // should not happen (UDP)
-        Debug_printf("Failed to connect NetSIO socket: %d, \"%s\"\n", 
+        Debug_printf("Failed to connect NetSIO socket: %d, \"%s\"\n",
             compat_getsockerr(), compat_sockstrerror(compat_getsockerr()));
         _errcount++;
         suspend(suspend_ms);
-		return;
+                return;
     }
 
 #if defined(_WIN32)
@@ -235,14 +211,14 @@ int NetSIO::ping(int count, int interval_ms, int timeout_ms, bool fast)
             ping = NETSIO_PING_REQUEST;
             result = send(_fd, (char *)&ping, 1, 0);
             t1 = fnSystem.micros();
-            do 
+            do
             {
                 wait_ms = timeout_ms - (fnSystem.micros() - t1) / 1000;
                 if (result == 1 && wait_sock_readable(wait_ms))
                 {
                     t2 = fnSystem.micros();
                     result = recv(_fd, (char *)&ping, 1, 0);
-                    if (result == 1 && ping == NETSIO_PING_RESPONSE) 
+                    if (result == 1 && ping == NETSIO_PING_RESPONSE)
                         rtt = (int)(t2 - t1);
                 }
                 wait_ms = timeout_ms - (fnSystem.micros() - t1) / 1000;
@@ -275,7 +251,7 @@ bool NetSIO::rxbuffer_empty()
     return (_rxhead == _rxtail && !_rxfull);
 }
 
-bool NetSIO::rxbuffer_put(uint8_t b) 
+bool NetSIO::rxbuffer_put(uint8_t b)
 {
     _rxbuf[_rxhead++] = b;
     _rxhead %= sizeof(_rxbuf);
@@ -288,7 +264,7 @@ bool NetSIO::rxbuffer_put(uint8_t b)
     return false;
 }
 
-int NetSIO::rxbuffer_get() 
+int NetSIO::rxbuffer_get()
 {
     int b;
     if (rxbuffer_empty())
@@ -299,7 +275,7 @@ int NetSIO::rxbuffer_get()
     return b;
 }
 
-int  NetSIO::rxbuffer_available() 
+int  NetSIO::rxbuffer_available()
 {
     int avail = _rxhead - _rxtail;
     if ((avail < 0) || (avail == 0 && _rxfull))
@@ -307,7 +283,7 @@ int  NetSIO::rxbuffer_available()
     return avail;
 }
 
-void NetSIO::rxbuffer_flush() 
+void NetSIO::rxbuffer_flush()
 {
     _rxtail = _rxhead;
     _rxfull = false;
@@ -416,7 +392,7 @@ int NetSIO::handle_netsio()
                 break;
 
             case NETSIO_COMMAND_OFF_SYNC:
-                if (received >= 2) 
+                if (received >= 2)
                     _sync_request_num = rxbuf[1]; // sync request sequence number
                 // [[fallthrough]]; // > No warning
 
@@ -482,7 +458,7 @@ bool NetSIO::wait_sock_readable(uint32_t timeout_ms)
     timeval timeout_tv;
     fd_set readfds;
     int result;
-    
+
     for(;;)
     {
         // Setup a select call to block for socket data or a timeout
@@ -498,7 +474,7 @@ bool NetSIO::wait_sock_readable(uint32_t timeout_ms)
 #if defined(_WIN32)
             if (err == WSAEINTR)
 #else
-            if (err == EINTR) 
+            if (err == EINTR)
 #endif
             {
                 // TODO adjust timeout_tv
@@ -537,13 +513,13 @@ bool NetSIO::wait_sock_writable(uint32_t timeout_ms)
         result = select(_fd + 1, nullptr, &writefds, nullptr, &timeout_tv);
 
         // select error
-        if (result < 0) 
+        if (result < 0)
         {
             int err = compat_getsockerr();
 #if defined(_WIN32)
             if (err == WSAEINTR)
 #else
-            if (err == EINTR) 
+            if (err == EINTR)
 #endif
             {
                 // TODO adjust timeout_tv
@@ -558,7 +534,7 @@ bool NetSIO::wait_sock_writable(uint32_t timeout_ms)
             return false;
 
         // this shouldn't happen, if result > 0 our fd has to be in the list!
-        if (!FD_ISSET(_fd, &writefds)) 
+        if (!FD_ISSET(_fd, &writefds))
         {
             Debug_println("NetSIO wait_sock_writable() unexpected select result");
             return false;
@@ -579,7 +555,7 @@ ssize_t NetSIO::write_sock(const uint8_t *buffer, size_t size, uint32_t timeout_
     ssize_t result = send(_fd, (char *)buffer, size, 0);
     if (result < 0)
     {
-        Debug_printf("NetSIO write_sock() send error %d: %s\n", 
+        Debug_printf("NetSIO write_sock() send error %d: %s\n",
             compat_getsockerr(), compat_sockstrerror(compat_getsockerr()));
     }
     return result;
@@ -607,7 +583,7 @@ bool NetSIO::wait_for_credit(int needed)
     // wait for credit
     while (needed > _credit)
     {
-        if (!_initialized) 
+        if (!_initialized)
             return false; // disconnected
         // inform HUB we need more credit
         send(_fd, (char *)txbuf, sizeof(txbuf), 0);

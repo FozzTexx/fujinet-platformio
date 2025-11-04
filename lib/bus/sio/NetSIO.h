@@ -6,6 +6,9 @@
 #include <string>
 #include <sys/time.h>
 
+#define NETSIO_PORT             9997
+#define SIOPORT_DEFAULT_BAUD   19200
+
 namespace SioCom {
     enum sio_mode
     {
@@ -17,33 +20,33 @@ namespace SioCom {
 class NetSIO // : public SioPort
 {
 private:
-    char _host[64];
-    in_addr_t _ip;
-    uint16_t _port;
+    char _host[64] = {0};
+    in_addr_t _ip = IPADDR_NONE;
+    uint16_t _port = NETSIO_PORT;
 
-    uint32_t _baud;
-    uint32_t _baud_peer;
-    int _fd;
-    bool _initialized;
-    bool _command_asserted;
-    bool _motor_asserted;
+    uint32_t _baud = SIOPORT_DEFAULT_BAUD;
+    uint32_t _baud_peer = SIOPORT_DEFAULT_BAUD;
+    int _fd = -1;
+    bool _initialized = false;
+    bool _command_asserted = false;
+    bool _motor_asserted = false;
 
     uint8_t _rxbuf[1024];
-    int _rxhead;
-    int _rxtail;
-    bool _rxfull;
+    int _rxhead = 0;
+    int _rxtail = 0;
+    bool _rxfull = false;
 
-    int _sync_request_num;  // 0..255 sync request sequence number, -1 if sync is not requested
-    uint8_t _sync_ack_byte; // ACK byte to send with sync response
+    int _sync_request_num = -1;  // 0..255 sync request sequence number, -1 if sync is not requested
+    uint8_t _sync_ack_byte = -1; // ACK byte to send with sync response
     int _sync_write_size;   // 0 .. no SIO write (from computer), > 0 .. expected bytes written
 
     // serial port error counter
-    int _errcount;
+    int _errcount = 0;
     uint64_t _resume_time;
     uint64_t _alive_time;    // when last message was received
     uint64_t _alive_request; // when last ALIVE request was sent
     // flow control
-    int _credit;
+    int _credit = 3;
 
     size_t _print_number(unsigned long n, uint8_t base);
 
@@ -69,7 +72,6 @@ protected:
     void rxbuffer_flush();
 
 public:
-    NetSIO();
     virtual ~NetSIO();
     void begin(int baud);
     void end();
@@ -103,7 +105,7 @@ public:
     size_t print(int n, int base = 10) { return print((long) n, base); }
     size_t print(const char *str) { return write((const uint8_t *) str, strlen(str)); }
     size_t print(const std::string &str) { return print(str.c_str()); }
-    
+
     // specific to NetSioPort
     void set_host(const char *host, int port);
     const char* get_host(int &port);
