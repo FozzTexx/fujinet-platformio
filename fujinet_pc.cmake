@@ -163,8 +163,10 @@ set(SOURCES src/main.cpp
     lib/utils/U8Char.h lib/utils/U8Char.cpp
     lib/hardware/fnWiFi.h lib/hardware/fnDummyWiFi.h lib/hardware/fnDummyWiFi.cpp
     lib/hardware/led.h lib/hardware/led.cpp
-    lib/hardware/fnUART.h lib/hardware/fnUART.cpp
-    lib/hardware/fnUARTUnix.cpp lib/hardware/fnUARTWindows.cpp
+    lib/hardware/COMChannel.h lib/hardware/COMChannel.cpp
+    lib/hardware/IOChannel.cpp lib/hardware/IOChannel.h
+    lib/hardware/TTYChannel.cpp lib/hardware/TTYChannel.h
+    lib/hardware/UARTChannel.h
     lib/hardware/fnSystem.h lib/hardware/fnSystem.cpp lib/hardware/fnSystemNet.cpp
     lib/FileSystem/fnDirCache.h lib/FileSystem/fnDirCache.cpp
     lib/FileSystem/fnFileCache.h lib/FileSystem/fnFileCache.cpp
@@ -367,7 +369,7 @@ if(FUJINET_TARGET STREQUAL "COCO")
     lib/media/drivewire/mediaTypeDSK.h lib/media/drivewire/mediaTypeDSK.cpp
     lib/media/drivewire/mediaTypeMRM.h lib/media/drivewire/mediaTypeMRM.cpp
     lib/media/drivewire/mediaTypeVDK.h lib/media/drivewire/mediaTypeVDK.cpp
-    
+
     lib/device/drivewire/fuji.h lib/device/drivewire/fuji.cpp
     lib/device/drivewire/network.h lib/device/drivewire/network.cpp
     lib/device/drivewire/dload.h lib/device/drivewire/dload.cpp
