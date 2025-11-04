@@ -72,6 +72,8 @@ void NetSIO::begin(int baud)
         end();
     }
 
+    discard_timeout_ms = 0;
+
     _baud = baud;
     _resume_time = 0;
 
@@ -551,6 +553,7 @@ bool NetSIO::wait_for_credit(int needed)
     return true;
 }
 
+#ifdef OBSOLETE
 /* Discards anything in the input buffer
 */
 void NetSIO::flush_input()
@@ -558,15 +561,16 @@ void NetSIO::flush_input()
     if (_initialized)
         _fifo.clear();
 }
+#endif /* OBSOLETE */
 
 /* Clears input buffer and flushes out transmit buffer waiting at most
    waiting MAX_FLUSH_WAIT_TICKS until all sends are completed
 */
-void NetSIO::flush()
+void NetSIO::flushOutput()
 {
     if (_initialized)
     {
-        flush_input();
+        discardInput();
         wait_sock_writable(500);
     }
 }

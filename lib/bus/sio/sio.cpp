@@ -462,7 +462,7 @@ void systemBus::service()
         SYSTEM_BUS.discardInput();
 #else
         if (_port.get_sio_mode() == SioCom::sio_mode::SERIAL)
-            _port.flush_input();
+            _port.discardInput();
 #endif
     }
 
@@ -536,7 +536,7 @@ void systemBus::setup()
     // Set the initial HSIO index
     setHighSpeedIndex(Config.get_general_hsioindex());
 
-    _port.flush_input();
+    _port.discardInput();
 #endif
 }
 
@@ -640,8 +640,8 @@ void systemBus::toggleBaudrate()
     // Debug_printf("Toggling baudrate from %d to %d\n", _sioBaud, baudrate);
     _sioBaud = baudrate;
 #ifndef ESP_PLATFORM
-    _port.flush_input();
-    _port.flush();
+    _port.discardInput();
+    _port.flushOutput();
     // hmm, calling flush() may not be enough to empty TX buffer
     fnSystem.delay_microseconds(2000);
 #endif

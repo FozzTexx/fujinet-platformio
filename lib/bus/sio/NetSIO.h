@@ -74,7 +74,7 @@ public:
     void end();
     bool poll(int ms);
 
-    void flushOutput() override { flush(); }
+    void flushOutput() override;
 
     void set_baudrate(uint32_t baud);
     uint32_t get_baudrate();
@@ -89,8 +89,10 @@ public:
 #ifdef OBSOLETE
     int available();
 #endif /* OBSOLETE */
+#ifdef OBSOLETE
     void flush();
     void flush_input();
+#endif /* OBSOLETE */
 
 #ifdef OBSOLETE
     // read single byte
