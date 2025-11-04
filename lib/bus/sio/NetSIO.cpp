@@ -248,11 +248,16 @@ int NetSIO::ping(int count, int interval_ms, int timeout_ms, bool fast)
 
 bool NetSIO::rxbuffer_empty()
 {
+#ifdef NETSIO_OBSOLETE
     return (_rxhead == _rxtail && !_rxfull);
+#else
+    return _fifo.size() == 0;
+#endif /* NETSIO_OBSOLETE */
 }
 
 bool NetSIO::rxbuffer_put(uint8_t b)
 {
+#ifdef NETSIO_OBSOLETE
     _rxbuf[_rxhead++] = b;
     _rxhead %= sizeof(_rxbuf);
     if (_rxfull) {
@@ -261,6 +266,9 @@ bool NetSIO::rxbuffer_put(uint8_t b)
         return true;
     }
     _rxfull = (_rxhead == _rxtail);
+#else
+    _fifo.push_back(b);
+#endif /* NETSIO_OBSOLETE */
     return false;
 }
 
@@ -269,24 +277,37 @@ int NetSIO::rxbuffer_get()
     int b;
     if (rxbuffer_empty())
         return -1;
+#ifdef NETSIO_OBSOLETE
     b = _rxbuf[_rxtail++];
     _rxtail %= sizeof(_rxbuf);
     _rxfull = false;
+#else
+    b = (uint8_t) _fifo[0];
+    _fifo.erase(0, 1);
+#endif /* NETSIO_OBSOLETE */
     return b;
 }
 
 int  NetSIO::rxbuffer_available()
 {
+#ifdef NETSIO_OBSOLETE
     int avail = _rxhead - _rxtail;
     if ((avail < 0) || (avail == 0 && _rxfull))
         avail += sizeof(_rxbuf);
     return avail;
+#else
+    return _fifo.size();
+#endif /* NETSIO_OBSOLETE */
 }
 
 void NetSIO::rxbuffer_flush()
 {
+#ifdef NETSIO_OBSOLETE
     _rxtail = _rxhead;
     _rxfull = false;
+#else
+    _fifo.clear();
+#endif /* NETSIO_OBSOLETE */
 }
 
 bool NetSIO::resume_test()
