@@ -71,11 +71,13 @@ protected:
     bool wait_sock_writable(uint32_t timeout_ms);
     ssize_t write_sock(const uint8_t *buffer, size_t size, uint32_t timeout_ms=500);
 
+#ifdef OBSOLETE
     bool rxbuffer_empty();
     bool rxbuffer_put(uint8_t b);
     int rxbuffer_get();
     int rxbuffer_available();
     void rxbuffer_flush();
+#endif /* OBSOLETE */
 
 public:
     virtual ~NetSIO();
