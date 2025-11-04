@@ -1,8 +1,6 @@
 #ifndef NETSIO_H
 #define NETSIO_H
 
-//#define NETSIO_OBSOLETE 1
-
 #include "fnDNS.h"
 #include <string.h>
 #include <string>
@@ -33,14 +31,7 @@ private:
     bool _command_asserted = false;
     bool _motor_asserted = false;
 
-#ifdef NETSIO_OBSOLETE
-    uint8_t _rxbuf[1024];
-    int _rxhead = 0;
-    int _rxtail = 0;
-    bool _rxfull = false;
-#else
     std::string _fifo;
-#endif /* NETSIO_OBSOLETE */
 
     int _sync_request_num = -1;  // 0..255 sync request sequence number, -1 if sync is not requested
     uint8_t _sync_ack_byte = -1; // ACK byte to send with sync response
@@ -70,14 +61,6 @@ protected:
 
     bool wait_sock_writable(uint32_t timeout_ms);
     ssize_t write_sock(const uint8_t *buffer, size_t size, uint32_t timeout_ms=500);
-
-#ifdef OBSOLETE
-    bool rxbuffer_empty();
-    bool rxbuffer_put(uint8_t b);
-    int rxbuffer_get();
-    int rxbuffer_available();
-    void rxbuffer_flush();
-#endif /* OBSOLETE */
 
 public:
     virtual ~NetSIO();

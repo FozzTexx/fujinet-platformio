@@ -77,9 +77,6 @@ void NetSIO::begin(int baud)
 
     _command_asserted = false;
     _motor_asserted = false;
-#ifdef OBSOLETE
-    rxbuffer_flush();
-#endif /* OBSOLETE */
 
     // Wait for WiFi
     int suspend_ms = _errcount < 5 ? 400 : 2000;
@@ -248,72 +245,6 @@ int NetSIO::ping(int count, int interval_ms, int timeout_ms, bool fast)
     return ok_count ? rtt_sum / ok_count : -1;
 }
 
-#ifdef OBSOLETE
-bool NetSIO::rxbuffer_empty()
-{
-#ifdef NETSIO_OBSOLETE
-    return (_rxhead == _rxtail && !_rxfull);
-#else
-    return _fifo.size() == 0;
-#endif /* NETSIO_OBSOLETE */
-}
-
-bool NetSIO::rxbuffer_put(uint8_t b)
-{
-#ifdef NETSIO_OBSOLETE
-    _rxbuf[_rxhead++] = b;
-    _rxhead %= sizeof(_rxbuf);
-    if (_rxfull) {
-        // tail byte was overwritten / lost
-        _rxtail = _rxhead;
-        return true;
-    }
-    _rxfull = (_rxhead == _rxtail);
-#else
-    _fifo.push_back(b);
-#endif /* NETSIO_OBSOLETE */
-    return false;
-}
-
-int NetSIO::rxbuffer_get()
-{
-    int b;
-    if (rxbuffer_empty())
-        return -1;
-#ifdef NETSIO_OBSOLETE
-    b = _rxbuf[_rxtail++];
-    _rxtail %= sizeof(_rxbuf);
-    _rxfull = false;
-#else
-    b = (uint8_t) _fifo[0];
-    _fifo.erase(0, 1);
-#endif /* NETSIO_OBSOLETE */
-    return b;
-}
-
-int  NetSIO::rxbuffer_available()
-{
-#ifdef NETSIO_OBSOLETE
-    int avail = _rxhead - _rxtail;
-    if ((avail < 0) || (avail == 0 && _rxfull))
-        avail += sizeof(_rxbuf);
-    return avail;
-#else
-    return _fifo.size();
-#endif /* NETSIO_OBSOLETE */
-}
-
-void NetSIO::rxbuffer_flush()
-{
-#ifdef NETSIO_OBSOLETE
-    _rxtail = _rxhead;
-    _rxfull = false;
-#else
-    _fifo.clear();
-#endif /* NETSIO_OBSOLETE */
-}
-#endif /* OBSOLETE */
-
 bool NetSIO::resume_test()
 {
     if (!_initialized)
@@ -397,12 +328,7 @@ int NetSIO::handle_netsio()
                 b = rxbuf[1];
                 if (_baud_peer < _baud * 90 / 100 || _baud_peer > _baud * 110 / 100)
                     b ^= (uint8_t)_baud_peer ^ (uint8_t)_baud; // corrupt byte
-#ifdef OBSOLETE
-                if (rxbuffer_put(b))
-                    Debug_println("NetSIO rxbuffer overrun");
-#else
                 _fifo.push_back(b);
-#endif /* OBSOLETE */
                 break;
 
             case NETSIO_DATA_BLOCK:
@@ -414,12 +340,7 @@ int NetSIO::handle_netsio()
                         b = rxbuf[i];
                         if (_baud_peer < _baud * 90 / 100 || _baud_peer > _baud * 110 / 100)
                             b ^= (uint8_t)_baud_peer ^ (uint8_t)_baud; // corrupt byte
-#ifdef OBSOLETE
-                        if (rxbuffer_put(b))
-                            Debug_println("NetSIO rxbuffer overrun");
-#else
                         _fifo.push_back(b);
-#endif /* OBSOLETE */
                     }
                 }
                 break;
@@ -437,11 +358,7 @@ int NetSIO::handle_netsio()
                 _command_asserted = true;
                 _sync_request_num = -1; // cancel any sync request
                 _sync_write_size = -1;
-#ifdef OBSOLETE
-                rxbuffer_flush();   // flush any stray input data
-#else
                 _fifo.clear();
-#endif /* OBSOLETE */
                 break;
 
             case NETSIO_MOTOR_OFF:
@@ -600,11 +517,7 @@ ssize_t NetSIO::write_sock(const uint8_t *buffer, size_t size, uint32_t timeout_
 
 bool NetSIO::wait_for_data(uint32_t timeout_ms)
 {
-#ifdef OBSOLETE
-    while (rxbuffer_empty())
-#else
     while (_fifo.size() == 0)
-#endif /* OBSOLETE */
     {
         if (!wait_sock_readable(timeout_ms))
             return false;  // timeout
@@ -643,11 +556,7 @@ bool NetSIO::wait_for_credit(int needed)
 void NetSIO::flush_input()
 {
     if (_initialized)
-#ifdef OBSOLETE
-        rxbuffer_flush();
-#else
         _fifo.clear();
-#endif /* OBSOLETE */
 }
 
 /* Clears input buffer and flushes out transmit buffer waiting at most
@@ -666,17 +575,9 @@ void NetSIO::flush()
 */
 int NetSIO::available()
 {
-#ifdef OBSOLETE
-    if (rxbuffer_empty())
-#else
     if (_fifo.size() == 0)
-#endif /* OBSOLETE */
         handle_netsio();
-#ifdef OBSOLETE
-    return rxbuffer_available();
-#else
     return _fifo.size();
-#endif /* OBSOLETE */
 }
 
 /* Changes baud rate
@@ -777,15 +678,11 @@ int NetSIO::read(void)
         Debug_println("NetSIO read() - TIMEOUT");
         return -1;
     }
-#ifdef OBSOLETE
-    return rxbuffer_get();
-#else
     if (_fifo.size() == 0)
         return -1;
     int b = (uint8_t) _fifo[0];
     _fifo.erase(0, 1);
     return b;
-#endif /* OBSOLETE */
 }
 
 /* Since the underlying Stream calls this Read() multiple times to get more than one
