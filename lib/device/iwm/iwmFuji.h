@@ -210,9 +210,9 @@ public:
     fujiHost *set_slot_hostname(int host_slot, char *hostname);
     DEVICE_TYPE *get_disk_dev(int i) {
 #ifndef DEV_RELAY_SLIP
-      return i < MAX_SP_DEVICES
+      return i < MAX_SPDISK_DEVICES
         ? (DEVICE_TYPE *) &_fnDisks[i].disk_dev
-        : (DEVICE_TYPE *) &_fnDisk2s[i - MAX_SP_DEVICES];
+        : (DEVICE_TYPE *) &_fnDisk2s[i - MAX_SPDISK_DEVICES];
 #else
       return &_fnDisks[i].disk_dev;
 #endif
