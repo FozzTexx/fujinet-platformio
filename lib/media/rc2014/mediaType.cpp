@@ -62,7 +62,7 @@ void MediaType::unmount()
     }
 }
 
-mediatype_t MediaType::discover_mediatype(const char *filename, uint32_t disksize)
+mediatype_t MediaType::discover_mediatype(const char *filename, size_t disksize)
 {
     // TODO: iterate through supported images matching ext and filesize
 

@@ -5,6 +5,7 @@
  */
 
 #include "network.h"
+#include "../network.h"
 
 #include <cstring>
 #include <algorithm>
@@ -87,7 +88,7 @@ void rc2014Network::open()
     rc2014_recv_buffer(response, 256);
 
     Debug_printf("rc2014Network::open url %s\n", response);
-    
+
     rc2014_send_ack();
 
     channelMode = PROTOCOL;
@@ -305,7 +306,6 @@ bool rc2014Network::status_channel_json(NetworkStatus *ns)
 {
     ns->connected = json_bytes_remaining > 0;
     ns->error = json_bytes_remaining > 0 ? 1 : 136;
-    ns->rxBytesWaiting = json_bytes_remaining;
     return false; // for now
 }
 
@@ -319,7 +319,9 @@ void rc2014Network::status()
     Debug_printf("rc2014Network::status()\n");
 
     NetworkStatus s;
-    
+    NDeviceStatus *status = (NDeviceStatus *) response;
+    size_t avail = 0;
+
     rc2014_send_ack();
 
     switch (channelMode)
@@ -331,26 +333,25 @@ void rc2014Network::status()
             s.error = true;
         } else {
             err = protocol->status(&s);
+            avail = protocol->available();
         }
         break;
     case JSON:
         err = status_channel_json(&s);
+        avail = json_bytes_remaining;
         break;
     }
 
-    uint16_t bytes_waiting = (s.rxBytesWaiting > RC2014_TX_BUFFER_SIZE) ?
-            RC2014_TX_BUFFER_SIZE : s.rxBytesWaiting;
-
-    response[0] = bytes_waiting & 0xFF;
-    response[1] = bytes_waiting >> 8;
-    response[2] = s.connected;
-    response[3] = s.error;
-    response_len = 4;
+    avail = avail > RC2014_TX_BUFFER_SIZE ? RC2014_TX_BUFFER_SIZE : avail;
+    status->avail = avail;
+    status->conn = s.connected;
+    status->err = s.error;
+    response_len = sizeof(*status);
     //receiveMode = STATUS;
 
     rc2014_send_buffer(response, response_len);
     rc2014_flush();
-    
+
     rc2014_send_complete();
 
 }
@@ -626,7 +627,7 @@ bool rc2014Network::rc2014_poll_interrupt()
 
         protocol->fromInterrupt = false;
 
-        if (s.rxBytesWaiting > 0 || s.connected == 0)
+        if (protocol->available() > 0 || s.connected == 0)
             result = true;
     }
 
@@ -646,7 +647,7 @@ bool rc2014Network::instantiate_protocol()
     {
         protocolParser = new ProtocolParser();
     }
-    
+
     protocol = protocolParser->createProtocol(urlParser->scheme, receiveBuffer, transmitBuffer, specialBuffer, &login, &password);
 
     if (protocol == nullptr)

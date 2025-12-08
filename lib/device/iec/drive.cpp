@@ -1504,7 +1504,7 @@ mediatype_t iecDrive::mount(FILE *f, const char *filename, uint32_t disksize, me
 
   m_cwd.reset( MFSOwner::File( url ) );
 
-  return MediaType::discover_mediatype(filename); // MEDIATYPE_UNKNOWN
+  return MediaType::discover_mediatype(filename, disksize); // MEDIATYPE_UNKNOWN
 }
 
 

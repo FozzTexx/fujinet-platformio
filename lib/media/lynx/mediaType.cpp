@@ -35,7 +35,7 @@ void MediaType::unmount()
     }
 }
 
-mediatype_t MediaType::discover_mediatype(const char *filename)
+mediatype_t MediaType::discover_mediatype(const char *filename, size_t disksize)
 {
     // On the Lynx, we can just treat every file like a ROM file
     // We aren't doing anything special with the files at this point

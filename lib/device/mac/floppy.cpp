@@ -22,7 +22,7 @@ mediatype_t macFloppy::mount(FILE *f, const char *filename, uint32_t disksize, m
   }
 
   if (disk_type == MEDIATYPE_UNKNOWN)
-    disk_type = MediaType::discover_mediatype(filename);
+    disk_type = MediaType::discover_mediatype(filename, disksize);
 
   _disk_size_in_blocks = disksize/512;
 

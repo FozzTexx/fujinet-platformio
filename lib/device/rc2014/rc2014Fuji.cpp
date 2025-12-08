@@ -1,6 +1,7 @@
 #ifdef BUILD_RC2014
 
 #include "rc2014Fuji.h"
+#include "fujiCommandID.h"
 
 #include <cstring>
 
@@ -400,17 +401,17 @@ void rc2014Fuji::image_rotate()
         count--;
 
         // Save the device ID of the disk in the last slot
-        int last_id = _fnDisks[count].disk_dev.id();
+        fujiDeviceID_t last_id = _fnDisks[count].disk_dev.id();
 
         for (int n = count; n > 0; n--)
         {
-            int swap = _fnDisks[n - 1].disk_dev.id();
+            fujiDeviceID_t swap = _fnDisks[n - 1].disk_dev.id();
             Debug_printf("setting slot %d to ID %hx\n", n, swap);
-            _rc2014_bus->changeDeviceId(&_fnDisks[n].disk_dev, swap);
+            SYSTEM_BUS.changeDeviceId(&_fnDisks[n].disk_dev, swap);
         }
 
         // The first slot gets the device ID of the last slot
-        _rc2014_bus->changeDeviceId(&_fnDisks[0].disk_dev, last_id);
+        SYSTEM_BUS.changeDeviceId(&_fnDisks[0].disk_dev, last_id);
     }
 }
 
@@ -463,10 +464,10 @@ void rc2014Fuji::rc2014_open_directory()
     rc2014_send_complete();
 }
 
-void _set_additional_direntry_details(fsdir_entry_t *f, uint8_t *dest, uint8_t maxlen)
+size_t _set_additional_direntry_details(fsdir_entry_t *f, uint8_t *dest, uint8_t maxlen)
 {
-    set_additional_direntry_details(f, dest, maxlen, 100, SIZE_32_LE,
-                                    HAS_DIR_ENTRY_FLAGS_COMBINED, HAS_DIR_ENTRY_TYPE);
+    return set_additional_direntry_details(f, dest, maxlen, 100, SIZE_32_LE,
+                                           HAS_DIR_ENTRY_FLAGS_COMBINED, HAS_DIR_ENTRY_TYPE);
 }
 
 void rc2014Fuji::rc2014_read_directory_entry()
@@ -496,10 +497,10 @@ void rc2014Fuji::rc2014_read_directory_entry()
         // If 0x80 is set on AUX2, send back additional information
         if (addtl & 0x80)
         {
-            _set_additional_direntry_details(f, (uint8_t *)dirpath, maxlen);
+            size_t len = _set_additional_direntry_details(f, (uint8_t *)dirpath, maxlen);
             // Adjust remaining size of buffer and file path destination
-            bufsize = sizeof(dirpath) - ADDITIONAL_DETAILS_BYTES;
-            filenamedest = dirpath + ADDITIONAL_DETAILS_BYTES;
+            bufsize = sizeof(dirpath) - len;
+            filenamedest = dirpath + len;
         }
         else
         {
@@ -899,33 +900,33 @@ void rc2014Fuji::rc2014_get_device_filename()
 
 void rc2014Fuji::rc2014_enable_device()
 {
-    unsigned char d = cmdFrame.aux1;
+    fujiDeviceID_t d = (fujiDeviceID_t) cmdFrame.aux1;
 
     rc2014_send_ack();
 
-    rc2014Bus.enableDevice(d);
+    SYSTEM_BUS.enableDevice(d);
 
     rc2014_send_complete();
 }
 
 void rc2014Fuji::rc2014_disable_device()
 {
-    unsigned char d = cmdFrame.aux1;
+    fujiDeviceID_t d = (fujiDeviceID_t) cmdFrame.aux1;
 
     rc2014_send_ack();
 
-    rc2014Bus.disableDevice(d);
+    SYSTEM_BUS.disableDevice(d);
 
     rc2014_send_complete();
 }
 
 void rc2014Fuji::rc2014_device_enabled_status()
 {
-    unsigned char d = cmdFrame.aux1;
+    fujiDeviceID_t d = (fujiDeviceID_t) cmdFrame.aux1;
 
     rc2014_send_ack();
 
-    response[0] = (uint8_t)rc2014Bus.enabledDeviceStatus(d);
+    response[0] = (uint8_t)SYSTEM_BUS.enabledDeviceStatus(d);
     response_len = 1;
 
     rc2014_send_buffer(response, response_len);
@@ -1201,11 +1202,9 @@ void rc2014Fuji::rc2014_hash_clear()
 
 
 // Initializes base settings and adds our devices to the SIO bus
-void rc2014Fuji::setup(systemBus *siobus)
+void rc2014Fuji::setup()
 {
     // set up Fuji device
-    _rc2014_bus = siobus;
-
     _populate_slots_from_config();
 
     // Disable booting from CONFIG if our settings say to turn it off
@@ -1214,27 +1213,27 @@ void rc2014Fuji::setup(systemBus *siobus)
     // Disable status_wait if our settings say to turn it off
     status_wait_enabled = false;
 
-    _rc2014_bus->addDevice(&_fnDisks[0].disk_dev, RC2014_DEVICEID_DISK);
-    _rc2014_bus->addDevice(&_fnDisks[1].disk_dev, RC2014_DEVICEID_DISK + 1);
-    _rc2014_bus->addDevice(&_fnDisks[2].disk_dev, RC2014_DEVICEID_DISK + 2);
-    _rc2014_bus->addDevice(&_fnDisks[3].disk_dev, RC2014_DEVICEID_DISK + 3);
+    SYSTEM_BUS.addDevice(&_fnDisks[0].disk_dev, FUJI_DEVICEID_DISK);
+    SYSTEM_BUS.addDevice(&_fnDisks[1].disk_dev, (fujiDeviceID_t) (FUJI_DEVICEID_DISK + 1));
+    SYSTEM_BUS.addDevice(&_fnDisks[2].disk_dev, (fujiDeviceID_t) (FUJI_DEVICEID_DISK + 2));
+    SYSTEM_BUS.addDevice(&_fnDisks[3].disk_dev, (fujiDeviceID_t) (FUJI_DEVICEID_DISK + 3));
 
     //FILE *f = fsFlash.file_open("/autorun.ddp");
     //_fnDisks[0].disk_dev.mount(f, "/autorun.ddp", 262144, MEDIATYPE_DDP);
 
     theNetwork = new rc2014Network();
-    _rc2014_bus->addDevice(theNetwork, RC2014_DEVICEID_FN_NETWORK); // temporary.
-    _rc2014_bus->addDevice(theFuji, RC2014_DEVICEID_FUJINET);   // Fuji becomes the gateway device.
-  //  _rc2014_bus->addDevice(&_fnModem, RC2014_DEVICEID_MODEM);
-  //  _rc2014_bus->addDevice(&_fnCpm, RC2014_DEVICEID_CPM);
+    SYSTEM_BUS.addDevice(theNetwork, FUJI_DEVICEID_NETWORK); // temporary.
+    SYSTEM_BUS.addDevice(theFuji, FUJI_DEVICEID_FUJINET);   // Fuji becomes the gateway device.
+  //  SYSTEM_BUS.addDevice(&_fnModem, FUJI_DEVICEID_MODEM);
+  //  SYSTEM_BUS.addDevice(&_fnCpm, FUJI_DEVICEID_CPM);
 
 
     // Add our devices to the rc2014 bus
     // for (int i = 0; i < 4; i++)
-    //    _rc2014_bus->addDevice(&_fnDisks[i].disk_dev, rc2014_DEVICEID_DISK + i);
+    //    SYSTEM_BUS.addDevice(&_fnDisks[i].disk_dev, rc2014_DEVICEID_DISK + i);
 
     // for (int i = 0; i < MAX_NETWORK_DEVICES; i++)
-    //     _rc2014_bus->addDevice(&sioNetDevs[i], rc2014_DEVICEID_FN_NETWORK + i);
+    //     SYSTEM_BUS.addDevice(&sioNetDevs[i], rc2014_DEVICEID_FN_NETWORK + i);
 }
 
 // Mount all
@@ -1470,7 +1469,7 @@ void rc2014Fuji::rc2014_process(uint32_t commanddata, uint8_t checksum)
         rc2014_hash_clear();
         break;
     default:
-        fnUartDebug.printf("rc2014_process() not implemented yet for this device. Cmd received: %02x\n", cmdFrame.comnd);
+        Debug_printf("rc2014_process() not implemented yet for this device. Cmd received: %02x\n", cmdFrame.comnd);
         rc2014_send_nak();
     }
 }

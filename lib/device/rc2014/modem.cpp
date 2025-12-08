@@ -10,7 +10,6 @@
 
 #include "fnSystem.h"
 #include "fnConfig.h"
-#include "fnUART.h"
 #include "fnWiFi.h"
 
 #include "utils.h"
@@ -80,7 +79,7 @@ static void _telnet_event_handler(telnet_t *telnet, telnet_event_t *ev, void *us
 {
     rc2014Modem *modem = (rc2014Modem *)user_data; // somehow it thinks this is unused?
 
-    modem->telnet_event_handler(telnet, ev);    
+    modem->telnet_event_handler(telnet, ev);
 }
 
 
@@ -1232,7 +1231,7 @@ void rc2014Modem::rc2014_handle_stream()
             Debug_println("Going back to command mode");
 
             at_cmd_println("OK");
-    
+
             cmdMode = true;
 
             plusCount = 0;

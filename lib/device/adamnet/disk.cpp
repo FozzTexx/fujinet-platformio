@@ -55,7 +55,7 @@ mediatype_t adamDisk::mount(FILE *f, const char *filename, uint32_t disksize, me
 
     // Determine MediaType based on filename extension
     if (disk_type == MEDIATYPE_UNKNOWN && filename != nullptr)
-        disk_type = MediaType::discover_mediatype(filename);
+        disk_type = MediaType::discover_mediatype(filename, disksize);
 
     switch (disk_type)
     {

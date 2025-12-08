@@ -84,10 +84,10 @@ public:
     virtual bool write_sector(int track, int sector, uint8_t *buffer) = 0;
 
     // virtual uint16_t sector_size(uint16_t sectornum);
-    
+
     virtual bool status() = 0;
 
-    static mediatype_t discover_mediatype(const char *filename);
+    static mediatype_t discover_mediatype(const char *filename, size_t disksize);
     static mediatype_t discover_dsk_mediatype(fnFile* f, uint32_t disksize);
 
     // void dump_percom_block();

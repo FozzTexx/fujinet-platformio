@@ -393,7 +393,7 @@ uint8_t iwmFuji::iwm_ctrl_disk_image_mount() // SP CTRL command
         disk.disk_size = host.file_size(disk.fileh);
 
         // special handling for Disk ][ .woz images
-        // mediatype_t mt = MediaType::discover_mediatype(disk.filename);
+        // mediatype_t mt = MediaType::discover_mediatype(disk.filename, disk.disk_size);
         // if (mt == mediatype_t::MEDIATYPE_PO)
         // { // And now mount it
         disk.disk_type = disk_dev->mount(disk.fileh, disk.filename, disk.disk_size);

@@ -23,7 +23,7 @@ void MediaType::unmount()
     }
 }
 
-mediatype_t MediaType::discover_mediatype(const char *filename)
+mediatype_t MediaType::discover_mediatype(const char *filename, size_t disksize)
 {
     // should probably look inside the file to help figure it out
     int l = strlen(filename);

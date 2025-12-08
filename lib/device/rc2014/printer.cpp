@@ -117,8 +117,8 @@ void rc2014Printer::stream()
     Debug_printf("rc2014Printer::stream()\n");
 
     rc2014_send_ack();
-    rc2014Bus.streamDeactivate();
-    rc2014Bus.streamDevice(_devnum);
+    SYSTEM_BUS.streamDeactivate();
+    SYSTEM_BUS.streamDevice(_devnum);
     rc2014_send_complete();
 }
 
@@ -148,7 +148,7 @@ void rc2014Printer::rc2014_handle_stream()
     int num_bytes = rc2014_recv_available();
 
     if (num_bytes > 0) {
-        int sioBytesRead = rc2014_recv_buffer(_buffer, 
+        int sioBytesRead = rc2014_recv_buffer(_buffer,
                 (num_bytes > TX_BUF_SIZE) ? TX_BUF_SIZE : num_bytes);
 
         // Copy the data to the printer emulator's buffer

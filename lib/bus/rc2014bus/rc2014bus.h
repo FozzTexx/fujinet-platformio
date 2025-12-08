@@ -5,6 +5,8 @@
  * rc2014 Routines
  */
 
+#include "fujiDeviceID.h"
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <deque>
@@ -275,7 +277,7 @@ protected:
     /**
      * @brief Device Number: 0-255
      */
-    uint8_t _devnum;
+    fujiDeviceID_t _devnum;
 
     virtual void shutdown() {}
 
@@ -337,7 +339,7 @@ public:
      * @brief return the device number (0-15) of this device
      * @return the device # (0-15) of this device
      */
-    uint8_t id() { return _devnum; }
+    fujiDeviceID_t id() { return _devnum; }
 
 protected:
     rc2014Fifo<1024> streamFifoTx; // streamed data from rc2014
@@ -379,17 +381,17 @@ public:
     int64_t start_time;
 
     int numDevices();
-    void addDevice(virtualDevice *pDevice, FujiDeviceID device_id);
+    void addDevice(virtualDevice *pDevice, fujiDeviceID_t device_id);
     void remDevice(virtualDevice *pDevice);
-    void remDevice(FujiDeviceID device_id);
-    bool deviceExists(FujiDeviceID device_id);
-    void enableDevice(FujiDeviceID device_id);
-    void disableDevice(FujiDeviceID device_id);
-    bool enabledDeviceStatus(FujiDeviceID device_id);
-    void streamDevice(FujiDeviceID device_id);
+    void remDevice(fujiDeviceID_t device_id);
+    bool deviceExists(fujiDeviceID_t device_id);
+    void enableDevice(fujiDeviceID_t device_id);
+    void disableDevice(fujiDeviceID_t device_id);
+    bool enabledDeviceStatus(fujiDeviceID_t device_id);
+    void streamDevice(fujiDeviceID_t device_id);
     void streamDeactivate();
-    virtualDevice *deviceById(FujiDeviceID device_id);
-    void changeDeviceId(virtualDevice *pDevice, FujiDeviceID device_id);
+    virtualDevice *deviceById(fujiDeviceID_t device_id);
+    void changeDeviceId(virtualDevice *pDevice, fujiDeviceID_t device_id);
     QueueHandle_t qrc2014Messages = nullptr;
 
     bool shuttingDown = false;                                  // TRUE if we are in shutdown process
@@ -407,6 +409,13 @@ public:
     size_t busTxTransfer();
 
     size_t busRxBuffer(uint8_t *buf, unsigned short len);
+
+    // Everybody thinks "oh I know how a serial port works, I'll just
+    // access it directly and bypass the bus!" ಠ_ಠ
+    size_t read() { return 0; }
+    size_t write(int n) { return 0; }
+    size_t available() { return 0; }
+    void set_baudrate(int) { return; }
 };
 
 extern systemBus SYSTEM_BUS;

@@ -71,7 +71,7 @@ size_t set_additional_direntry_details(fsdir_entry_t *f, uint8_t *dest, uint8_t 
 
     // File type
     if (has_type == HAS_DIR_ENTRY_TYPE)
-        dest[idx++] = MediaType::discover_mediatype(f->filename);
+        dest[idx++] = MediaType::discover_mediatype(f->filename, f->size);
 
     // Adjust the truncated flag using total bytes of dir entry
     maxlen -= idx;

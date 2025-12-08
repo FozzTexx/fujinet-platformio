@@ -46,7 +46,7 @@ public:
     
     virtual uint8_t status() = 0;
 
-    static mediatype_t discover_mediatype(const char *filename);
+    static mediatype_t discover_mediatype(const char *filename, size_t disksize);
 
     uint32_t num_blocks() { return _media_num_blocks; }
 
