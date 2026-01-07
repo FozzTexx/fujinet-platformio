@@ -121,12 +121,14 @@ netProtoErr_t NetworkProtocolTCP::read(unsigned short len)
 
     if (receiveBuffer->length() == 0)
     {
+#if 0
         // Check for client connection
         if (!client.connected())
         {
             error = NETWORK_ERROR_NOT_CONNECTED;
             return NETPROTO_ERR_UNSPECIFIED; // error
         }
+#endif
 
         // Do the read from client socket.
         actual_len = client.read(newData.data(), len);
@@ -231,8 +233,10 @@ void NetworkProtocolTCP::status_server(NetworkStatus *status)
 
 size_t NetworkProtocolTCP::available()
 {
+#if 0
     if (!client.connected())
         return 0;
+#endif
     size_t avail = receiveBuffer->size();
     if (!avail)
         avail = client.available();
