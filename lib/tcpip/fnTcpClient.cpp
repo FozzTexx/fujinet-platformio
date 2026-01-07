@@ -422,12 +422,14 @@ int fnTcpClient::peek()
 
 void fnTcpClient::updateFIFO()
 {
+#if 0
     // check if socket is still connected
     if (!connected())
     {
         // connection was closed or it has an error
         return;
     }
+#endif
 
 #if defined(_WIN32)
     unsigned long count;
