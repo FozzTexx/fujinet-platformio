@@ -67,18 +67,18 @@ AtariSIODirection NetworkProtocolHTTP::special_inquiry(fujiCommandID_t cmd)
     }
 }
 
-protocolError_t NetworkProtocolHTTP::special_00(cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolHTTP::special_00(fujiCommandID_t cmd, uint8_t httpChanMode)
 {
-    switch (cmdFrame->comnd)
+    switch (cmd)
     {
     case NETCMD_UNLISTEN:
-        return special_set_channel_mode(cmdFrame);
+        return special_set_channel_mode((netProtoHTTPChannelMode_t) httpChanMode);
     default:
         return PROTOCOL_ERROR::UNSPECIFIED;
     }
 }
 
-protocolError_t NetworkProtocolHTTP::special_set_channel_mode(cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolHTTP::special_set_channel_mode(netProtoHTTPChannelMode_t newMode)
 {
     protocolError_t err = PROTOCOL_ERROR::NONE;
 
@@ -89,7 +89,7 @@ protocolError_t NetworkProtocolHTTP::special_set_channel_mode(cmdFrame_t *cmdFra
     receiveBuffer->clear();
     transmitBuffer->clear();
 
-    switch (cmdFrame->aux2)
+    switch (newMode)
     {
     case HTTP_CHANMODE_BODY:
         httpChannelMode = DATA;
@@ -776,9 +776,9 @@ void NetworkProtocolHTTP::http_transaction()
 #endif
 }
 
-protocolError_t NetworkProtocolHTTP::rename(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolHTTP::rename(PeoplesUrlParser *url)
 {
-    if (NetworkProtocolFS::rename(url, cmdFrame) != PROTOCOL_ERROR::NONE)
+    if (NetworkProtocolFS::rename(url) != PROTOCOL_ERROR::NONE)
         return PROTOCOL_ERROR::UNSPECIFIED;
 
     url->path = url->path.substr(0, url->path.find(","));
@@ -793,7 +793,7 @@ protocolError_t NetworkProtocolHTTP::rename(PeoplesUrlParser *url, cmdFrame_t *c
     return resultCode > 399 ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolHTTP::del(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolHTTP::del(PeoplesUrlParser *url)
 {
 #ifdef VERBOSE_PROTOCOL
     Debug_printf("NetworkProtocolHTTP::del(%s,%s)", url->host.c_str(), url->path.c_str());
@@ -808,7 +808,7 @@ protocolError_t NetworkProtocolHTTP::del(PeoplesUrlParser *url, cmdFrame_t *cmdF
     return resultCode > 399 ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolHTTP::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolHTTP::mkdir(PeoplesUrlParser *url)
 {
 #ifdef VERBOSE_PROTOCOL
     Debug_printf("NetworkProtocolHTTP::mkdir(%s,%s)", url->host.c_str(), url->path.c_str());
@@ -823,9 +823,9 @@ protocolError_t NetworkProtocolHTTP::mkdir(PeoplesUrlParser *url, cmdFrame_t *cm
     return resultCode > 399 ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolHTTP::rmdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolHTTP::rmdir(PeoplesUrlParser *url)
 {
-    return del(url, cmdFrame);
+    return del(url);
 }
 
 size_t NetworkProtocolHTTP::available()

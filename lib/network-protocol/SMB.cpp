@@ -273,37 +273,7 @@ protocolError_t NetworkProtocolSMB::write_file_handle(uint8_t *buf, unsigned sho
     return PROTOCOL_ERROR::NONE;
 }
 
-AtariSIODirection NetworkProtocolSMB::special_inquiry(fujiCommandID_t cmd)
-{
-    return SIO_DIRECTION_INVALID;
-}
-
-protocolError_t NetworkProtocolSMB::special_00(cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolSMB::special_40(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolSMB::special_80(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolSMB::rename(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolSMB::del(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolSMB::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolSMB::mkdir(PeoplesUrlParser *url)
 {
     mount(url);
 
@@ -318,7 +288,7 @@ protocolError_t NetworkProtocolSMB::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmd
     return PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolSMB::rmdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolSMB::rmdir(PeoplesUrlParser *url)
 {
     mount(url);
 
@@ -341,16 +311,6 @@ protocolError_t NetworkProtocolSMB::stat()
 
     fileSize = st.smb2_size;
     return ret != 0 ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolSMB::lock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolSMB::unlock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
 }
 
 off_t NetworkProtocolSMB::seek(off_t position, int whence)

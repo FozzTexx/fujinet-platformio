@@ -241,32 +241,9 @@ AtariSIODirection NetworkProtocolTNFS::special_inquiry(fujiCommandID_t cmd)
     return ret;
 }
 
-protocolError_t NetworkProtocolTNFS::special_00(cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolTNFS::rename(PeoplesUrlParser *url)
 {
-    switch (cmdFrame->comnd)
-    {
-    default:
-        return NetworkProtocolFS::special_00(cmdFrame);
-    }
-}
-
-protocolError_t NetworkProtocolTNFS::special_40(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    switch (cmdFrame->comnd)
-    {
-    default:
-        return NetworkProtocolFS::special_40(sp_buf, len, cmdFrame);
-    }
-}
-
-protocolError_t NetworkProtocolTNFS::special_80(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolTNFS::rename(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    if (NetworkProtocolFS::rename(url, cmdFrame) != PROTOCOL_ERROR::NONE)
+    if (NetworkProtocolFS::rename(url) != PROTOCOL_ERROR::NONE)
         return PROTOCOL_ERROR::NONE;
 
     mount(url);
@@ -281,7 +258,7 @@ protocolError_t NetworkProtocolTNFS::rename(PeoplesUrlParser *url, cmdFrame_t *c
     return tnfs_error != TNFS_RESULT_SUCCESS ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolTNFS::del(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolTNFS::del(PeoplesUrlParser *url)
 {
     mount(url);
 
@@ -295,7 +272,7 @@ protocolError_t NetworkProtocolTNFS::del(PeoplesUrlParser *url, cmdFrame_t *cmdF
     return tnfs_error != TNFS_RESULT_SUCCESS ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolTNFS::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolTNFS::mkdir(PeoplesUrlParser *url)
 {
     Debug_printf("NetworkProtocolTNFS::mkdir(%s,%s)", url->host.c_str(), url->path.c_str());
 
@@ -309,7 +286,7 @@ protocolError_t NetworkProtocolTNFS::mkdir(PeoplesUrlParser *url, cmdFrame_t *cm
     return tnfs_error != TNFS_RESULT_SUCCESS ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolTNFS::rmdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolTNFS::rmdir(PeoplesUrlParser *url)
 {
     mount(url);
 
@@ -333,7 +310,7 @@ protocolError_t NetworkProtocolTNFS::stat()
     return tnfs_error != TNFS_RESULT_SUCCESS ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolTNFS::lock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolTNFS::lock(PeoplesUrlParser *url)
 {
     Debug_printf("lock: %s\r\n", url->path.c_str());
     tnfs_error = tnfs_chmod(&mountInfo, url->path.c_str(), 0444);
@@ -344,7 +321,7 @@ protocolError_t NetworkProtocolTNFS::lock(PeoplesUrlParser *url, cmdFrame_t *cmd
     return tnfs_error != TNFS_RESULT_SUCCESS ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolTNFS::unlock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolTNFS::unlock(PeoplesUrlParser *url)
 {
     tnfs_error = tnfs_chmod(&mountInfo, url->path.c_str(), 0644);
 

@@ -30,7 +30,9 @@ NetworkProtocolUDP::~NetworkProtocolUDP()
     Debug_printf("NetworkProtocolUDP::dtor\r\n");
 }
 
-protocolError_t NetworkProtocolUDP::open(PeoplesUrlParser *urlParser, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolUDP::open(PeoplesUrlParser *urlParser,
+                                       fileAccessMode_t access,
+                                       netProtoTranslation_t translate)
 {
     Debug_printf("NetworkProtocolUDP::open(%s:%s)\r\n", urlParser->host.c_str(), urlParser->port.c_str());
 
@@ -78,7 +80,7 @@ protocolError_t NetworkProtocolUDP::open(PeoplesUrlParser *urlParser, cmdFrame_t
     }
 
     // call base class
-    NetworkProtocol::open(urlParser, cmdFrame);
+    NetworkProtocol::open(urlParser, access, translate);
 
     return PROTOCOL_ERROR::NONE; // all good.
 }
@@ -203,17 +205,12 @@ AtariSIODirection NetworkProtocolUDP::special_inquiry(fujiCommandID_t cmd)
     return SIO_DIRECTION_INVALID;
 }
 
-protocolError_t NetworkProtocolUDP::special_00(cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::UNSPECIFIED; // none implemented.
-}
-
-protocolError_t NetworkProtocolUDP::special_40(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolUDP::special_40(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd)
 {
 #ifdef ESP_PLATFORM
     return PROTOCOL_ERROR::UNSPECIFIED; // none implemented.
 #else
-    switch (cmdFrame->comnd)
+    switch (cmd)
     {
     case NETCMD_GET_REMOTE:
         return get_remote(sp_buf, len);
@@ -223,9 +220,9 @@ protocolError_t NetworkProtocolUDP::special_40(uint8_t *sp_buf, unsigned short l
 #endif
 }
 
-protocolError_t NetworkProtocolUDP::special_80(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolUDP::special_80(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd)
 {
-    switch (cmdFrame->comnd)
+    switch (cmd)
     {
     case NETCMD_SET_DESTINATION:
         return set_destination(sp_buf, len);

@@ -138,7 +138,7 @@ void rs232Network::rs232_open()
     }
 
     // Attempt protocol open
-    if (protocol->open(urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
+    if (protocol->open(urlParser.get(), (fileAccessMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) != PROTOCOL_ERROR::NONE)
     {
         status.error = protocol->error;
         Debug_printf("Protocol unable to make connection. Error: %d\n", (int) status.error);
@@ -734,7 +734,7 @@ void rs232Network::rs232_special_00()
         rs232_set_channel_mode();
         break;
     default:
-        if (protocol->special_00(&cmdFrame) == PROTOCOL_ERROR::NONE)
+        if (protocol->special_00(cmdFrame.comnd, cmdFrame.aux2) == PROTOCOL_ERROR::NONE)
             rs232_complete();
         else
             rs232_error();
@@ -760,7 +760,7 @@ void rs232Network::rs232_special_40()
     }
 
     protocolError_t err = protocol->special_40((uint8_t *)receiveBuffer->data(),
-                                               SPECIAL_BUFFER_SIZE, &cmdFrame);
+                                               SPECIAL_BUFFER_SIZE, cmdFrame.comnd);
     bus_to_computer((uint8_t *)receiveBuffer->data(),
                     SPECIAL_BUFFER_SIZE,
                     err != PROTOCOL_ERROR::NONE);
@@ -812,7 +812,7 @@ void rs232Network::rs232_special_80()
     Debug_printf("rs232Network::rs232_special_80() - %s\n", spData);
 
     // Do protocol action and return
-    if (protocol->special_80(spData, SPECIAL_BUFFER_SIZE, &cmdFrame) == PROTOCOL_ERROR::NONE)
+    if (protocol->special_80(spData, SPECIAL_BUFFER_SIZE, cmdFrame.comnd) == PROTOCOL_ERROR::NONE)
         rs232_complete();
     else
         rs232_error();
@@ -1164,7 +1164,7 @@ void rs232Network::rs232_do_idempotent_command_80()
         return;
     }
 
-    if (protocol->perform_idempotent_80(urlParser.get(), &cmdFrame) == PROTOCOL_ERROR::NONE)
+    if (protocol->perform_idempotent_80(urlParser.get(), cmdFrame.comnd) != PROTOCOL_ERROR::NONE)
     {
         Debug_printf("perform_idempotent_80 failed\n");
         rs232_error();

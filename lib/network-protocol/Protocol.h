@@ -8,6 +8,17 @@
 
 #include <string>
 
+// FIXME - only used by FS classes and doesn't belong here
+typedef enum class ACCESS_MODE {
+    READ          = 0b0100,
+    DIRECTORY     = 0b0110,
+    DIRECTORY_ALT = 0b0111,
+    WRITE         = 0b1000,
+    APPEND        = 0b1001,
+    READWRITE     = 0b1100,
+    INVALID       = -1,
+} fileAccessMode_t;
+
 // FIXME - this has something to do with Atari SIO and doesn't belong here
 enum AtariSIODirection {
     SIO_DIRECTION_NONE    = 0x00,
@@ -36,7 +47,7 @@ public:
     /**
      * Was the last command a write?
      */
-    bool is_write = false;
+    bool was_write = false;
 
     /**
      * Pointer to the receive buffer
@@ -131,10 +142,10 @@ public:
     /**
      * @brief Open connection to the protocol using URL
      * @param urlParser The URL object passed in to open.
-     * @param cmdFrame The command frame to extract aux1/aux2/etc.
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    virtual protocolError_t open(PeoplesUrlParser *urlParser, cmdFrame_t *cmdFrame);
+    virtual protocolError_t open(PeoplesUrlParser *urlParser, fileAccessMode_t access,
+                                 netProtoTranslation_t translate);
 
     /**
      * @brief Close connection to the protocol.
@@ -153,7 +164,7 @@ public:
      * @param len The # of bytes to transmit, len should not be larger than buffer.
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    virtual protocolError_t write(unsigned short len);
+    virtual protocolError_t write(unsigned short len) { return PROTOCOL_ERROR::NONE; }
 
     /**
      * @brief Return protocol status information in provided NetworkStatus object.
@@ -171,10 +182,9 @@ public:
 
     /**
      * @brief execute a command that returns no payload
-     * @param cmdFrame a pointer to the passed in command frame for aux1/aux2/etc
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    virtual protocolError_t special_00(cmdFrame_t *cmdFrame) { return PROTOCOL_ERROR::NONE; };
+    virtual protocolError_t special_00(fujiCommandID_t cmd, uint8_t httpChanMode) { return PROTOCOL_ERROR::NONE; }
 
     /**
      * @brief execute a command that returns a payload to the atari.
@@ -182,21 +192,20 @@ public:
      * @param len Length of data to request from protocol. Should not be larger than buffer.
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    virtual protocolError_t special_40(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame) { return PROTOCOL_ERROR::NONE; };
+    virtual protocolError_t special_40(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) { return PROTOCOL_ERROR::NONE; }
 
     /**
      * @brief execute a command that sends a payload to fujinet (most common, XIO)
      * @param sp_buf, a pointer to the special buffer, usually a EOL terminated devicespec.
      * @param len length of the special buffer, typically SPECIAL_BUFFER_SIZE
      */
-    virtual protocolError_t special_80(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame) { return PROTOCOL_ERROR::NONE; };
+    virtual protocolError_t special_80(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) { return PROTOCOL_ERROR::NONE; }
 
     /**
      * @brief perform an idempotent command with DSTATS 0x80, that does not require open channel.
      * @param url The URL object.
-     * @param cmdFrame command frame.
      */
-    virtual protocolError_t perform_idempotent_80(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) { return PROTOCOL_ERROR::NONE; };
+    virtual protocolError_t perform_idempotent_80(PeoplesUrlParser *url, fujiCommandID_t cmd) { return PROTOCOL_ERROR::NONE; }
 
     /**
      * @brief return an _atari_ error (>199) based on errno. into error for status reporting.
@@ -204,12 +213,12 @@ public:
     virtual void errno_to_error();
 
     /**
-     * @brief change the values passed to open for platforms that need to do it after the open (looking a you IEC)
+     * @brief change the values passed to open for platforms that need to do it after the open (looking at you IEC)
      */
     // FIXME - only used by FS class hierarchy, doesn't belong here
     virtual void set_open_params(uint8_t p1, uint8_t p2) { abort(); };
 
-    virtual off_t seek(off_t offset, int whence);
+    virtual off_t seek(off_t offset, int whence) { return -1; }
 
     virtual size_t available() = 0;
 

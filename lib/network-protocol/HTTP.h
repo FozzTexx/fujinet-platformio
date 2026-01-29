@@ -63,34 +63,33 @@ public:
 
     /**
      * @brief execute a command that returns no payload
-     * @param cmdFrame a pointer to the passed in command frame for aux1/aux2/etc
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t special_00(cmdFrame_t *cmdFrame) override;
+    protocolError_t special_00(fujiCommandID_t cmd, uint8_t httpChanMode) override;
 
 protected:
     /**
      * @brief open a file handle to fd
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t open_file_handle() override;
 
     /**
      * @brief Open directory handle
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t open_dir_handle() override;
 
     /**
      * @brief Do mount
      * @param url the url to mount
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t mount(PeoplesUrlParser *url) override;
 
     /**
      * @brief Unmount TNFS server specified in mountInfo.
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t umount() override;
 
@@ -103,7 +102,7 @@ protected:
      * @brief Read from file handle
      * @param buf destination buffer
      * @param len the number of bytes requested
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t read_file_handle(uint8_t *buf, unsigned short len) override;
 
@@ -116,13 +115,13 @@ protected:
 
     /**
      * @brief close file handle
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t close_file_handle() override;
 
     /**
      * @brief Close directory handle
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t close_dir_handle() override;
 
@@ -130,14 +129,14 @@ protected:
      * @brief for len requested, break up into number of required
      *        tnfs_write() blocks.
      * @param len Requested # of bytes.
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t write_file_handle(uint8_t *buf, unsigned short len) override;
 
     /**
      * @brief return status from channel
      * @param Pointer to NetworkStatus object to inject new data.
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t status_file(NetworkStatus *status) override;
 
@@ -149,34 +148,30 @@ protected:
     /**
      * @brief Rename file specified by incoming devicespec.
      * @param url pointer to PeoplesUrlParser pointing to file/dest to rename
-     * @param cmdFrame the command frame
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t rename(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t rename(PeoplesUrlParser *url) override;
 
     /**
      * @brief Delete file specified by incoming devicespec.
      * @param url pointer to PeoplesUrlParser pointing to file to delete
-     * @param cmdFrame the command frame
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t del(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t del(PeoplesUrlParser *url) override;
 
     /**
      * @brief Make directory specified by incoming devicespec.
      * @param url pointer to PeoplesUrlParser pointing to file to delete
-     * @param cmdFrame the command frame
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t mkdir(PeoplesUrlParser *url) override;
 
     /**
      * @brief Remove directory specified by incoming devicespec.
      * @param url pointer to PeoplesUrlParser pointing to file to delete
-     * @param cmdFrame the command frame
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t rmdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t rmdir(PeoplesUrlParser *url) override;
 
 private:
     /**
@@ -257,15 +252,14 @@ private:
 
     /**
      * @brief Set Channel mode (DATA, HEADERS, etc.)
-     * @param cmdFrame the passed in command frame.
      */
-    protocolError_t special_set_channel_mode(cmdFrame_t *cmdFrame);
+    protocolError_t special_set_channel_mode(netProtoHTTPChannelMode_t newMode);
 
     /**
      * @brief header mode - retrieve requested headers previously collected.
      * @param buf The target buffer
      * @param len The target buffer length
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t read_file_handle_header(uint8_t *buf, unsigned short len);
 
@@ -273,7 +267,7 @@ private:
      * @brief data mode - read
      * @param buf The target buffer
      * @param len The target buffer length
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t read_file_handle_data(uint8_t *buf, unsigned short len);
 
@@ -281,7 +275,7 @@ private:
      * @brief header mode - write requested headers to pass into collect_headers.
      * @param buf The source buffer
      * @param len The source buffer length
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t write_file_handle_get_header(uint8_t *buf, unsigned short len);
 
@@ -289,7 +283,7 @@ private:
      * @brief header mode - write specified header to server
      * @param buf The source buffer
      * @param len The source buffer length
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t write_file_handle_set_header(uint8_t *buf, unsigned short len);
 
@@ -297,7 +291,7 @@ private:
      * @brief post mode - write specified post data to server
      * @param buf The source buffer
      * @param len The source buffer length
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t write_file_handle_send_post_data(uint8_t *buf, unsigned short len);
 
@@ -305,7 +299,7 @@ private:
      * @brief data mode - write requested headers to pass into PUT
      * @param buf The source buffer
      * @param len The source buffer length
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t write_file_handle_data(uint8_t *buf, unsigned short len);
 
@@ -313,7 +307,7 @@ private:
      * @brief Parse directory retrieved from PROPFIND
      * @param buf the source buffer
      * @param len the buffer length
-     * @return PROTOCOL_ERROR_NONE on success, PROTOCOL_ERROR_UNSPECIFIED on error
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t parseDir(char *buf, unsigned short len);
 
