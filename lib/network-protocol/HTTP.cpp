@@ -58,19 +58,18 @@ NetworkProtocolHTTP::~NetworkProtocolHTTP()
 
 AtariSIODirection NetworkProtocolHTTP::special_inquiry(fujiCommandID_t cmd)
 {
-
     switch (cmd)
     {
     case NETCMD_UNLISTEN:
-        return (aux1_open > 8 ? SIO_DIRECTION_NONE : SIO_DIRECTION_INVALID);
+        return (_httpStreamMode > NETPROTO_OPEN_WRITE ? SIO_DIRECTION_NONE : SIO_DIRECTION_INVALID);
     default:
         return SIO_DIRECTION_INVALID;
     }
 }
 
-netProtoErr_t NetworkProtocolHTTP::special_00(cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolHTTP::special_00(fujiCommandID_t cmd, uint8_t httpChanMode)
 {
-    switch (cmdFrame->comnd)
+    switch (cmd)
     {
     case NETCMD_UNLISTEN:
         return special_set_channel_mode(cmdFrame);
@@ -79,7 +78,7 @@ netProtoErr_t NetworkProtocolHTTP::special_00(cmdFrame_t *cmdFrame)
     }
 }
 
-netProtoErr_t NetworkProtocolHTTP::special_set_channel_mode(cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolHTTP::special_set_channel_mode(netProtoHTTPChannelMode_t newMode)
 {
     netProtoErr_t err = NETPROTO_ERR_NONE;
 
@@ -90,7 +89,7 @@ netProtoErr_t NetworkProtocolHTTP::special_set_channel_mode(cmdFrame_t *cmdFrame
     receiveBuffer->clear();
     transmitBuffer->clear();
 
-    switch (cmdFrame->aux2)
+    switch (newMode)
     {
     case HTTP_CHANMODE_BODY:
         httpChannelMode = DATA;
@@ -117,14 +116,15 @@ netProtoErr_t NetworkProtocolHTTP::special_set_channel_mode(cmdFrame_t *cmdFrame
     return err;
 }
 
-netProtoErr_t NetworkProtocolHTTP::open_file_handle()
+netProtoErr_t NetworkProtocolHTTP::open_file_handle(netProtoOpenMode_t omode)
 {
 #ifdef VERBOSE_PROTOCOL
-    Debug_printv("NetworkProtocolHTTP::open_file_handle() aux1[%d]\r\n", aux1_open);
+    Debug_printv("NetworkProtocolHTTP::open_file_handle() omode[%d]\r\n", omode);
 #endif
     error = NETWORK_ERROR_SUCCESS;
+    _httpStreamMode = omode;
 
-    switch (aux1_open)
+    switch (omode)
     {
     case NETPROTO_OPEN_READ:        // GET with no headers, filename resolve
     case NETPROTO_OPEN_READWRITE:   // GET with ability to set headers, no filename resolve.
@@ -316,13 +316,13 @@ netProtoErr_t NetworkProtocolHTTP::mount(PeoplesUrlParser *url)
 
     // fileSize = 65535;
 
-    if (aux1_open == 6)
+    if (_httpStreamMode == NETPROTO_OPEN_DIRECTORY)
     {
         util_replaceAll(url->path, "*.*", "");
         url->rebuildUrl();
     }
 
-    if (aux1_open == 4 || aux1_open == 8)
+    if (_httpStreamMode == NETPROTO_OPEN_READ || _httpStreamMode == NETPROTO_OPEN_WRITE)
     {
         // We are opening a file, URL encode the path.
         std::string encoded = mstr::urlEncode(url->path);
@@ -558,7 +558,7 @@ netProtoErr_t NetworkProtocolHTTP::close_file_handle()
 
     if (client != nullptr)
     {
-        if (httpOpenMode == PUT || aux1_open == OPEN_MODE_HTTP_PUT_H)
+        if (httpOpenMode == PUT || _httpStreamMode == OPEN_MODE_HTTP_PUT_H)
             http_transaction();
         client->close();
         fserror_to_error();
@@ -675,7 +675,7 @@ netProtoErr_t NetworkProtocolHTTP::write_file_handle_send_post_data(uint8_t *buf
 
 netProtoErr_t NetworkProtocolHTTP::write_file_handle_data(uint8_t *buf, unsigned short len)
 {
-    if (httpOpenMode == PUT || aux1_open == OPEN_MODE_HTTP_PUT_H)
+    if (httpOpenMode == PUT || _httpStreamMode == OPEN_MODE_HTTP_PUT_H)
     {
         postData += std::string((char *)buf, len);
         return NETPROTO_ERR_NONE; // come back here later.
@@ -694,7 +694,7 @@ netProtoErr_t NetworkProtocolHTTP::stat()
     Debug_printf("NetworkProtocolHTTP::stat(%s)\r\n", opened_url->url.c_str());
 #endif
 
-    if (aux1_open != 4) // only for READ FILE
+    if (_httpStreamMode != NETPROTO_OPEN_READ) // only for READ FILE
         return NETPROTO_ERR_NONE;   // We don't care.
 
     // Since we know client is active, we need to destroy it.
@@ -727,7 +727,7 @@ netProtoErr_t NetworkProtocolHTTP::stat()
 
 void NetworkProtocolHTTP::http_transaction()
 {
-    if ((aux1_open != 4) && (aux1_open != 8) && !collect_headers.empty())
+    if ((_httpStreamMode != NETPROTO_OPEN_READ) && (_httpStreamMode != NETPROTO_OPEN_WRITE) && !collect_headers.empty())
     {
         client->create_empty_stored_headers(collect_headers);
     }
@@ -738,7 +738,7 @@ void NetworkProtocolHTTP::http_transaction()
         resultCode = client->GET();
         break;
     case POST:
-        if (aux1_open == OPEN_MODE_HTTP_PUT_H)
+        if (_httpStreamMode == OPEN_MODE_HTTP_PUT_H)
             resultCode = client->PUT(postData.c_str(), postData.size());
         else
             resultCode = client->POST(postData.c_str(), postData.size());
@@ -752,7 +752,7 @@ void NetworkProtocolHTTP::http_transaction()
     }
 
     // the appropriate headers to be collected should have now been done, so let's put their values into returned_headers
-    if ((aux1_open != 4) && (aux1_open != 8) && (!collect_headers.empty()))
+    if ((_httpStreamMode != NETPROTO_OPEN_READ) && (_httpStreamMode != NETPROTO_OPEN_WRITE) && (!collect_headers.empty()))
     {
 #ifdef VERBOSE_PROTOCOL
         Debug_printf("setting returned_headers (count =%u)\r\n", client->get_header_count());
@@ -771,9 +771,9 @@ void NetworkProtocolHTTP::http_transaction()
 #endif
 }
 
-netProtoErr_t NetworkProtocolHTTP::rename(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolHTTP::rename(PeoplesUrlParser *url)
 {
-    if (NetworkProtocolFS::rename(url, cmdFrame) == true)
+    if (NetworkProtocolFS::rename(url) == true)
         return NETPROTO_ERR_UNSPECIFIED;
 
     url->path = url->path.substr(0, url->path.find(","));
@@ -788,7 +788,7 @@ netProtoErr_t NetworkProtocolHTTP::rename(PeoplesUrlParser *url, cmdFrame_t *cmd
     return resultCode > 399 ? NETPROTO_ERR_UNSPECIFIED : NETPROTO_ERR_NONE;
 }
 
-netProtoErr_t NetworkProtocolHTTP::del(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolHTTP::del(PeoplesUrlParser *url)
 {
 #ifdef VERBOSE_PROTOCOL
     Debug_printf("NetworkProtocolHTTP::del(%s,%s)", url->host.c_str(), url->path.c_str());
@@ -803,7 +803,7 @@ netProtoErr_t NetworkProtocolHTTP::del(PeoplesUrlParser *url, cmdFrame_t *cmdFra
     return resultCode > 399 ? NETPROTO_ERR_UNSPECIFIED : NETPROTO_ERR_NONE;
 }
 
-netProtoErr_t NetworkProtocolHTTP::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolHTTP::mkdir(PeoplesUrlParser *url)
 {
 #ifdef VERBOSE_PROTOCOL
     Debug_printf("NetworkProtocolHTTP::mkdir(%s,%s)", url->host.c_str(), url->path.c_str());
@@ -818,9 +818,9 @@ netProtoErr_t NetworkProtocolHTTP::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdF
     return resultCode > 399 ? NETPROTO_ERR_UNSPECIFIED : NETPROTO_ERR_NONE;
 }
 
-netProtoErr_t NetworkProtocolHTTP::rmdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolHTTP::rmdir(PeoplesUrlParser *url)
 {
-    return del(url, cmdFrame);
+    return del(url);
 }
 
 size_t NetworkProtocolHTTP::available()

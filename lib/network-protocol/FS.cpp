@@ -32,49 +32,49 @@ NetworkProtocolFS::~NetworkProtocolFS()
 {
 }
 
-netProtoErr_t NetworkProtocolFS::open(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolFS::open(PeoplesUrlParser *urlParser,
+                                      netProtoOpenMode_t accessMode,
+                                      netProtoTranslation_t translate)
 {
     // Call base class.
-    NetworkProtocol::open(url, cmdFrame);
+    NetworkProtocol::open(urlParser, accessMode, translate);
     fileSize = 0;
 
     update_dir_filename(opened_url);
 
-    if (mount(url) == true)
+    if (mount(urlParser) == true)
         return NETPROTO_ERR_UNSPECIFIED;
 
-    if (cmdFrame->aux1 == NETPROTO_OPEN_DIRECTORY || cmdFrame->aux1 == NETPROTO_OPEN_DIRECTORY_ALT)
+    if (accessMode == NETPROTO_OPEN_DIRECTORY || accessMode == NETPROTO_OPEN_DIRECTORY_ALT)
     {
-        return open_dir();
+        return open_dir(translate);
     }
-    else
-    {
-        return open_file();
-    }
+
+    return open_file(accessMode);
 }
 
-netProtoErr_t NetworkProtocolFS::open_file()
+netProtoErr_t NetworkProtocolFS::open_file(netProtoOpenMode_t accessMode)
 {
     update_dir_filename(opened_url);
 
-    if (aux1_open == NETPROTO_OPEN_READ || aux1_open == NETPROTO_OPEN_WRITE)
+    if (accessMode == NETPROTO_OPEN_READ || accessMode == NETPROTO_OPEN_WRITE)
         resolve();
     else
         stat();
 
     update_dir_filename(opened_url);
 
-    openMode = FILE;
+    openMode = OpenMode::FILE;
 
     if (opened_url->path.empty())
         return NETPROTO_ERR_UNSPECIFIED;
 
-    return open_file_handle();
+    return open_file_handle(accessMode);
 }
 
-netProtoErr_t NetworkProtocolFS::open_dir()
+netProtoErr_t NetworkProtocolFS::open_dir(netProtoTranslation_t a2mode)
 {
-    openMode = DIR;
+    openMode = OpenMode::DIR;
 #ifndef BUILD_ATARI
     this->setLineEnding("\r\n");
 #endif /* BUILD_RS232 */
@@ -108,10 +108,10 @@ netProtoErr_t NetworkProtocolFS::open_dir()
         if (entryBuffer.at(0) == '.' || entryBuffer.at(0) == '/')
             continue;
 
-        if (aux2_open & NETPROTO_A2_FLAG)
+        if (a2mode & NETPROTO_A2_FLAG)
         {
             // Long entry
-            if (aux2_open == NETPROTO_A2_80COL) // Apple2 80 col format.
+            if (a2mode == NETPROTO_A2_80COL) // Apple2 80 col format.
                 dirBuffer += util_long_entry_apple2_80col((char *)entryBuffer.data(), fileSize, is_directory) + lineEnding;
             else
                 dirBuffer += util_long_entry((char *)entryBuffer.data(), fileSize, is_directory) + lineEnding;
@@ -158,10 +158,10 @@ netProtoErr_t NetworkProtocolFS::close()
 
     switch (openMode)
     {
-    case FILE:
+    case OpenMode::FILE:
         file_closed = close_file();
         break;
-    case DIR:
+    case OpenMode::DIR:
         file_closed = close_dir();
         break;
     default:
@@ -195,10 +195,10 @@ netProtoErr_t NetworkProtocolFS::read(unsigned short len)
 
     switch (openMode)
     {
-    case FILE:
+    case OpenMode::FILE:
         ret =  read_file(len);
         break;
-    case DIR:
+    case OpenMode::DIR:
         ret = read_dir(len);
         break;
     default:
@@ -274,10 +274,10 @@ netProtoErr_t NetworkProtocolFS::status(NetworkStatus *status)
 {
     switch (openMode)
     {
-    case FILE:
+    case OpenMode::FILE:
         return status_file(status);
         break;
-    case DIR:
+    case OpenMode::DIR:
         return status_dir(status);
         break;
     default:
@@ -291,7 +291,7 @@ netProtoErr_t NetworkProtocolFS::status_file(NetworkStatus *status)
 {
     unsigned int remaining;
 
-    if (aux1_open == 8) {
+    if (opened_write) {
         remaining = fileSize;
     }
     else {
@@ -320,49 +320,6 @@ netProtoErr_t NetworkProtocolFS::status_dir(NetworkStatus *status)
     NetworkProtocol::status(status);
 
     return NETPROTO_ERR_NONE;
-}
-
-AtariSIODirection NetworkProtocolFS::special_inquiry(fujiCommandID_t cmd)
-{
-    AtariSIODirection ret;
-
-    switch (cmd)
-    {
-    default:
-        ret = SIO_DIRECTION_INVALID; // Not implemented.
-    }
-
-    return ret;
-}
-
-netProtoErr_t NetworkProtocolFS::special_00(cmdFrame_t *cmdFrame)
-{
-    switch (cmdFrame->comnd)
-    {
-    default:
-        error = NETWORK_ERROR_NOT_IMPLEMENTED;
-        return NETPROTO_ERR_UNSPECIFIED;
-    }
-}
-
-netProtoErr_t NetworkProtocolFS::special_40(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    switch (cmdFrame->comnd)
-    {
-    default:
-        error = NETWORK_ERROR_NOT_IMPLEMENTED;
-        return NETPROTO_ERR_UNSPECIFIED;
-    }
-}
-
-netProtoErr_t NetworkProtocolFS::special_80(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    switch (cmdFrame->comnd)
-    {
-    default:
-        error = NETWORK_ERROR_NOT_IMPLEMENTED;
-        return NETPROTO_ERR_UNSPECIFIED;
-    }
 }
 
 void NetworkProtocolFS::resolve()
@@ -411,17 +368,16 @@ void NetworkProtocolFS::resolve()
 #endif
 
     // Clear file size, if resolved to write and not append.
-    if (aux1_open == 8)
+    if (opened_write)
         fileSize = 0;
-
 }
 
-netProtoErr_t NetworkProtocolFS::perform_idempotent_80(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolFS::perform_idempotent_80(PeoplesUrlParser *url, fujiCommandID_t cmd)
 {
 #ifdef VERBOSE_PROTOCOL
-    Debug_printf("NetworkProtocolFS::perform_idempotent_80, url: %s cmd: 0x%02X\r\n", url->url.c_str(), cmdFrame->comnd);
+    Debug_printf("NetworkProtocolFS::perform_idempotent_80, url: %s cmd: 0x%02X\r\n", url->url.c_str(), cmd);
 #endif
-    switch (cmdFrame->comnd)
+    switch (cmd)
     {
     case NETCMD_RENAME:
         return rename(url, cmdFrame);
@@ -437,13 +393,13 @@ netProtoErr_t NetworkProtocolFS::perform_idempotent_80(PeoplesUrlParser *url, cm
         return rmdir(url, cmdFrame);
     default:
 #ifdef VERBOSE_PROTOCOL
-        Debug_printf("Uncaught idempotent command: 0x%02X\r\n", cmdFrame->comnd);
+        Debug_printf("Uncaught idempotent command: 0x%02X\r\n", cmd);
 #endif
         return NETPROTO_ERR_UNSPECIFIED;
     }
 }
 
-netProtoErr_t NetworkProtocolFS::rename(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolFS::rename(PeoplesUrlParser *url)
 {
     update_dir_filename(url);
 
@@ -468,31 +424,6 @@ netProtoErr_t NetworkProtocolFS::rename(PeoplesUrlParser *url, cmdFrame_t *cmdFr
     return NETPROTO_ERR_NONE;
 }
 
-netProtoErr_t NetworkProtocolFS::del(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return NETPROTO_ERR_NONE;
-}
-
-netProtoErr_t NetworkProtocolFS::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return NETPROTO_ERR_NONE;
-}
-
-netProtoErr_t NetworkProtocolFS::rmdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return NETPROTO_ERR_NONE;
-}
-
-netProtoErr_t NetworkProtocolFS::lock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return NETPROTO_ERR_NONE;
-}
-
-netProtoErr_t NetworkProtocolFS::unlock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
-{
-    return NETPROTO_ERR_NONE;
-}
-
 size_t NetworkProtocolFS::available()
 {
     size_t avail;
@@ -500,12 +431,14 @@ size_t NetworkProtocolFS::available()
 
     switch (openMode)
     {
-    case FILE:
-        if (aux1_open == 8)
+    case OpenMode::FILE:
+#if 0
+        if (aux1_open == NETPROTO_OPEN_WRITE)
             return 0;
+#endif
         avail = std::min<size_t>(fileSize + receiveBuffer->length(), WAITING_CAP);
         break;
-    case DIR:
+    case OpenMode::DIR:
         avail = receiveBuffer->length();
         if (!avail)
             avail = dirBuffer.length();

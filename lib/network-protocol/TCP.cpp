@@ -51,7 +51,9 @@ NetworkProtocolTCP::~NetworkProtocolTCP()
  * @param urlParser The URL object passed in to open.
  * @param cmdFrame The command frame to extract aux1/aux2/etc.
  */
-netProtoErr_t NetworkProtocolTCP::open(PeoplesUrlParser *urlParser, cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolTCP::open(PeoplesUrlParser *urlParser,
+                                       netProtoOpenMode_t omode,
+                                       netProtoTranslation_t translate)
 {
     netProtoErr_t ret = NETPROTO_ERR_UNSPECIFIED; // assume error until proven ok
 
@@ -78,7 +80,7 @@ netProtoErr_t NetworkProtocolTCP::open(PeoplesUrlParser *urlParser, cmdFrame_t *
     }
 
     // call base class
-    NetworkProtocol::open(urlParser, cmdFrame);
+    NetworkProtocol::open(urlParser, omode, translate);
 
     return ret;
 }
@@ -208,7 +210,7 @@ netProtoErr_t NetworkProtocolTCP::status(NetworkStatus *status)
 void NetworkProtocolTCP::status_client(NetworkStatus *status)
 {
     status->connected = client.connected();
-    status->error = client.connected() ? error : 136;
+    status->error = status->connected ? error : 136;
 }
 
 void NetworkProtocolTCP::status_server(NetworkStatus *status)
@@ -257,11 +259,11 @@ AtariSIODirection NetworkProtocolTCP::special_inquiry(fujiCommandID_t cmd)
  * @param cmdFrame a pointer to the passed in command frame for aux1/aux2/etc
  * @return NETPROTO_ERR_NONE on success, NETPROTO_ERR_UNSPECIFIED on error
  */
-netProtoErr_t NetworkProtocolTCP::special_00(cmdFrame_t *cmdFrame)
+netProtoErr_t NetworkProtocolTCP::special_00(fujiCommandID_t cmd, uint8_t httpChanMode)
 {
-    Debug_printf("NetworkProtocolTCP::special_00(%c)\n",cmdFrame->comnd);
+    Debug_printf("NetworkProtocolTCP::special_00(%c)\n", cmd);
 
-    switch (cmdFrame->comnd)
+    switch (cmd)
     {
     case NETCMD_CONTROL:
         return special_accept_connection();
@@ -270,29 +272,10 @@ netProtoErr_t NetworkProtocolTCP::special_00(cmdFrame_t *cmdFrame)
         return special_close_client_connection();
     default:
         break;
+    default:
+        break;
     }
     return NETPROTO_ERR_UNSPECIFIED; // error
-}
-
-/**
- * @brief execute a command that returns a payload to the atari.
- * @param sp_buf a pointer to the special buffer
- * @param len Length of data to request from protocol. Should not be larger than buffer.
- * @return NETPROTO_ERR_NONE on success, NETPROTO_ERR_UNSPECIFIED on error
- */
-netProtoErr_t NetworkProtocolTCP::special_40(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    return NETPROTO_ERR_NONE;
-}
-
-/**
- * @brief execute a command that sends a payload to fujinet (most common, XIO)
- * @param sp_buf, a pointer to the special buffer, usually a EOL terminated devicespec.
- * @param len length of the special buffer, typically SPECIAL_BUFFER_SIZE
- */
-netProtoErr_t NetworkProtocolTCP::special_80(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    return NETPROTO_ERR_NONE;
 }
 
 /**
