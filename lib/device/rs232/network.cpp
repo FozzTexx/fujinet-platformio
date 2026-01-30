@@ -31,6 +31,8 @@
 
 #include "ProtocolParser.h"
 
+#define DEFAULT_LINE_ENDING "\n"
+
 using namespace std;
 
 #ifdef ESP_PLATFORM
@@ -60,7 +62,7 @@ rs232Network::rs232Network()
     transmitBuffer->clear();
     specialBuffer->clear();
 
-    json.setLineEnding("\r\n"); // use ATASCII EOL for JSON records
+    json.setLineEnding(DEFAULT_LINE_ENDING);
 }
 
 /**
@@ -163,8 +165,8 @@ void rs232Network::rs232_open()
 
     // TODO: Finally, go ahead and let the parsers know
     json.setProtocol(protocol);
-    json.setLineEnding("\r\n");
-    protocol->setLineEnding("\r\n");
+    json.setLineEnding(DEFAULT_LINE_ENDING);
+    protocol->setLineEnding(DEFAULT_LINE_ENDING);
     channelMode = PROTOCOL;
 
     // And signal complete!
