@@ -469,7 +469,7 @@ void rs232Network::rs232_get_prefix()
     uint8_t prefixSpec[256];
     string prefixSpec_str;
 
-    memset(prefixSpec, 0, sizeof(prefixSpec));
+    rs232_ack();
     memcpy(prefixSpec, prefix.data(), prefix.size());
 
     prefixSpec[prefix.size()] = 0x9B; // add EOL.
@@ -485,8 +485,7 @@ void rs232Network::rs232_set_prefix()
     uint8_t prefixSpec[256];
     string prefixSpec_str;
 
-    memset(prefixSpec, 0, sizeof(prefixSpec));
-
+    rs232_ack();
     bus_to_peripheral(prefixSpec, sizeof(prefixSpec)); // TODO test checksum
     util_devicespec_fix_9b(prefixSpec, sizeof(prefixSpec));
 
@@ -586,7 +585,7 @@ void rs232Network::rs232_set_login()
 {
     uint8_t loginSpec[256];
 
-    memset(loginSpec, 0, sizeof(loginSpec));
+    rs232_ack();
     bus_to_peripheral(loginSpec, sizeof(loginSpec));
     util_devicespec_fix_9b(loginSpec, sizeof(loginSpec));
 
@@ -601,7 +600,7 @@ void rs232Network::rs232_set_password()
 {
     uint8_t passwordSpec[256];
 
-    memset(passwordSpec, 0, sizeof(passwordSpec));
+    rs232_ack();
     bus_to_peripheral(passwordSpec, sizeof(passwordSpec));
     util_devicespec_fix_9b(passwordSpec, sizeof(passwordSpec));
 
