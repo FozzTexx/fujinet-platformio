@@ -9,6 +9,7 @@
 #include <fcntl.h>
 
 #include <cstring>
+#include <algorithm>
 
 #include "../../include/debug.h"
 
