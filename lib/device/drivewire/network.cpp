@@ -1196,7 +1196,7 @@ void drivewireNetwork::json_query()
         return;
     }
 
-    in_string = std::string(tmpq,256);
+    in_string = std::string(tmpq);
 
     // strip away line endings from input spec.
     for (int i = 0; i < in_string.size(); i++)
@@ -1204,7 +1204,8 @@ void drivewireNetwork::json_query()
         unsigned char currentChar = static_cast<unsigned char>(in_string[i]);
         if (currentChar == 0x0A || currentChar == 0x0D || currentChar == 0x9b)
         {
-            in_string[i] = '\0';
+            in_string.resize(i);
+            break;
         }
     }
 
@@ -1219,10 +1220,12 @@ void drivewireNetwork::json_query()
     auto null_pos = std::find(tmp.begin(), tmp.end(), 0);
     *receiveBuffer += std::string(tmp.begin(), null_pos);
 
+#if 0
     for (int i=0;i<in_string.length();i++)
         Debug_printf("%02X ",(unsigned char)in_string[i]);
 
     Debug_printf("\n");
+#endif
 
     Debug_printf("Query set to >%s<\r\n", in_string.c_str());
 }
