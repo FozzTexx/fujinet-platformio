@@ -29,7 +29,7 @@ public:
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t open(PeoplesUrlParser *urlParser, fileAccessMode_t access,
-                       netProtoTranslation_t translate) override;
+                         netProtoTranslation_t translate) override;
 
     /**
      * @brief Close connection to the protocol.
@@ -57,6 +57,7 @@ public:
      */
     protocolError_t status(NetworkStatus *status) override;
 
+#ifdef OBSOLETE
     /**
      * @brief Return a DSTATS byte for a requested COMMAND byte.
      * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -84,6 +85,17 @@ public:
      * @param len length of the special buffer, typically SPECIAL_BUFFER_SIZE
      */
     protocolError_t special_80(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) override { return PROTOCOL_ERROR::NONE; }
+#endif /* OBSOLETE */
+
+    /**
+     * Accept a server connection, transfer to client socket.
+     */
+    protocolError_t accept_connection();
+
+    /**
+     * Close client connection.
+     */
+    protocolError_t close_client_connection();
 
 protected:
     /**
@@ -111,16 +123,6 @@ protected:
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t open_client(std::string hostname, unsigned short port);
-
-    /**
-     * Special: Accept a server connection, transfer to client socket.
-     */
-    protocolError_t special_accept_connection();
-
-    /**
-     * Special: Close client connection.
-     */
-    protocolError_t special_close_client_connection();
 
     /**
      * Return status of client connection

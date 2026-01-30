@@ -51,8 +51,8 @@ NetworkProtocolTCP::~NetworkProtocolTCP()
  * @param urlParser The URL object passed in to open.
  */
 protocolError_t NetworkProtocolTCP::open(PeoplesUrlParser *urlParser,
-                                       fileAccessMode_t access,
-                                       netProtoTranslation_t translate)
+                                         fileAccessMode_t access,
+                                         netProtoTranslation_t translate)
 {
     protocolError_t ret = PROTOCOL_ERROR::UNSPECIFIED; // assume error until proven ok
 
@@ -231,6 +231,7 @@ size_t NetworkProtocolTCP::available()
     return avail;
 }
 
+#ifdef OBSOLETE
 /**
  * @brief Return a DSTATS byte for a requested COMMAND byte.
  * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -273,6 +274,7 @@ protocolError_t NetworkProtocolTCP::special_00(fujiCommandID_t cmd, uint8_t http
     }
     return PROTOCOL_ERROR::UNSPECIFIED; // error
 }
+#endif /* OBSOLETE */
 
 /**
  * Open a server (listening) connection.
@@ -326,9 +328,9 @@ protocolError_t NetworkProtocolTCP::open_client(std::string hostname, unsigned s
 }
 
 /**
- * Special: Accept a server connection, transfer to client socket.
+ * Accept a server connection, transfer to client socket.
  */
-protocolError_t NetworkProtocolTCP::special_accept_connection()
+protocolError_t NetworkProtocolTCP::accept_connection()
 {
     if (server == nullptr)
     {
@@ -367,9 +369,9 @@ protocolError_t NetworkProtocolTCP::special_accept_connection()
 }
 
 /**
- * Special: Accept a server connection, transfer to client socket.
+ * Close client connection.
  */
-protocolError_t NetworkProtocolTCP::special_close_client_connection()
+protocolError_t NetworkProtocolTCP::close_client_connection()
 {
     in_addr_t remoteIP;
     unsigned char remotePort;

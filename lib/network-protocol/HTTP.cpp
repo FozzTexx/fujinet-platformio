@@ -56,6 +56,7 @@ NetworkProtocolHTTP::~NetworkProtocolHTTP()
         delete(client);
 }
 
+#ifdef OBSOLETE
 AtariSIODirection NetworkProtocolHTTP::special_inquiry(fujiCommandID_t cmd)
 {
     switch (cmd)
@@ -77,8 +78,9 @@ protocolError_t NetworkProtocolHTTP::special_00(fujiCommandID_t cmd, uint8_t htt
         return PROTOCOL_ERROR::UNSPECIFIED;
     }
 }
+#endif /* OBSOLETE */
 
-protocolError_t NetworkProtocolHTTP::special_set_channel_mode(netProtoHTTPChannelMode_t newMode)
+protocolError_t NetworkProtocolHTTP::set_channel_mode(netProtoHTTPChannelMode_t newMode)
 {
     protocolError_t err = PROTOCOL_ERROR::NONE;
 

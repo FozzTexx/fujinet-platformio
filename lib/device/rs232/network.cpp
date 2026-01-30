@@ -609,6 +609,7 @@ void rs232Network::rs232_set_password()
     rs232_complete();
 }
 
+#ifdef OBSOLETE
 /**
  * RS232 Special, called as a default for any other RS232 command not processed by the other rs232_ functions.
  * First, the protocol is asked whether it wants to process the command, and if so, the protocol will
@@ -638,7 +639,9 @@ void rs232Network::rs232_special()
         break;
     }
 }
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
 /**
  * @brief Do an inquiry to determine whether a protoocol supports a particular command.
  * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -657,7 +660,9 @@ void rs232Network::rs232_special_inquiry()
     // Finally, return the completed inq_dstats value back to Atari
     bus_to_computer((uint8_t *) &inq_dstats, sizeof(inq_dstats), false); // never errors.
 }
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
 void rs232Network::do_inquiry(fujiCommandID_t inq_cmd)
 {
     // Reset inq_dstats
@@ -711,7 +716,9 @@ void rs232Network::do_inquiry(fujiCommandID_t inq_cmd)
 
     Debug_printf("inq_dstats = %u\n", inq_dstats);
 }
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
 /**
  * @brief called to handle special protocol interactions when DSTATS=$00, meaning there is no payload.
  * Essentially, call the protocol action
@@ -735,14 +742,80 @@ void rs232Network::rs232_special_00()
     case NETCMD_CHANNEL_MODE:
         rs232_set_channel_mode();
         break;
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+        process_tcp();
+        break;
+    case NETCMD_UNLISTEN:
+        process_http();
+        break;
     default:
-        if (protocol->special_00(cmdFrame.comnd, cmdFrame.aux2) == PROTOCOL_ERROR::NONE)
-            rs232_complete();
-        else
-            rs232_error();
+        rs232_error();
     }
 }
+#endif /* OBSOLETE */
 
+void rs232Network::process_tcp()
+{
+    // Make sure this is really a TCP protocol instance
+    NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol);
+    if (!tcp)
+    {
+        rs232_nak();
+        return;
+    }
+
+    protocolError_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_CONTROL:
+        rs232_ack();
+        err = tcp->accept_connection();
+        break;
+    case NETCMD_CLOSE_CLIENT:
+        rs232_ack();
+        err = tcp->close_client_connection();
+        break;
+    default:
+        rs232_nak();
+        return;
+    }
+
+    if (err != PROTOCOL_ERROR::NONE)
+        rs232_error();
+    else
+        rs232_complete();
+}
+
+void rs232Network::process_http()
+{
+    // Make sure this is really an HTTP protocol instance
+    NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol);
+    if (!http)
+    {
+        rs232_nak();
+        return;
+    }
+
+    protocolError_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_UNLISTEN:
+        rs232_ack();
+        err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
+        break;
+    default:
+        rs232_nak();
+        return;
+    }
+
+    if (err != PROTOCOL_ERROR::NONE)
+        rs232_error();
+    else
+        rs232_complete();
+}
+
+#ifdef OBSOLETE
 /**
  * @brief called to handle protocol interactions when DSTATS=$40, meaning the payload is to go from
  * the peripheral back to the ATARI. Essentially, call the protocol action with the accrued special
@@ -757,6 +830,11 @@ void rs232Network::rs232_special_40()
     case NETCMD_GETCWD:
         rs232_get_prefix();
         return;
+
+    case NETCMD_GET_REMOTE:
+        process_udp();
+        break;
+
     default:
         break;
     }
@@ -767,7 +845,44 @@ void rs232Network::rs232_special_40()
                     SPECIAL_BUFFER_SIZE,
                     err != PROTOCOL_ERROR::NONE);
 }
+#endif /* OBSOLETE */
 
+void rs232Network::process_udp()
+{
+    // Make sure this is really a UDP protocol instance
+    NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol);
+    if (!udp)
+    {
+        rs232_nak();
+        return;
+    }
+
+    protocolError_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_GET_REMOTE:
+        rs232_ack();
+        err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
+        bus_to_computer((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err != PROTOCOL_ERROR::NONE);
+        break;
+    case NETCMD_SET_DESTINATION:
+        {
+            uint8_t spData[SPECIAL_BUFFER_SIZE];
+            bus_to_peripheral(spData, sizeof(spData));
+            err = udp->set_destination(spData, sizeof(spData));
+            if (err != PROTOCOL_ERROR::NONE)
+                rs232_error();
+            else
+                rs232_complete();
+        }
+        break;
+    default:
+        rs232_nak();
+        return;
+    }
+}
+
+#ifdef OBSOLETE
 /**
  * @brief called to handle protocol interactions when DSTATS=$80, meaning the payload is to go from
  * the ATARI to the pheripheral. Essentially, call the protocol action with the accrued special
@@ -802,6 +917,9 @@ void rs232Network::rs232_special_80()
     case NETCMD_PASSWORD:
         rs232_set_password();
         return;
+    case NETCMD_SET_DESTINATION:
+        process_udp();
+        break;
     default:
         break;
     }
@@ -819,6 +937,7 @@ void rs232Network::rs232_special_80()
     else
         rs232_error();
 }
+#endif /* OBSOLETE */
 
 void rs232Network::rs232_seek()
 {
@@ -889,17 +1008,61 @@ void rs232Network::rs232_process(cmdFrame_t *cmd_ptr)
         rs232_ack();
         rs232_set_channel_mode();
         break;
+#ifdef OBSOLETE
     case NETCMD_SPECIAL_INQUIRY:
         rs232_special_inquiry();
         break;
+#endif /* OBSOLETE */
     case NETCMD_SEEK:
         rs232_seek();
         break;
     case NETCMD_TELL:
         rs232_tell();
         break;
+    case NETCMD_TRANSLATION:
+        rs232_set_translation();
+        break;
+    case NETCMD_SET_INT_RATE:
+        rs232_set_timer_rate();
+        break;
+    case NETCMD_GETCWD:
+        rs232_get_prefix();
+        break;
+    case NETCMD_CHDIR:
+        rs232_set_prefix();
+        break;
+    case NETCMD_USERNAME:
+        rs232_set_login();
+        break;
+    case NETCMD_PASSWORD:
+        rs232_set_password();
+        break;
+
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+        process_tcp();
+        break;
+
+    case NETCMD_UNLISTEN:
+        process_http();
+        break;
+
+    case NETCMD_GET_REMOTE:
+    case NETCMD_SET_DESTINATION:
+        process_udp();
+        break;
+
+    case NETCMD_RENAME:
+    case NETCMD_DELETE:
+    case NETCMD_LOCK:
+    case NETCMD_UNLOCK:
+    case NETCMD_MKDIR:
+    case NETCMD_RMDIR:
+        process_fs();
+        break;
+
     default:
-        rs232_special();
+        rs232_nak();
         break;
     }
 }
@@ -1153,6 +1316,7 @@ void rs232Network::rs232_set_timer_rate()
     rs232_complete();
 }
 
+#ifdef OBSOLETE
 void rs232Network::rs232_do_idempotent_command_80()
 {
     rs232_ack();
@@ -1171,6 +1335,52 @@ void rs232Network::rs232_do_idempotent_command_80()
         Debug_printf("perform_idempotent_80 failed\n");
         rs232_error();
     }
+    else
+        rs232_complete();
+}
+#endif /* OBSOLETE */
+
+void rs232Network::process_fs()
+{
+    parse_and_instantiate_protocol();
+
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
+    if (!fs)
+    {
+        rs232_nak();
+        return;
+    }
+
+    protocolError_t err;
+    auto url = urlParser.get();
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_RENAME:
+        err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        err = fs->rmdir(url);
+        break;
+    default:
+        rs232_nak();
+        return;
+    }
+
+    if (err != PROTOCOL_ERROR::NONE)
+        rs232_error();
     else
         rs232_complete();
 }

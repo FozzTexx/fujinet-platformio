@@ -31,8 +31,8 @@ NetworkProtocolUDP::~NetworkProtocolUDP()
 }
 
 protocolError_t NetworkProtocolUDP::open(PeoplesUrlParser *urlParser,
-                                       fileAccessMode_t access,
-                                       netProtoTranslation_t translate)
+                                         fileAccessMode_t access,
+                                         netProtoTranslation_t translate)
 {
     Debug_printf("NetworkProtocolUDP::open(%s:%s)\r\n", urlParser->host.c_str(), urlParser->port.c_str());
 
@@ -186,6 +186,7 @@ protocolError_t NetworkProtocolUDP::status(NetworkStatus *status)
     return PROTOCOL_ERROR::NONE;
 }
 
+#ifdef OBSOLETE
 AtariSIODirection NetworkProtocolUDP::special_inquiry(fujiCommandID_t cmd)
 {
     Debug_printf("NetworkProtocolUDP::special_inquiry(%02x)\r\n", cmd);
@@ -231,6 +232,7 @@ protocolError_t NetworkProtocolUDP::special_80(uint8_t *sp_buf, unsigned short l
     }
     return PROTOCOL_ERROR::UNSPECIFIED;
 }
+#endif /* OBSOLETE */
 
 protocolError_t NetworkProtocolUDP::set_destination(uint8_t *sp_buf, unsigned short len)
 {
@@ -266,7 +268,7 @@ protocolError_t NetworkProtocolUDP::set_destination(uint8_t *sp_buf, unsigned sh
 }
 
 #ifndef ESP_PLATFORM
-protocolError_t NetworkProtocolUDP::get_remote(uint8_t *sp_buf, unsigned short len)
+protocolError_t NetworkProtocolUDP::get_remote(void *sp_buf, unsigned short len)
 {
     char port_part[8];
 

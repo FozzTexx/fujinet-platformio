@@ -54,6 +54,7 @@ public:
      */
     virtual ~NetworkProtocolHTTP();
 
+#ifdef OBSOLETE
     /**
      * @brief Return a DSTATS byte for a requested COMMAND byte.
      * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -66,6 +67,12 @@ public:
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t special_00(fujiCommandID_t cmd, uint8_t httpChanMode) override;
+#endif /* OBSOLETE */
+
+    /**
+     * @brief Set Channel mode (DATA, HEADERS, etc.)
+     */
+    protocolError_t set_channel_mode(netProtoHTTPChannelMode_t newMode);
 
 protected:
     /**
@@ -249,11 +256,6 @@ private:
      * Do HTTP transaction
      */
     void http_transaction();
-
-    /**
-     * @brief Set Channel mode (DATA, HEADERS, etc.)
-     */
-    protocolError_t special_set_channel_mode(netProtoHTTPChannelMode_t newMode);
 
     /**
      * @brief header mode - retrieve requested headers previously collected.

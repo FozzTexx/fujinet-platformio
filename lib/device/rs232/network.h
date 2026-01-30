@@ -82,12 +82,14 @@ public:
      */
     virtual void rs232_write();
 
+#ifdef OBSOLETE
     /**
      * RS232 Status Command. First try to populate NetworkStatus object from protocol. If protocol not instantiated,
      * or Protocol does not want to fill status buffer (e.g. due to unknown aux1/aux2 values), then try to deal
      * with them locally. Then serialize resulting NetworkStatus object to RS232.
      */
     virtual void rs232_special();
+#endif /* OBSOLETE */
 
     /**
      * RS232 Special, called as a default for any other RS232 command not processed by the other rs232_ functions.
@@ -133,6 +135,10 @@ public:
      * @param checksum 8 bit checksum
      */
     virtual void rs232_process(cmdFrame_t *cmd_ptr);
+    void process_tcp();
+    void process_http();
+    void process_udp();
+    void process_fs();
 
     void rs232_seek();
     void rs232_tell();
@@ -335,6 +341,7 @@ private:
      */
     bool rs232_status_channel_json(NetworkStatus *ns);
 
+#ifdef OBSOLETE
     /**
      * @brief Do an inquiry to determine whether a protoocol supports a particular command.
      * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -365,17 +372,20 @@ private:
      * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
      */
     void rs232_special_80();
+#endif /* OBSOLETE */
 
     /**
      * Called to pulse the PROCEED interrupt, rate limited by the interrupt timer.
      */
     void rs232_assert_interrupt();
 
+#ifdef OBSOLETE
     /**
      * @brief Perform the inquiry, handle both local and protocol commands.
      * @param inq_cmd the command to check against.
      */
     void do_inquiry(fujiCommandID_t inq_cmd);
+#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.

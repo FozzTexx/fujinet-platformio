@@ -33,8 +33,8 @@ NetworkProtocolFS::~NetworkProtocolFS()
 }
 
 protocolError_t NetworkProtocolFS::open(PeoplesUrlParser *urlParser,
-                                      fileAccessMode_t access,
-                                      netProtoTranslation_t translate)
+                                        fileAccessMode_t access,
+                                        netProtoTranslation_t translate)
 {
     // Call base class.
     NetworkProtocol::open(urlParser, access, translate);
@@ -386,6 +386,7 @@ void NetworkProtocolFS::resolve()
         fileSize = 0;
 }
 
+#ifdef OBSOLETE
 protocolError_t NetworkProtocolFS::perform_idempotent_80(PeoplesUrlParser *url, fujiCommandID_t cmd)
 {
 #ifdef VERBOSE_PROTOCOL
@@ -412,6 +413,7 @@ protocolError_t NetworkProtocolFS::perform_idempotent_80(PeoplesUrlParser *url, 
         return PROTOCOL_ERROR::UNSPECIFIED;
     }
 }
+#endif /* OBSOLETE */
 
 protocolError_t NetworkProtocolFS::rename(PeoplesUrlParser *url)
 {

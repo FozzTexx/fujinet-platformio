@@ -219,6 +219,7 @@ protocolError_t NetworkProtocolFTP::status_file(NetworkStatus *status)
     return PROTOCOL_ERROR::NONE;
 }
 
+#ifdef OBSOLETE
 AtariSIODirection NetworkProtocolFTP::special_inquiry(fujiCommandID_t cmd)
 {
     AtariSIODirection ret;
@@ -237,6 +238,7 @@ AtariSIODirection NetworkProtocolFTP::special_inquiry(fujiCommandID_t cmd)
 
     return ret;
 }
+#endif /* OBSOLETE */
 
 size_t NetworkProtocolFTP::available()
 {

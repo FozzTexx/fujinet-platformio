@@ -52,11 +52,10 @@ public:
     /**
      * @brief Open a URL
      * @param url pointer to PeoplesUrlParser pointing to file to open.
-     * @param cmdFrame pointer to command frame for aux1/aux2/etc values.
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t open(PeoplesUrlParser *urlParser, fileAccessMode_t access,
-                       netProtoTranslation_t translate) override;
+                         netProtoTranslation_t translate) override;
 
     /**
      * @brief Close the open URL
@@ -85,6 +84,7 @@ public:
      */
     protocolError_t status(NetworkStatus *status) override;
 
+#ifdef OBSOLETE
     /**
      * @brief Return a DSTATS byte for a requested COMMAND byte.
      * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -94,7 +94,6 @@ public:
 
     /**
      * @brief execute a command that returns no payload
-     * @param cmdFrame a pointer to the passed in command frame for aux1/aux2/etc
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
     protocolError_t special_00(fujiCommandID_t cmd, uint8_t httpChanMode) override { error = NDEV_STATUS::NOT_IMPLEMENTED; return PROTOCOL_ERROR::UNSPECIFIED; }
@@ -119,6 +118,49 @@ public:
      * @param url The URL object.
      */
     protocolError_t perform_idempotent_80(PeoplesUrlParser *url, fujiCommandID_t cmd) override;
+#endif /* OBSOLETE */
+
+    /**
+     * @brief Rename file specified by incoming devicespec.
+     * @param url pointer to PeoplesUrlParser pointing to file/dest to rename
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
+     */
+    virtual protocolError_t rename(PeoplesUrlParser *url);
+
+    /**
+     * @brief Delete file specified by incoming devicespec.
+     * @param url pointer to PeoplesUrlParser pointing to file to delete
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
+     */
+    virtual protocolError_t del(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
+
+    /**
+     * @brief Make directory specified by incoming devicespec.
+     * @param url pointer to PeoplesUrlParser pointing to file to delete
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
+     */
+    virtual protocolError_t mkdir(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
+
+    /**
+     * @brief Remove directory specified by incoming devicespec.
+     * @param url pointer to PeoplesUrlParser pointing to file to delete
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
+     */
+    virtual protocolError_t rmdir(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
+
+    /**
+     * @brief lock file specified by incoming devicespec.
+     * @param url pointer to PeoplesUrlParser pointing to file to delete
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
+     */
+    virtual protocolError_t lock(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
+
+    /**
+     * @brief unlock file specified by incoming devicespec.
+     * @param url pointer to PeoplesUrlParser pointing to file to delete
+     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
+     */
+    virtual protocolError_t unlock(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
 
     size_t available() override;
 
@@ -323,48 +365,6 @@ protected:
      * @brief get status of file, filling in filesize. mount() must have already been called.
      */
     virtual protocolError_t stat() = 0;
-
-    /**
-     * @brief Rename file specified by incoming devicespec.
-     * @param url pointer to PeoplesUrlParser pointing to file/dest to rename
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    virtual protocolError_t rename(PeoplesUrlParser *url);
-
-    /**
-     * @brief Delete file specified by incoming devicespec.
-     * @param url pointer to PeoplesUrlParser pointing to file to delete
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    virtual protocolError_t del(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
-
-    /**
-     * @brief Make directory specified by incoming devicespec.
-     * @param url pointer to PeoplesUrlParser pointing to file to delete
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    virtual protocolError_t mkdir(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
-
-    /**
-     * @brief Remove directory specified by incoming devicespec.
-     * @param url pointer to PeoplesUrlParser pointing to file to delete
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    virtual protocolError_t rmdir(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
-
-    /**
-     * @brief lock file specified by incoming devicespec.
-     * @param url pointer to PeoplesUrlParser pointing to file to delete
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    virtual protocolError_t lock(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
-
-    /**
-     * @brief unlock file specified by incoming devicespec.
-     * @param url pointer to PeoplesUrlParser pointing to file to delete
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    virtual protocolError_t unlock(PeoplesUrlParser *url) { return PROTOCOL_ERROR::NONE; }
 
     /**
      * @brief change the values passed to open for platforms that need to do it after the open (looking a you IEC)

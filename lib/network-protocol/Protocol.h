@@ -173,6 +173,7 @@ public:
      */
     virtual protocolError_t status(NetworkStatus *status);
 
+#ifdef OBSOLETE
     /**
      * @brief Return a DSTATS byte for a requested COMMAND byte.
      * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -206,6 +207,7 @@ public:
      * @param url The URL object.
      */
     virtual protocolError_t perform_idempotent_80(PeoplesUrlParser *url, fujiCommandID_t cmd) { return PROTOCOL_ERROR::NONE; }
+#endif /* OBSOLETE */
 
     /**
      * @brief return an _atari_ error (>199) based on errno. into error for status reporting.
