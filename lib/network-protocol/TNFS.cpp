@@ -219,6 +219,7 @@ netProtoErr_t NetworkProtocolTNFS::write_file_handle(uint8_t *buf, unsigned shor
     return tnfs_error != TNFS_RESULT_SUCCESS ? NETPROTO_ERR_UNSPECIFIED : NETPROTO_ERR_NONE;
 }
 
+#ifdef OBSOLETE
 AtariSIODirection NetworkProtocolTNFS::special_inquiry(fujiCommandID_t cmd)
 {
     AtariSIODirection ret;
@@ -239,6 +240,7 @@ AtariSIODirection NetworkProtocolTNFS::special_inquiry(fujiCommandID_t cmd)
 
     return ret;
 }
+#endif /* OBSOLETE */
 
 netProtoErr_t NetworkProtocolTNFS::rename(PeoplesUrlParser *url)
 {

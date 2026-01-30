@@ -29,6 +29,7 @@ public:
     NetworkProtocolFTP (const NetworkProtocolFTP&) = delete;
     NetworkProtocolFTP& operator= (const NetworkProtocolFTP&) = delete;
 
+#ifdef OBSOLETE
     /**
      * @brief Return a DSTATS byte for a requested COMMAND byte.
      * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -56,6 +57,7 @@ public:
      * @param len length of the special buffer, typically SPECIAL_BUFFER_SIZE
      */
     netProtoErr_t special_80(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) override { return NETPROTO_ERR_NONE; }
+#endif /* OBSOLETE */
 
     /**
      * @brief Rename file specified by incoming devicespec.

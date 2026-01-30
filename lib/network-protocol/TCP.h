@@ -58,6 +58,7 @@ public:
      */
     netProtoErr_t status(NetworkStatus *status) override;
 
+#ifdef OBSOLETE
     /**
      * @brief Return a DSTATS byte for a requested COMMAND byte.
      * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -85,6 +86,17 @@ public:
      * @param len length of the special buffer, typically SPECIAL_BUFFER_SIZE
      */
     netProtoErr_t special_80(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) override { return NETPROTO_ERR_NONE; }
+#endif /* OBSOLETE */
+
+    /**
+     * Accept a server connection, transfer to client socket.
+     */
+    netProtoErr_t accept_connection();
+
+    /**
+     * Close client connection.
+     */
+    netProtoErr_t close_client_connection();
 
 protected:
     /**
@@ -112,16 +124,6 @@ protected:
      * @return NETPROTO_ERR_NONE on success, NETPROTO_ERR_UNSPECIFIED on error
      */
     netProtoErr_t open_client(std::string hostname, unsigned short port);
-
-    /**
-     * Special: Accept a server connection, transfer to client socket.
-     */
-    netProtoErr_t special_accept_connection();
-
-    /**
-     * Special: Close client connection.
-     */
-    netProtoErr_t special_close_client_connection();
 
     /**
      * Return status of client connection

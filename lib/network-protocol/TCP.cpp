@@ -232,6 +232,7 @@ size_t NetworkProtocolTCP::available()
     return avail;
 }
 
+#ifdef OBSOLETE
 /**
  * @brief Return a DSTATS byte for a requested COMMAND byte.
  * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -277,6 +278,7 @@ netProtoErr_t NetworkProtocolTCP::special_00(fujiCommandID_t cmd, uint8_t httpCh
     }
     return NETPROTO_ERR_UNSPECIFIED; // error
 }
+#endif /* OBSOLETE */
 
 /**
  * Open a server (listening) connection.
@@ -330,9 +332,9 @@ netProtoErr_t NetworkProtocolTCP::open_client(std::string hostname, unsigned sho
 }
 
 /**
- * Special: Accept a server connection, transfer to client socket.
+ * Accept a server connection, transfer to client socket.
  */
-netProtoErr_t NetworkProtocolTCP::special_accept_connection()
+netProtoErr_t NetworkProtocolTCP::accept_connection()
 {
     if (server == nullptr)
     {
@@ -371,9 +373,9 @@ netProtoErr_t NetworkProtocolTCP::special_accept_connection()
 }
 
 /**
- * Special: Accept a server connection, transfer to client socket.
+ * Close client connection.
  */
-netProtoErr_t NetworkProtocolTCP::special_close_client_connection()
+netProtoErr_t NetworkProtocolTCP::close_client_connection()
 {
     in_addr_t remoteIP;
     unsigned char remotePort;

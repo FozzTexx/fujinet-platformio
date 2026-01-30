@@ -372,6 +372,7 @@ void NetworkProtocolFS::resolve()
         fileSize = 0;
 }
 
+#ifdef OBSOLETE
 netProtoErr_t NetworkProtocolFS::perform_idempotent_80(PeoplesUrlParser *url, fujiCommandID_t cmd)
 {
 #ifdef VERBOSE_PROTOCOL
@@ -398,6 +399,7 @@ netProtoErr_t NetworkProtocolFS::perform_idempotent_80(PeoplesUrlParser *url, fu
         return NETPROTO_ERR_UNSPECIFIED;
     }
 }
+#endif /* OBSOLETE */
 
 netProtoErr_t NetworkProtocolFS::rename(PeoplesUrlParser *url)
 {

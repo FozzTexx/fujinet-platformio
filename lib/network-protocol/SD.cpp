@@ -213,6 +213,7 @@ netProtoErr_t NetworkProtocolSD::write_file_handle(uint8_t *buf, unsigned short 
 }
 
 
+#ifdef OBSOLETE
 AtariSIODirection NetworkProtocolSD::special_inquiry(fujiCommandID_t cmd)
 {
     AtariSIODirection ret;
@@ -233,6 +234,7 @@ AtariSIODirection NetworkProtocolSD::special_inquiry(fujiCommandID_t cmd)
 
     return ret;
 }
+#endif /* OBSOLETE */
 
 netProtoErr_t NetworkProtocolSD::rename(PeoplesUrlParser *url)
 {

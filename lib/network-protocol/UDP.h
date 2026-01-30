@@ -56,6 +56,7 @@ public:
      */
     netProtoErr_t status(NetworkStatus *status) override;
 
+#ifdef OBSOLETE
     /**
      * @brief Return a DSTATS byte for a requested COMMAND byte.
      * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -76,13 +77,32 @@ public:
      * @return NETPROTO_ERR_NONE on success, NETPROTO_ERR_UNSPECIFIED on error
      */
     netProtoErr_t special_40(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) override;
+#endif /* OBSOLETE */
 
+#ifndef ESP_PLATFORM
+    /**
+     * @brief Get remote address
+     * @param sp_buf pointer to transmit special buffer.
+     * @param len of special transmit buffer
+     */
+    netProtoErr_t get_remote(void *sp_buf, unsigned short len);
+#endif
+
+#ifdef OBSOLETE
     /**
      * @brief execute a command that sends a payload to fujinet (most common, XIO)
      * @param sp_buf, a pointer to the special buffer, usually a EOL terminated devicespec.
      * @param len length of the special buffer, typically SPECIAL_BUFFER_SIZE
      */
     netProtoErr_t special_80(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) override;
+#endif /* OBSOLETE */
+
+    /**
+     * @brief Set destination address
+     * @param sp_buf pointer to received special buffer.
+     * @param len of special received buffer
+     */
+    netProtoErr_t set_destination(uint8_t *sp_buf, unsigned short len);
 
     size_t available() override { return udp.available(); }
 
@@ -107,22 +127,6 @@ protected:
      * Do multicast write?
      */
     bool multicast_write = false;
-
-    /**
-     * @brief Set destination address
-     * @param sp_buf pointer to received special buffer.
-     * @param len of special received buffer
-     */
-    netProtoErr_t set_destination(uint8_t *sp_buf, unsigned short len);
-
-#ifndef ESP_PLATFORM
-    /**
-     * @brief Get remote address
-     * @param sp_buf pointer to transmit special buffer.
-     * @param len of special transmit buffer
-     */
-    netProtoErr_t get_remote(uint8_t *sp_buf, unsigned short len);
-#endif
 
 private:
     /**
