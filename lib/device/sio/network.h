@@ -87,12 +87,14 @@ public:
      */
     virtual void sio_write();
 
+#ifdef OBSOLETE
     /**
      * SIO Status Command. First try to populate NetworkStatus object from protocol. If protocol not instantiated,
      * or Protocol does not want to fill status buffer (e.g. due to unknown aux1/aux2 values), then try to deal
      * with them locally. Then serialize resulting NetworkStatus object to SIO.
      */
     virtual void sio_special();
+#endif /* OBSOLETE */
 
     /**
      * SIO Special, called as a default for any other SIO command not processed by the other sio_ functions.
@@ -349,6 +351,7 @@ private:
      */
     bool sio_status_channel_json(NetworkStatus *ns);
 
+#ifdef OBSOLETE
     /**
      * @brief Do an inquiry to determine whether a protoocol supports a particular command.
      * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -379,6 +382,7 @@ private:
      * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
      */
     void sio_special_80();
+#endif /* OBSOLETE */
 
     /**
      * Called to pulse the PROCEED interrupt, rate limited by the interrupt timer.
@@ -392,11 +396,13 @@ private:
     void sio_clear_interrupt();
 #endif
 
+#ifdef OBSOLETE
     /**
      * @brief Perform the inquiry, handle both local and protocol commands.
      * @param inq_cmd the command to check against.
      */
     void do_inquiry(fujiCommandID_t inq_cmd);
+#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.
@@ -424,16 +430,23 @@ private:
      */
     void sio_set_timer_rate();
 
+#ifdef OBSOLETE
     /**
      * @brief perform ->FujiNet commands on protocols that do not use an explicit OPEN channel.
      */
     void sio_do_idempotent_command_80();
+#endif /* OBSOLETE */
 
     /**
      * @brief parse URL and instantiate protocol
      */
     void parse_and_instantiate_protocol();
 
+    void process_fs();
+    void process_tcp();
+    void process_http();
+    void process_udp();
+    
 };
 
 #endif /* NETWORK_H */

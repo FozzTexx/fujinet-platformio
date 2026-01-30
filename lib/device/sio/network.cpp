@@ -23,6 +23,11 @@
 
 #include "status_error_codes.h"
 
+#include "TCP.h"
+#include "UDP.h"
+#include "HTTP.h"
+#include "FS.h"
+
 using namespace std;
 
 //
@@ -174,7 +179,7 @@ void sioNetwork::sio_open()
     }
 
     // Attempt protocol open
-    if (protocol->open(urlParser.get(), &cmdFrame) == true)
+    if (protocol->open(urlParser.get(), (netProtoOpenMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) == true)
     {
         status.error = protocol->error;
         Debug_printf("Protocol unable to make connection. Error: %d\n", status.error);
@@ -681,6 +686,7 @@ void sioNetwork::sio_set_password()
     sio_complete();
 }
 
+#ifdef OBSOLETE
 /**
  * SIO Special, called as a default for any other SIO command not processed by the other sio_ functions.
  * First, the protocol is asked whether it wants to process the command, and if so, the protocol will
@@ -729,7 +735,7 @@ void sioNetwork::sio_special_inquiry()
     do_inquiry((fujiCommandID_t) cmdFrame.aux1);
 
     // Finally, return the completed inq_dstats value back to Atari
-    bus_to_computer((uint8_t *) &inq_dstats, sizeof(inq_dstats), false); // never errors.
+    bus_to_computer(&inq_dstats, sizeof(inq_dstats), false); // never errors.
 }
 
 void sioNetwork::do_inquiry(fujiCommandID_t inq_cmd)
@@ -907,6 +913,7 @@ void sioNetwork::sio_special_80()
     else
         sio_error();
 }
+#endif /* OBSOLETE */
 
 /**
  * Process incoming SIO command for device 0x7X
@@ -945,8 +952,76 @@ void sioNetwork::sio_process(uint32_t commanddata, uint8_t checksum)
     case NETCMD_SPECIAL_INQUIRY:
         sio_special_inquiry();
         break;
+#endif /* OBSOLETE */
+
+    case NETCMD_PARSE:
+        sio_ack();
+        sio_parse_json();
+        break;
+    case NETCMD_TRANSLATION:
+        sio_ack();
+        sio_set_translation();
+        break;
+    case NETCMD_TIMER:
+        sio_ack();
+        sio_set_timer_rate();
+        break;
+    case NETCMD_SET_SSID: // JSON parameter wrangling
+        sio_ack();
+        sio_set_json_parameters();
+        break;
+    case NETCMD_GET_SCAN_RESULT: // SET CHANNEL MODE
+        sio_ack();
+        sio_set_channel_mode();
+        break;
+
+    case NETCMD_GETCWD:
+        sio_ack();
+        sio_get_prefix();
+        break;
+
+    case NETCMD_CHDIR:
+        sio_ack();
+        sio_set_prefix();
+        return;
+    case NETCMD_QUERY:
+        sio_ack();
+        sio_set_json_query();
+        return;
+    case NETCMD_USERNAME:
+        sio_ack();
+        sio_set_login();
+        return;
+    case NETCMD_PASSWORD:
+        sio_ack();
+        sio_set_password();
+        return;
+        
+    case NETCMD_RENAME:
+    case NETCMD_DELETE:
+    case NETCMD_LOCK:
+    case NETCMD_UNLOCK:
+    case NETCMD_MKDIR:
+    case NETCMD_RMDIR:
+        process_fs();
+        break;
+
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+        process_tcp();
+        break;
+
+    case NETCMD_UNLISTEN:
+        process_http();
+        break;
+
+    case NETCMD_GET_REMOTE:
+    case NETCMD_SET_DESTINATION:
+        process_udp();
+        break;
+
     default:
-        sio_special();
+        sio_nak();
         break;
     }
 }
@@ -1279,6 +1354,7 @@ void sioNetwork::sio_set_timer_rate()
     sio_complete();
 }
 
+#ifdef OBSOLETE
 void sioNetwork::sio_do_idempotent_command_80()
 {
     Debug_printf("sioNetwork::sio_do_idempotent_command_80()\r\n");
@@ -1323,6 +1399,147 @@ void sioNetwork::sio_do_idempotent_command_80()
     }
     else
         sio_complete();
+}
+#endif /* OBSOLETE */
+
+void sioNetwork::process_fs()
+{
+    parse_and_instantiate_protocol();
+
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
+    if (!fs)
+    {
+        sio_nak();
+        return;
+    }
+
+    netProtoErr_t err;
+    auto url = urlParser.get();
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_RENAME:
+        err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        err = fs->rmdir(url);
+        break;
+    default:
+        sio_nak();
+        return;
+    }
+
+    if (err != NETPROTO_ERR_NONE)
+        sio_error();
+    else
+        sio_complete();
+}
+
+void sioNetwork::process_tcp()
+{
+    // Make sure this is really a TCP protocol instance
+    NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol);
+    if (!tcp)
+    {
+        sio_nak();
+        return;
+    }
+
+    netProtoErr_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_CONTROL:
+        sio_ack();
+        err = tcp->accept_connection();
+        break;
+    case NETCMD_CLOSE_CLIENT:
+        sio_ack();
+        err = tcp->close_client_connection();
+        break;
+    default:
+        sio_nak();
+        return;
+    }
+
+    if (err != NETPROTO_ERR_NONE)
+        sio_error();
+    else
+        sio_complete();
+}
+
+void sioNetwork::process_http()
+{
+    // Make sure this is really an HTTP protocol instance
+    NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol);
+    if (!http)
+    {
+        sio_nak();
+        return;
+    }
+
+    netProtoErr_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_UNLISTEN:
+        sio_ack();
+        err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
+        break;
+    default:
+        sio_nak();
+        return;
+    }
+
+    if (err != NETPROTO_ERR_NONE)
+        sio_error();
+    else
+        sio_complete();
+}
+
+void sioNetwork::process_udp()
+{
+    // Make sure this is really a UDP protocol instance
+    NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol);
+    if (!udp)
+    {
+        sio_nak();
+        return;
+    }
+
+    netProtoErr_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_GET_REMOTE:
+        sio_ack();
+        err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
+        bus_to_computer((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err);
+        break;
+    case NETCMD_SET_DESTINATION:
+        {
+            uint8_t spData[SPECIAL_BUFFER_SIZE];
+            bus_to_peripheral(spData, sizeof(spData));
+            err = udp->set_destination(spData, sizeof(spData));
+            if (err != NETPROTO_ERR_NONE)
+                sio_error();
+            else
+                sio_complete();
+        }
+        break;
+    default:
+        sio_nak();
+        return;
+    }
 }
 
 #endif /* BUILD_ATARI */
