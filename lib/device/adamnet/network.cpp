@@ -1102,10 +1102,23 @@ void adamNetwork::adamnet_set_timer_rate()
 
 void adamNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
 {
+    adamnet_recv_buffer(response, pkt_len);
+    adamnet_recv(); // CK
+
+    SYSTEM_BUS.start_time = esp_timer_get_time();
+    adamnet_response_ack();
+
     auto data = string((char *)response, pkt_len);
     parse_and_instantiate_protocol(data);
 
-    NetworkProtocolFS* fs = static_cast<NetworkProtocolFS*>(protocol);
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
+    if (!fs)
+    {
+        err = NETWORK_ERROR_GENERAL;
+        return;
+    }
+
     netProtoErr_t cmd_err;
     auto url = urlParser.get();
     switch (cmd)
@@ -1139,7 +1152,14 @@ void adamNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
 
 void adamNetwork::process_tcp(fujiCommandID_t cmd)
 {
-    NetworkProtocolTCP* tcp = static_cast<NetworkProtocolTCP*>(protocol);
+    // Make sure this is really a TCP protocol instance
+    NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol);
+    if (!tcp)
+    {
+        err = NETWORK_ERROR_GENERAL;
+        return;
+    }
+
     netProtoErr_t cmd_err;
     switch (cmd)
     {
@@ -1160,7 +1180,14 @@ void adamNetwork::process_tcp(fujiCommandID_t cmd)
 
 void adamNetwork::process_http(fujiCommandID_t cmd)
 {
-    NetworkProtocolHTTP* http = static_cast<NetworkProtocolHTTP*>(protocol);
+    // Make sure this is really a HTTP protocol instance
+    NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol);
+    if (!http)
+    {
+        err = NETWORK_ERROR_GENERAL;
+        return;
+    }
+
     netProtoErr_t cmd_err;
     switch (cmd)
     {
@@ -1178,7 +1205,14 @@ void adamNetwork::process_http(fujiCommandID_t cmd)
 
 void adamNetwork::process_udp(fujiCommandID_t cmd)
 {
-    NetworkProtocolUDP* udp = static_cast<NetworkProtocolUDP*>(protocol);
+    // Make sure this is really a UDP protocol instance
+    NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol);
+    if (!udp)
+    {
+        err = NETWORK_ERROR_GENERAL;
+        return;
+    }
+
     netProtoErr_t cmd_err;
     switch (cmd)
     {
