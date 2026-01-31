@@ -217,10 +217,12 @@ private:
      */
     uint8_t trans_aux2 = 0;
 
+#ifdef OBSOLETE
     /**
      * Return value for DSTATS inquiry
      */
     AtariSIODirection inq_dstats = SIO_DIRECTION_INVALID;
+#endif /* OBSOLETE */
 
     /**
      * The login to use for a protocol action
