@@ -140,7 +140,11 @@ public:
      * @param checksum 8 bit checksum
      */
     virtual void sio_process(uint32_t commanddata, uint8_t checksum);
-
+    void process_fs();
+    void process_tcp();
+    void process_http();
+    void process_udp();
+    
 private:
     /**
      * Buffer for holding devicespec
@@ -441,12 +445,6 @@ private:
      * @brief parse URL and instantiate protocol
      */
     void parse_and_instantiate_protocol();
-
-    void process_fs();
-    void process_tcp();
-    void process_http();
-    void process_udp();
-    
 };
 
 #endif /* NETWORK_H */

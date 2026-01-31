@@ -19,6 +19,10 @@
 
 #include "status_error_codes.h"
 #include "Protocol.h"
+#include "TCP.h"
+#include "UDP.h"
+#include "HTTP.h"
+#include "FS.h"
 
 using namespace std;
 
@@ -185,7 +189,7 @@ void drivewireNetwork::open()
     protocol->setLineEnding("\x0D");
 
     // Attempt protocol open
-    if (protocol->open(urlParser.get(), &cmdFrame) == true)
+    if (protocol->open(urlParser.get(), (netProtoOpenMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) == true)
     {
         ns.error = protocol->error;
         Debug_printf("Protocol unable to make connection. Error: %d\n", ns.error);
@@ -692,6 +696,7 @@ void drivewireNetwork::set_password()
     Debug_printf("drivewireNetwork::set_password(%s)\n", password.c_str());
 }
 
+#ifdef OBSOLETE
 /**
  * DRIVEWIRE Special, called as a default for any other DRIVEWIRE command not processed by the other drivewire_ functions.
  * First, the protocol is asked whether it wants to process the command, and if so, the protocol will
@@ -900,6 +905,7 @@ void drivewireNetwork::special_80()
 
     protocol->status(&ns);
 }
+#endif /* OBSOLETE */
 
 /** PRIVATE METHODS ************************************************************/
 
@@ -1230,6 +1236,7 @@ void drivewireNetwork::json_query()
     Debug_printf("Query set to >%s<\r\n", in_string.c_str());
 }
 
+#ifdef OBSOLETE
 void drivewireNetwork::do_idempotent_command_80()
 {
     Debug_printf("sioNetwork::sio_do_idempotent_command_80()\r\n");
@@ -1254,6 +1261,7 @@ void drivewireNetwork::do_idempotent_command_80()
     // else
     //     sio_complete();
 }
+#endif /* OBSOLETE */
 
 void drivewireNetwork::process()
 {
@@ -1293,8 +1301,200 @@ void drivewireNetwork::process()
     case NETCMD_SPECIAL_INQUIRY:
         special_inquiry();
         break;
+#endif /* OBSOLETE */
+
+    case NETCMD_PARSE:
+        parse_json();
+        break;
+    case NETCMD_TRANSLATION:
+        set_translation();
+        break;
+    case NETCMD_GET_SCAN_RESULT: // SET CHANNEL MODE
+        set_channel_mode();
+        break;
+
+    case NETCMD_GETCWD:
+        get_prefix();
+        break;
+
+    case NETCMD_CHDIR:
+        set_prefix();
+        return;
+    case NETCMD_QUERY:
+        json_query();
+        return;
+    case NETCMD_USERNAME:
+        set_login();
+        return;
+    case NETCMD_PASSWORD:
+        set_password();
+        return;
+        
+    case NETCMD_RENAME:
+    case NETCMD_DELETE:
+    case NETCMD_LOCK:
+    case NETCMD_UNLOCK:
+    case NETCMD_MKDIR:
+    case NETCMD_RMDIR:
+        process_fs();
+        break;
+
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+        process_tcp();
+        break;
+
+    case NETCMD_UNLISTEN:
+        process_http();
+        break;
+
+    case NETCMD_GET_REMOTE:
+    case NETCMD_SET_DESTINATION:
+        process_udp();
+        break;
+
     default:
-        special();
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
+        break;
+    }
+}
+
+void drivewireNetwork::process_fs()
+{
+    parse_and_instantiate_protocol();
+
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
+    if (!fs)
+    {
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
+        return;
+    }
+
+    netProtoErr_t err;
+    auto url = urlParser.get();
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_RENAME:
+        err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        err = fs->rmdir(url);
+        break;
+    default:
+        err = NETPROTO_ERR_UNSPECIFIED;
+        break;
+    }
+
+    if (err != NETPROTO_ERR_NONE)
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
+}
+
+void drivewireNetwork::process_tcp()
+{
+    // Make sure this is really a TCP protocol instance
+    NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol);
+    if (!tcp)
+    {
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
+        return;
+    }
+
+    netProtoErr_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_CONTROL:
+        err = tcp->accept_connection();
+        break;
+    case NETCMD_CLOSE_CLIENT:
+        err = tcp->close_client_connection();
+        break;
+    default:
+        err = NETPROTO_ERR_UNSPECIFIED;
+        break;
+    }
+
+    if (err != NETPROTO_ERR_NONE)
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
+}
+
+void drivewireNetwork::process_http()
+{
+    // Make sure this is really an HTTP protocol instance
+    NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol);
+    if (!http)
+    {
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
+        return;
+    }
+
+    netProtoErr_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_UNLISTEN:
+        err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
+        break;
+    default:
+        err = NETPROTO_ERR_UNSPECIFIED;
+        return;
+    }
+
+    if (err != NETPROTO_ERR_NONE)
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
+}
+
+void drivewireNetwork::process_udp()
+{
+    // Make sure this is really a UDP protocol instance
+    NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol);
+    if (!udp)
+    {
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
+        return;
+    }
+
+    netProtoErr_t err;
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_GET_REMOTE:
+        err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
+        response += *receiveBuffer;
+        break;
+    case NETCMD_SET_DESTINATION:
+        {
+            uint8_t spData[SPECIAL_BUFFER_SIZE];
+            size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));
+            err = udp->set_destination(spData, bytes_read);
+            if (err != NETPROTO_ERR_NONE)
+            {
+                ns.reset();
+                ns.error = NETWORK_ERROR_GENERAL;
+            }
+        }
+        break;
+    default:
+        ns.reset();
+        ns.error = NETWORK_ERROR_GENERAL;
         break;
     }
 }
