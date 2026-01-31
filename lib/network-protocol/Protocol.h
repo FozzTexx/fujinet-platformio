@@ -8,6 +8,7 @@
 
 #include <string>
 
+#ifdef OBSOLETE
 // FIXME - this has something to do with Atari SIO and doesn't belong here
 enum AtariSIODirection {
     SIO_DIRECTION_NONE    = 0x00,
@@ -15,6 +16,7 @@ enum AtariSIODirection {
     SIO_DIRECTION_WRITE   = 0x80,
     SIO_DIRECTION_INVALID = 0xFF,
 };
+#endif /* OBSOLETE */
 
 enum netProtoTranslation_t {
     NETPROTO_TRANS_NONE    = 0,
