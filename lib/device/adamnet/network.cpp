@@ -16,6 +16,10 @@
 
 #include "status_error_codes.h"
 #include "ProtocolParser.h"
+#include "TCP.h"
+#include "UDP.h"
+#include "HTTP.h"
+#include "FS.h"
 
 using namespace std;
 
@@ -151,7 +155,7 @@ void adamNetwork::open(unsigned short s)
     }
 
     // Attempt protocol open
-    if (protocol->open(urlParser.get(), &cmdFrame) == true)
+    if (protocol->open(urlParser.get(), (netProtoOpenMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) == true)
     {
         statusByte.bits.client_error = true;
         Debug_printf("Protocol unable to make connection. Error: %d\n", err);
@@ -250,7 +254,7 @@ void adamNetwork::write(uint16_t num_bytes)
     adamnet_response_ack();
 
     *transmitBuffer += string((char *)response, num_bytes);
-    err = adamnet_write_channel(num_bytes);
+    err = adamnet_write_channel(num_bytes) == NETPROTO_ERR_NONE ? NETWORK_ERROR_SUCCESS : NETWORK_ERROR_GENERAL;
 }
 
 /**
@@ -258,9 +262,9 @@ void adamNetwork::write(uint16_t num_bytes)
  * @param num_bytes Number of bytes to write.
  * @return TRUE on error, FALSE on success. Used to emit adamnet_error or adamnet_complete().
  */
-bool adamNetwork::adamnet_write_channel(unsigned short num_bytes)
+netProtoErr_t adamNetwork::adamnet_write_channel(unsigned short num_bytes)
 {
-    bool err = false;
+    netProtoErr_t err = NETPROTO_ERR_NONE;
 
     switch (channelMode)
     {
@@ -269,7 +273,7 @@ bool adamNetwork::adamnet_write_channel(unsigned short num_bytes)
         break;
     case JSON:
         Debug_printf("JSON Not Handled.\n");
-        err = true;
+        err = NETPROTO_ERR_UNSPECIFIED;
         break;
     }
     return err;
@@ -300,7 +304,7 @@ void adamNetwork::status()
     switch (channelMode)
     {
     case PROTOCOL:
-        err = protocol->status(&ns);
+        err = protocol->status(&ns) == NETPROTO_ERR_NONE ? NETWORK_ERROR_SUCCESS : NETWORK_ERROR_GENERAL;
         break;
     case JSON:
         // err = json.status(&status);
@@ -565,6 +569,7 @@ void adamNetwork::json_parse()
     response_len = 0;
 }
 
+#ifdef OBSOLETE
 /**
  * @brief Do an inquiry to determine whether a protoocol supports a particular command.
  * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -703,6 +708,7 @@ void adamNetwork::adamnet_special_80(unsigned short s)
     memset(response, 0, sizeof(response));
     response_len = 0;
 }
+#endif /* OBSOLETE */
 
 void adamNetwork::adamnet_response_status()
 {
@@ -733,12 +739,12 @@ void adamNetwork::adamnet_control_ack()
 
 void adamNetwork::adamnet_control_send()
 {
-    uint16_t s = adamnet_recv_length(); // receive length
-    fujiCommandID_t c = (fujiCommandID_t) adamnet_recv();         // receive command
+    uint16_t pkt_len = adamnet_recv_length(); // receive length
+    fujiCommandID_t cmd = (fujiCommandID_t) adamnet_recv();         // receive command
 
-    s--; // Because we've popped the command off the stack
+    pkt_len--; // Because we've popped the command off the stack
 
-    switch (c)
+    switch (cmd)
     {
     case NETCMD_RENAME:
         rename(s);
@@ -774,11 +780,47 @@ void adamNetwork::adamnet_control_send()
         channel_mode();
         break;
     case NETCMD_USERNAME: // login
-        set_login(s);
+        set_login(pkt_len);
         break;
     case NETCMD_PASSWORD: // password
-        set_password(s);
+        set_password(pkt_len);
         break;
+
+    case NETCMD_PARSE:
+        json_parse();
+        break;
+    case NETCMD_QUERY:
+        json_query(cmd);
+        break;
+
+    case NETCMD_RENAME:
+    case NETCMD_DELETE:
+    case NETCMD_LOCK:
+    case NETCMD_UNLOCK:
+    case NETCMD_MKDIR:
+    case NETCMD_RMDIR:
+        process_fs(cmd, pkt_len);
+        break;
+
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+        process_tcp(cmd);
+        break;
+
+    case NETCMD_UNLISTEN:
+        process_http(cmd);
+        break;
+
+    case NETCMD_GET_REMOTE:
+    case NETCMD_SET_DESTINATION:
+        process_udp(cmd);
+        break;
+
+    default:
+        statusByte.bits.client_error = true;
+        break;
+
+#ifdef OBSOLETE
     default:
         Debug_printf("fall through to default\n");
         switch (channelMode)
@@ -812,6 +854,7 @@ void adamNetwork::adamnet_control_send()
             Debug_printf("Unknown channel mode\n");
             break;
         }
+#endif /* OBSOLETE */
     }
 }
 
@@ -1055,6 +1098,110 @@ void adamNetwork::adamnet_set_timer_rate()
     //     timer_start();
 
     // adamnet_complete();
+}
+
+void adamNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
+{
+    auto data = string((char *)response, pkt_len);
+    parse_and_instantiate_protocol(data);
+
+    NetworkProtocolFS* fs = static_cast<NetworkProtocolFS*>(protocol);
+    netProtoErr_t cmd_err;
+    auto url = urlParser.get();
+    switch (cmd)
+    {
+    case NETCMD_RENAME:
+        cmd_err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        cmd_err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        cmd_err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        cmd_err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        cmd_err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        cmd_err = fs->rmdir(url);
+        break;
+    default:
+        cmd_err = NETPROTO_ERR_UNSPECIFIED;
+        break;
+    }
+
+    if (cmd_err != NETPROTO_ERR_NONE)
+        err = NETWORK_ERROR_GENERAL;
+}
+
+void adamNetwork::process_tcp(fujiCommandID_t cmd)
+{
+    NetworkProtocolTCP* tcp = static_cast<NetworkProtocolTCP*>(protocol);
+    netProtoErr_t cmd_err;
+    switch (cmd)
+    {
+    case NETCMD_CONTROL:
+        cmd_err = tcp->accept_connection();
+        break;
+    case NETCMD_CLOSE_CLIENT:
+        cmd_err = tcp->close_client_connection();
+        break;
+    default:
+        cmd_err = NETPROTO_ERR_UNSPECIFIED;
+        break;
+    }
+
+    if (cmd_err != NETPROTO_ERR_NONE)
+        err = NETWORK_ERROR_GENERAL;
+}
+
+void adamNetwork::process_http(fujiCommandID_t cmd)
+{
+    NetworkProtocolHTTP* http = static_cast<NetworkProtocolHTTP*>(protocol);
+    netProtoErr_t cmd_err;
+    switch (cmd)
+    {
+    case NETCMD_UNLISTEN:
+        cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
+        break;
+    default:
+        cmd_err = NETPROTO_ERR_UNSPECIFIED;
+        return;
+    }
+
+    if (cmd_err != NETPROTO_ERR_NONE)
+        err = NETWORK_ERROR_GENERAL;
+}
+
+void adamNetwork::process_udp(fujiCommandID_t cmd)
+{
+    NetworkProtocolUDP* udp = static_cast<NetworkProtocolUDP*>(protocol);
+    netProtoErr_t cmd_err;
+    switch (cmd)
+    {
+#ifndef ESP_PLATFORM
+    case NETCMD_GET_REMOTE:
+        receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
+        cmd_err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
+        response += *receiveBuffer;
+        break;
+#endif /* ESP_PLATFORM */
+    case NETCMD_SET_DESTINATION:
+        {
+            uint8_t spData[SPECIAL_BUFFER_SIZE];
+            size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));
+            cmd_err = udp->set_destination(spData, bytes_read);
+            if (cmd_err != NETPROTO_ERR_NONE)
+                err = NETWORK_ERROR_GENERAL;
+        }
+        break;
+    default:
+        err = NETWORK_ERROR_GENERAL;
+        break;
+    }
 }
 
 #endif /* BUILD_ADAM */

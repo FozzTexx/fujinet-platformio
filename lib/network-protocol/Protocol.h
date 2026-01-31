@@ -5,6 +5,7 @@
 #include "bus.h"
 #include "networkStatus.h"
 #include "peoples_url_parser.h"
+#include "status_error_codes.h"
 
 #include <string>
 
@@ -104,7 +105,7 @@ public:
     /**
      * @brief Error code to return in status
      */
-    unsigned char error = 0;
+    networkStatusError_t error = NETWORK_ERROR_SUCCESS;
 
     /**
      * Translation mode: 0=NONE, 1=CR, 2=LF, 3=CR/LF

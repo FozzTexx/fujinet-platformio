@@ -142,7 +142,7 @@ netProtoErr_t NetworkProtocolTCP::read(unsigned short len)
         // Add new data to buffer.
         receiveBuffer->insert(receiveBuffer->end(), newData.begin(), newData.end());
     }
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
     return NetworkProtocol::read(len);
 }
 
@@ -184,7 +184,7 @@ netProtoErr_t NetworkProtocolTCP::write(unsigned short len)
     }
 
     // Return success
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
     transmitBuffer->erase(0, len);
 
     return NETPROTO_ERR_NONE;

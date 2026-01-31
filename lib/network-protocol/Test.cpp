@@ -63,7 +63,7 @@ netProtoErr_t NetworkProtocolTest::read(unsigned short len)
     if (receiveBuffer->length() == 0)
         *receiveBuffer += test_data.substr(0, len);
 
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
 
     Debug_printf("NetworkProtocolTest::read(%u)\r\n", len);
     for (int i = 0; i < receiveBuffer->length(); i++)

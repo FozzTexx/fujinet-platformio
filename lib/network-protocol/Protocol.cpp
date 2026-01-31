@@ -73,7 +73,7 @@ NetworkProtocol::NetworkProtocol(std::string *rx_buf,
     receiveBuffer = rx_buf;
     transmitBuffer = tx_buf;
     specialBuffer = sp_buf;
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
     login = password = nullptr;
 }
 
@@ -133,7 +133,7 @@ netProtoErr_t NetworkProtocol::close()
     transmitBuffer->shrink_to_fit();
     specialBuffer->shrink_to_fit();
 
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
     return NETPROTO_ERR_NONE;
 }
 
@@ -148,7 +148,7 @@ netProtoErr_t NetworkProtocol::read(unsigned short len)
     Debug_printf("NetworkProtocol::read(%u)\r\n", len);
 #endif
     translate_receive_buffer();
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
     return NETPROTO_ERR_NONE;
 }
 
@@ -292,7 +292,7 @@ void NetworkProtocol::errno_to_error()
         break;
 #else
     case EAGAIN:
-        error = 1; // This is okay.
+        error = NETWORK_ERROR_SUCCESS; // This is okay.
         compat_setsockerr(0); // Short circuit and say it's okay.
         break;
     case EADDRINUSE:

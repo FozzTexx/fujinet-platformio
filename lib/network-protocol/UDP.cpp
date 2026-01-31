@@ -119,7 +119,7 @@ netProtoErr_t NetworkProtocolUDP::read(unsigned short len)
 
     // Return success
     Debug_printf("errno = %u\r\n", errno);
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
 
     return NetworkProtocol::read(len);
 }
@@ -154,7 +154,7 @@ netProtoErr_t NetworkProtocolUDP::write(unsigned short len)
     }
 
     // Return success
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
     transmitBuffer->erase(0, len);
 
     return NETPROTO_ERR_NONE;

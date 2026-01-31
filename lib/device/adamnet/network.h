@@ -141,6 +141,10 @@ public:
      * @param b The incoming command byte
      */
     virtual void adamnet_process(uint8_t b) override;
+    void process_fs(fujiCommandID_t cmd, unsigned pkt_len);
+    void process_tcp(fujiCommandID_t cmd);
+    void process_http(fujiCommandID_t cmd);
+    void process_udp(fujiCommandID_t cmd);
 
     virtual void del(uint16_t s);
     virtual void rename(uint16_t s);
@@ -217,7 +221,7 @@ private:
     /**
      * Error number, if status.bits.client_error is set.
      */
-    uint8_t err;
+    networkStatusError_t err;
 
     /**
      * ESP timer handle for the Interrupt rate limiting timer
@@ -250,10 +254,12 @@ private:
      */
     uint8_t trans_aux2;
 
+#ifdef OBSOLETE
     /**
      * Return value for DSTATS inquiry
      */
     AtariSIODirection inq_dstats = SIO_DIRECTION_INVALID;
+#endif /* OBSOLETE */
 
     /**
      * The login to use for a protocol action
@@ -347,9 +353,9 @@ private:
     /**
      * Perform the correct write based on value of channelMode
      * @param num_bytes Number of bytes to write.
-     * @return TRUE on error, FALSE on success. Used to emit adamnet_error or adamnet_complete().
+     * @return NETPROTO_ERR_UNSPECIFIED on error, NETPROTO_ERR_NONE on success. Used to emit adamnet_error or adamnet_complete().
      */
-    bool adamnet_write_channel(unsigned short num_bytes);
+    netProtoErr_t adamnet_write_channel(unsigned short num_bytes);
 
     /**
      * @brief perform local status commands, if protocol is not bound, based on cmdFrame
@@ -362,6 +368,7 @@ private:
      */
     void adamnet_status_channel();
 
+#ifdef OBSOLETE
     /**
      * @brief Do an inquiry to determine whether a protoocol supports a particular command.
      * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -392,17 +399,20 @@ private:
      * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
      */
     void adamnet_special_80(unsigned short s);
+#endif /* OBSOLETE */
 
     /**
      * Called to pulse the PROCEED interrupt, rate limited by the interrupt timer.
      */
     void adamnet_assert_interrupt();
 
+#ifdef OBSOLETE
     /**
      * @brief Perform the inquiry, handle both local and protocol commands.
      * @param inq_cmd the command to check against.
      */
     void do_inquiry(fujiCommandID_t inq_cmd);
+#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.

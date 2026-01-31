@@ -131,7 +131,7 @@ netProtoErr_t NetworkProtocolTELNET::read(unsigned short len)
     }
 
     // Return success
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
 
     Debug_printf("NetworkProtocolTELNET::read(%d) - %s\r\n", newRxLen, receiveBuffer->c_str());
 
@@ -168,7 +168,7 @@ netProtoErr_t NetworkProtocolTELNET::write(unsigned short len)
     }
 
     // Return success
-    error = 1;
+    error = NETWORK_ERROR_SUCCESS;
 
     return NETPROTO_ERR_NONE;
 }

@@ -236,7 +236,7 @@ netProtoErr_t NetworkProtocolSSH::write(unsigned short len)
     ssh_channel_write(channel, transmitBuffer->data(), len);
 
     // Return success - WTF?
-    error = NETPROTO_ERR_UNSPECIFIED;
+    error = NETWORK_ERROR_SUCCESS;
     transmitBuffer->erase(0, len);
 
     return err;
