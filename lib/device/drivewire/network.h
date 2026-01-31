@@ -61,6 +61,10 @@ public:
      * @brief process network device command
      */
     void process();
+    void process_fs();
+    void process_tcp();
+    void process_http();
+    void process_udp();
 
     /**
      * Check to see if PROCEED needs to be asserted.
@@ -108,12 +112,14 @@ public:
      */
     virtual void write();
 
+#ifdef OBSOLETE
     /**
      * DRIVEWIRE Status Command. First try to populate NetworkStatus object from protocol. If protocol not instantiated,
      * or Protocol does not want to fill status buffer (e.g. due to unknown aux1/aux2 values), then try to deal
      * with them locally. Then serialize resulting NetworkStatus object to DRIVEWIRE.
      */
     virtual void special();
+#endif /* OBSOLETE */
 
     /**
      * DRIVEWIRE Special, called as a default for any other DRIVEWIRE command not processed by the other drivewire_ functions.
@@ -230,10 +236,12 @@ private:
      */
     uint8_t trans_aux2 = 0;
 
+#ifdef OBSOLETE
     /**
      * Return value for DSTATS inquiry
      */
     AtariSIODirection inq_dstats = SIO_DIRECTION_INVALID;
+#endif /* OBSOLETE */
 
     /**
      * The login to use for a protocol action
@@ -375,6 +383,7 @@ private:
      */
     bool status_channel_json(NetworkStatus *ns);
 
+#ifdef OBSOLETE
     /**
      * @brief Do an inquiry to determine whether a protoocol supports a particular command.
      * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -382,7 +391,9 @@ private:
      * Atari when making the N: DRIVEWIRE call.
      */
     void special_inquiry();
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
     /**
      * @brief called to handle special protocol interactions when DSTATS=$00, meaning there is no payload.
      * Essentially, call the protocol action
@@ -405,12 +416,15 @@ private:
      * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
      */
     void special_80();
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
     /**
      * @brief Perform the inquiry, handle both local and protocol commands.
      * @param inq_cmd the command to check against.
      */
     void do_inquiry(fujiCommandID_t inq_cmd);
+#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.
@@ -427,10 +441,12 @@ private:
      */
     void json_query();
 
+#ifdef OBSOLETE
     /**
      * @brief perform ->FujiNet commands on protocols that do not use an explicit OPEN channel.
      */
     void do_idempotent_command_80();
+#endif /* OBSOLETE */
 
     /**
      * @brief parse URL and instantiate protocol
