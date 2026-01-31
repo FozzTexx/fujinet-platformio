@@ -102,6 +102,10 @@ public:
     virtual void status();
 
     void process(iwm_decoded_cmd_t cmd) override;
+    void process_fs(fujiCommandID_t control_code);
+    void process_tcp(fujiCommandID_t control_code);
+    void process_http(fujiCommandID_t control_code);
+    void process_udp(fujiCommandID_t control_code);
 
     void iwm_ctrl(iwm_decoded_cmd_t cmd) override;
     void iwm_open(iwm_decoded_cmd_t cmd) override;
@@ -151,9 +155,11 @@ public:
      */
     void json_query(iwm_decoded_cmd_t cmd);
 
+#ifdef OBSOLETE
     virtual void del();
     virtual void rename();
     virtual void mkdir();
+#endif /* OBSOLETE */
 
     std::unordered_map<uint8_t, NetworkData> network_data_map;
     uint8_t current_network_unit = 1;
@@ -233,10 +239,12 @@ private:
      */
     uint8_t trans_aux2 = 0;
 
+#ifdef OBSOLETE
     /**
      * Return value for DSTATS inquiry
      */
     AtariSIODirection inq_dstats = SIO_DIRECTION_INVALID;
+#endif /* OBSOLETE */
 
     /**
      * The login to use for a protocol action
@@ -352,6 +360,7 @@ private:
      */
     void iwmnet_status_channel();
 
+#ifdef OBSOLETE
     /**
      * @brief Do an inquiry to determine whether a protoocol supports a particular command.
      * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -359,7 +368,9 @@ private:
      * Atari when making the N: iwm call.
      */
     void iwmnet_special_inquiry();
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
     /**
      * @brief called to handle special protocol interactions when DSTATS=$00, meaning there is no payload.
      * Essentially, call the protocol action
@@ -382,17 +393,20 @@ private:
      * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
      */
     void special_80();
+#endif /* OBSOLETE */
 
     /**
      * Called to pulse the PROCEED interrupt, rate limited by the interrupt timer.
      */
     void iwmnet_assert_interrupt();
 
+#ifdef OBSOLETE
     /**
      * @brief Perform the inquiry, handle both local and protocol commands.
      * @param inq_cmd the command to check against.
      */
     void do_inquiry(fujiCommandID_t inq_cmd);
+#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.

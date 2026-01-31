@@ -1478,7 +1478,8 @@ void drivewireNetwork::process_udp()
     switch (cmdFrame.comnd)
     {
     case NETCMD_GET_REMOTE:
-        err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
+        receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
+        err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
         response += *receiveBuffer;
         break;
     case NETCMD_SET_DESTINATION:

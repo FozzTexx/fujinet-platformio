@@ -109,7 +109,7 @@ void iwmNetwork::open()
         current_network_data.urlParser.reset();
     }
 
-    err = 0;
+    err = SP_ERR_NOERROR;
 
     Debug_printf("\nopen()\n");
 
@@ -122,7 +122,7 @@ void iwmNetwork::open()
     }
 
     // Attempt protocol open
-    if (current_network_data.protocol->open(current_network_data.urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
+    if (current_network_data.protocol->open(current_network_data.urlParser.get(), (fileAccessMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) != PROTOCOL_ERROR::NONE)
     {
         Debug_printf("Protocol unable to make connection. Error: %d\n", err);
         current_network_data.protocol.reset();
@@ -141,7 +141,7 @@ void iwmNetwork::open()
 void iwmNetwork::close()
 {
     Debug_printf("iwmNetwork::close()\n");
-    err = 0;
+    err = SP_ERR_NOERROR;
     if (network_data_map.find(current_network_unit) == network_data_map.end()) {
         Debug_printf("No network_data for unit: %d, exiting close\r\n", current_network_unit);
         return;
@@ -252,6 +252,7 @@ void iwmNetwork::set_password()
     Debug_printf("Password is %s\n", current_network_data.password.c_str()); // GREAT LOGGING
 }
 
+#ifdef OBSOLETE
 void iwmNetwork::del()
 {
     auto& current_network_data = network_data_map[current_network_unit];
@@ -265,7 +266,7 @@ void iwmNetwork::del()
 
     cmdFrame.comnd = NETCMD_DELETE;
 
-    if (current_network_data.protocol->perform_idempotent_80(current_network_data.urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
+    if (current_network_data.protocol->del(current_network_data.urlParser.get()) != PROTOCOL_ERROR::NONE)
     {
         err = SP_ERR_IOERROR;
         return;
@@ -282,7 +283,7 @@ void iwmNetwork::rename()
 
     cmdFrame.comnd = NETCMD_RENAME;
 
-    if (current_network_data.protocol->perform_idempotent_80(current_network_data.urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
+    if (current_network_data.protocol->rename(current_network_data.urlParser.get()) != PROTOCOL_ERROR::NONE)
     {
         err = SP_ERR_IOERROR;
         return;
@@ -299,12 +300,13 @@ void iwmNetwork::mkdir()
 
     cmdFrame.comnd = NETCMD_MKDIR;
 
-    if (current_network_data.protocol->perform_idempotent_80(current_network_data.urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
+    if (current_network_data.protocol->mkdir(current_network_data.urlParser.get()) != PROTOCOL_ERROR::NONE)
     {
         err = SP_ERR_IOERROR;
         return;
     }
 }
+#endif /* OBSOLETE */
 
 void iwmNetwork::channel_mode()
 {
@@ -338,6 +340,7 @@ void iwmNetwork::json_parse()
     current_network_data.json->parse();
 }
 
+#ifdef OBSOLETE
 /**
  * @brief Do an inquiry to determine whether a protoocol supports a particular command.
  * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -463,6 +466,7 @@ void iwmNetwork::special_80()
         // BAD - STILL LOL
     }
 }
+#endif /* OBSOLETE */
 
 void iwmNetwork::iwm_open(iwm_decoded_cmd_t cmd)
 {
@@ -771,6 +775,7 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
 
     switch (control_code)
     {
+#ifdef OBSOLETE
     case NETCMD_RENAME:
         rename();
         break;
@@ -780,6 +785,7 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
     case NETCMD_MKDIR:
         mkdir();
         break;
+#endif /* OBSOLETE */
     case NETCMD_CHDIR:
         set_prefix();
         break;
@@ -804,6 +810,42 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
     case NETCMD_PASSWORD: // password
         set_password();
         break;
+
+    case NETCMD_PARSE:
+        json_parse();
+        break;
+    case NETCMD_QUERY:
+        json_query(cmd);
+        break;
+
+    case NETCMD_RENAME:
+    case NETCMD_DELETE:
+    case NETCMD_LOCK:
+    case NETCMD_UNLOCK:
+    case NETCMD_MKDIR:
+    case NETCMD_RMDIR:
+        process_fs(control_code);
+        break;
+
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+        process_tcp(control_code);
+        break;
+
+    case NETCMD_UNLISTEN:
+        process_http(control_code);
+        break;
+
+    case NETCMD_GET_REMOTE:
+    case NETCMD_SET_DESTINATION:
+        process_udp(control_code);
+        break;
+
+    default:
+        err = SP_ERR_IOERROR;
+        break;
+
+#ifdef OBSOLETE
     default:
         switch (current_network_data.channelMode)
         {
@@ -844,6 +886,7 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
             Debug_printf("Unknown channel mode\n");
             break;
         }
+#endif /* OBSOLETE */
     }
 
     if (err != 0)
@@ -963,6 +1006,143 @@ void iwmNetwork::iwmnet_set_translation()
 
 void iwmNetwork::iwmnet_set_timer_rate()
 {
+}
+
+void iwmNetwork::process_fs(fujiCommandID_t control_code)
+{
+    auto& current_network_data = network_data_map[current_network_unit];
+    string d;
+
+    d = string((char *)data_buffer, 256);
+    parse_and_instantiate_protocol(d);
+
+    if (!current_network_data.protocol)
+        return;
+
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(current_network_data.protocol.get());
+    if (!fs)
+    {
+        err = SP_ERR_IOERROR;
+        return;
+    }
+
+    protocolError_t cmd_err;
+    auto url = current_network_data.urlParser.get();
+    switch (control_code)
+    {
+    case NETCMD_RENAME:
+        cmd_err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        cmd_err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        cmd_err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        cmd_err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        cmd_err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        cmd_err = fs->rmdir(url);
+        break;
+    default:
+        cmd_err = PROTOCOL_ERROR::UNSPECIFIED;
+        break;
+    }
+
+    if (cmd_err != PROTOCOL_ERROR::NONE)
+        err = SP_ERR_IOERROR;
+}
+
+void iwmNetwork::process_tcp(fujiCommandID_t control_code)
+{
+    auto& current_network_data = network_data_map[current_network_unit];
+    // Make sure this is really a TCP protocol instance
+    NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(current_network_data.protocol.get());
+    if (!tcp)
+    {
+        err = SP_ERR_IOERROR;
+        return;
+    }
+
+    protocolError_t cmd_err;
+    switch (control_code)
+    {
+    case NETCMD_CONTROL:
+        cmd_err = tcp->accept_connection();
+        break;
+    case NETCMD_CLOSE_CLIENT:
+        cmd_err = tcp->close_client_connection();
+        break;
+    default:
+        cmd_err = PROTOCOL_ERROR::UNSPECIFIED;
+        break;
+    }
+
+    if (cmd_err != PROTOCOL_ERROR::NONE)
+        err = SP_ERR_IOERROR;
+}
+
+void iwmNetwork::process_http(fujiCommandID_t control_code)
+{
+    auto& current_network_data = network_data_map[current_network_unit];
+    // Make sure this is really an HTTP protocol instance
+    NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(current_network_data.protocol.get());
+    if (!http)
+    {
+        err = SP_ERR_IOERROR;
+        return;
+    }
+
+    protocolError_t cmd_err;
+    switch (control_code)
+    {
+    case NETCMD_UNLISTEN:
+        cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
+        break;
+    default:
+        cmd_err = PROTOCOL_ERROR::UNSPECIFIED;
+        return;
+    }
+
+    if (cmd_err != PROTOCOL_ERROR::NONE)
+        err = SP_ERR_IOERROR;
+}
+
+void iwmNetwork::process_udp(fujiCommandID_t control_code)
+{
+    auto& current_network_data = network_data_map[current_network_unit];
+    // Make sure this is really a UDP protocol instance
+    NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(current_network_data.protocol.get());
+    if (!udp)
+    {
+        err = SP_ERR_IOERROR;
+        return;
+    }
+
+    protocolError_t cmd_err;
+    switch (control_code)
+    {
+    case NETCMD_GET_REMOTE:
+        cmd_err = udp->get_remote(data_buffer, SPECIAL_BUFFER_SIZE);
+        SYSTEM_BUS.iwm_send_packet(id(), iwm_packet_type_t::data, 0,
+                                   data_buffer, SPECIAL_BUFFER_SIZE);
+        break;
+    case NETCMD_SET_DESTINATION:
+        {
+            cmd_err = udp->set_destination(data_buffer, data_len);
+            if (cmd_err != PROTOCOL_ERROR::NONE)
+                err = SP_ERR_IOERROR;
+        }
+        break;
+    default:
+        err = SP_ERR_IOERROR;
+        break;
+    }
 }
 
 #endif /* BUILD_APPLE */
