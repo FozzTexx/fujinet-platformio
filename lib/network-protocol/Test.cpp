@@ -21,8 +21,8 @@ NetworkProtocolTest::~NetworkProtocolTest()
 }
 
 protocolError_t NetworkProtocolTest::open(PeoplesUrlParser *urlParser,
-                                        fileAccessMode_t access,
-                                        netProtoTranslation_t translate)
+                                          fileAccessMode_t access,
+                                          netProtoTranslation_t translate)
 {
     NetworkProtocol::open(urlParser, access, translate);
 

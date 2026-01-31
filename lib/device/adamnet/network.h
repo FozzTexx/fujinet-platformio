@@ -140,12 +140,17 @@ public:
      * Process incoming ADAM command for device 0x7X
      * @param b The incoming command byte
      */
-    void adamnet_process(uint8_t b) override;
+    virtual void adamnet_process(uint8_t b) override;
+    void process_fs(fujiCommandID_t cmd, unsigned pkt_len);
+    void process_tcp(fujiCommandID_t cmd);
+    void process_http(fujiCommandID_t cmd);
+    void process_udp(fujiCommandID_t cmd);
 
-    void del(uint16_t s);
-    void rename(uint16_t s);
-    void mkdir(uint16_t s);
-
+#ifdef OBSOLETE
+    virtual void del(uint16_t s);
+    virtual void rename(uint16_t s);
+    virtual void mkdir(uint16_t s);
+#endif /* OBSOLETE */
 
 private:
     /**
@@ -250,10 +255,12 @@ private:
      */
     uint8_t trans_aux2;
 
+#ifdef OBSOLETE
     /**
      * Return value for DSTATS inquiry
      */
     AtariSIODirection inq_dstats = SIO_DIRECTION_INVALID;
+#endif /* OBSOLETE */
 
     /**
      * The login to use for a protocol action
@@ -362,6 +369,7 @@ private:
      */
     void adamnet_status_channel();
 
+#ifdef OBSOLETE
     /**
      * @brief Do an inquiry to determine whether a protoocol supports a particular command.
      * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -392,17 +400,20 @@ private:
      * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
      */
     void adamnet_special_80(unsigned short s);
+#endif /* OBSOLETE */
 
     /**
      * Called to pulse the PROCEED interrupt, rate limited by the interrupt timer.
      */
     void adamnet_assert_interrupt();
 
+#ifdef OBSOLETE
     /**
      * @brief Perform the inquiry, handle both local and protocol commands.
      * @param inq_cmd the command to check against.
      */
     void do_inquiry(fujiCommandID_t inq_cmd);
+#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.

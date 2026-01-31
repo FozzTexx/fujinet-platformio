@@ -34,8 +34,8 @@ NetworkProtocolSSH::~NetworkProtocolSSH()
 }
 
 protocolError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
-                                       fileAccessMode_t access,
-                                       netProtoTranslation_t translate)
+                                         fileAccessMode_t access,
+                                         netProtoTranslation_t translate)
 {
     NetworkProtocol::open(urlParser, access, translate);
     int ret;

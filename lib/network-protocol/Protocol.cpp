@@ -98,7 +98,7 @@ NetworkProtocol::~NetworkProtocol()
  * @param urlParser The URL object passed in to open.
  */
 protocolError_t NetworkProtocol::open(PeoplesUrlParser *urlParser, fileAccessMode_t access,
-                                    netProtoTranslation_t translate)
+                                      netProtoTranslation_t translate)
 {
     // Set translation mode, Bits 0-1 of aux2
     translation_mode = translate;
