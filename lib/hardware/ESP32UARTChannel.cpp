@@ -219,7 +219,7 @@ void ESP32UARTChannel::updateFIFO()
     while (xQueueReceive(isr_context.rx_queue, &event, 0))
     {
         _fifo += (char) event.byte;
-        Debug_printf("updateFIFO added byte %02x from %lld\n", event.byte, event.timestamp_us);
+        //Debug_printf("updateFIFO added byte %02x from %lld\n", event.byte, event.timestamp_us);
     }
 
     return;
@@ -261,8 +261,20 @@ size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
         return uart_write_bytes(_uart_num, (const char *)buffer, size);
 
     uart_dev_t *uart = UART_LL_GET_HW(_uart_num);
-    //uart_ll_write_txfifo(uart, (uint8_t *) buffer, size);
-    return size;
+    size_t count = 0;
+    uint8_t *data = (uint8_t *) buffer;
+    while (count < size) {
+        // How many bytes can we write now without overflowing FIFO?
+        size_t space = uart_ll_get_txfifo_len(uart);
+
+        if (space > 0) {
+            size_t chunk = std::min(size - count, space);
+            uart_ll_write_txfifo(uart, &data[count], chunk);
+            count += chunk;
+        }
+    }
+
+    return count;
 }
 
 bool ESP32UARTChannel::getPin(int pin)
