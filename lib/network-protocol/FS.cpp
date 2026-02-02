@@ -318,11 +318,6 @@ protocolError_t NetworkProtocolFS::status_file(NetworkStatus *status)
     else
         status->error = remaining > 0 ? error : NDEV_STATUS::END_OF_FILE;
 
-#if 0
-    // This will reset the status->rxBytesWaiting that we just calculated above
-    NetworkProtocol::status(status);
-#endif
-
     return PROTOCOL_ERROR::NONE;
 }
 

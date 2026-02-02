@@ -140,7 +140,7 @@ public:
      * Process incoming ADAM command for device 0x7X
      * @param b The incoming command byte
      */
-    virtual void adamnet_process(uint8_t b) override;
+    void adamnet_process(uint8_t b) override;
     void process_fs(fujiCommandID_t cmd, unsigned pkt_len);
     void process_tcp(fujiCommandID_t cmd);
     void process_http(fujiCommandID_t cmd);
@@ -218,11 +218,6 @@ private:
         } bits;
         unsigned char byte;
     } statusByte;
-
-    /**
-     * Error number, if status.bits.client_error is set.
-     */
-    nDevStatus_t err;
 
     /**
      * ESP timer handle for the Interrupt rate limiting timer
@@ -358,6 +353,7 @@ private:
      */
     protocolError_t adamnet_write_channel(unsigned short num_bytes);
 
+#ifdef UNUSED
     /**
      * @brief perform local status commands, if protocol is not bound, based on cmdFrame
      * value.
@@ -368,6 +364,7 @@ private:
      * @brief perform channel status commands, if there is a protocol bound.
      */
     void adamnet_status_channel();
+#endif /* UNUSED */
 
 #ifdef OBSOLETE
     /**

@@ -158,7 +158,7 @@ void adamNetwork::open(unsigned short s)
     if (protocol->open(urlParser.get(), (fileAccessMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) != PROTOCOL_ERROR::NONE)
     {
         statusByte.bits.client_error = true;
-        Debug_printf("Protocol unable to make connection. Error: %d\n", err);
+        Debug_printf("Protocol unable to make connection.\n");
         delete protocol;
         protocol = nullptr;
         if (protocolParser != nullptr)
@@ -175,6 +175,7 @@ void adamNetwork::open(unsigned short s)
     // Clear response
     memset(response, 0, sizeof(response));
     response_len = 0;
+    Debug_printf("::open() complete err=%d\n", statusByte.bits.client_error);
 }
 
 /**
@@ -254,7 +255,7 @@ void adamNetwork::write(uint16_t num_bytes)
     adamnet_response_ack();
 
     *transmitBuffer += string((char *)response, num_bytes);
-    err = adamnet_write_channel(num_bytes) == PROTOCOL_ERROR::NONE ? NDEV_STATUS::SUCCESS : NDEV_STATUS::GENERAL;
+    adamnet_write_channel(num_bytes);
 }
 
 /**
@@ -304,7 +305,7 @@ void adamNetwork::status()
     switch (channelMode)
     {
     case PROTOCOL:
-        err = protocol->status(&ns) == PROTOCOL_ERROR::NONE ? NDEV_STATUS::SUCCESS : NDEV_STATUS::GENERAL;
+        protocol->status(&ns);
         break;
     case JSON:
         // err = json.status(&status);
@@ -925,7 +926,6 @@ inline void adamNetwork::adamnet_control_receive_channel_protocol()
     if (protocol->read(response_len) != PROTOCOL_ERROR::NONE) // protocol adapter returned error
     {
         statusByte.bits.client_error = true;
-        err = protocol->error;
         adamnet_response_nack();
         return;
     }
@@ -1065,7 +1065,6 @@ void adamNetwork::parse_and_instantiate_protocol(string d)
         Debug_printf("Invalid devicespec: %s\n", deviceSpec.c_str());
         statusByte.byte = 0x00;
         statusByte.bits.client_error = true;
-        err = NDEV_STATUS::INVALID_DEVICESPEC;
         return;
     }
 
@@ -1077,7 +1076,6 @@ void adamNetwork::parse_and_instantiate_protocol(string d)
         Debug_printf("Could not open protocol.\n");
         statusByte.byte = 0x00;
         statusByte.bits.client_error = true;
-        err = NDEV_STATUS::GENERAL;
         return;
     }
 }
@@ -1113,7 +1111,14 @@ void adamNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
     auto data = string((char *)response, pkt_len);
     parse_and_instantiate_protocol(data);
 
-    NetworkProtocolFS* fs = static_cast<NetworkProtocolFS*>(protocol);
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
+    if (!fs)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
     protocolError_t cmd_err;
     auto url = urlParser.get();
     switch (cmd)
@@ -1142,16 +1147,18 @@ void adamNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
     }
 
     if (cmd_err != PROTOCOL_ERROR::NONE)
-        err = NDEV_STATUS::GENERAL;
+        statusByte.bits.client_error = true;
 }
 
 void adamNetwork::process_tcp(fujiCommandID_t cmd)
 {
+    statusByte.byte = 0x00;
+
     // Make sure this is really a TCP protocol instance
     NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol);
     if (!tcp)
     {
-        err = NDEV_STATUS::GENERAL;
+        statusByte.bits.client_error = true;
         return;
     }
 
@@ -1159,7 +1166,20 @@ void adamNetwork::process_tcp(fujiCommandID_t cmd)
     switch (cmd)
     {
     case NETCMD_CONTROL:
-        cmd_err = tcp->accept_connection();
+        cmd_err = PROTOCOL_ERROR::NONE;
+
+        // Because we're not handling Adam bus very well, sometimes it
+        // retries and we've already accepted which will return an
+        // error. Don't do accept if client is already connected.
+        {
+            NetworkStatus status;
+            tcp->status(&status);
+            if (!status.connected)
+            {
+                cmd_err = tcp->accept_connection();
+                Debug_printf("ACCEPT %x CHANMODE %d ERR: %d\n", _devnum, channelMode, cmd_err);
+            }
+        }
         break;
     case NETCMD_CLOSE_CLIENT:
         cmd_err = tcp->close_client_connection();
@@ -1170,16 +1190,18 @@ void adamNetwork::process_tcp(fujiCommandID_t cmd)
     }
 
     if (cmd_err != PROTOCOL_ERROR::NONE)
-        err = NDEV_STATUS::GENERAL;
+        statusByte.bits.client_error = true;
 }
 
 void adamNetwork::process_http(fujiCommandID_t cmd)
 {
+    statusByte.byte = 0x00;
+
     // Make sure this is really a HTTP protocol instance
     NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol);
     if (!http)
     {
-        err = NDEV_STATUS::GENERAL;
+        statusByte.bits.client_error = true;
         return;
     }
 
@@ -1195,16 +1217,18 @@ void adamNetwork::process_http(fujiCommandID_t cmd)
     }
 
     if (cmd_err != PROTOCOL_ERROR::NONE)
-        err = NDEV_STATUS::GENERAL;
+        statusByte.bits.client_error = true;
 }
 
 void adamNetwork::process_udp(fujiCommandID_t cmd)
 {
+    statusByte.byte = 0x00;
+
     // Make sure this is really a UDP protocol instance
     NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol);
     if (!udp)
     {
-        err = NDEV_STATUS::GENERAL;
+        statusByte.bits.client_error = true;
         return;
     }
 
@@ -1224,11 +1248,11 @@ void adamNetwork::process_udp(fujiCommandID_t cmd)
             size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));
             cmd_err = udp->set_destination(spData, bytes_read);
             if (cmd_err != PROTOCOL_ERROR::NONE)
-                err = NDEV_STATUS::GENERAL;
+                statusByte.bits.client_error = true;
         }
         break;
     default:
-        err = NDEV_STATUS::GENERAL;
+        statusByte.bits.client_error = true;
         break;
     }
 }
