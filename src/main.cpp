@@ -388,12 +388,12 @@ void main_setup(int argc, char *argv[])
     adamPrinter::printer_type printer = Config.get_printer_type(0);
     adamPrinter *ptr = new adamPrinter(ptrfs, printer);
     fnPrinters.set_entry(0, ptr, printer, 0);
-    SYSTEM_BUS.addDevice(ptr, ADAMNET_DEVICE_ID_PRINTER);
+    SYSTEM_BUS.addDevice(ptr, FUJI_DEVICEID_PRINTER);
 
     if (Config.get_printer_enabled())
-        SYSTEM_BUS.enableDevice(ADAMNET_DEVICE_ID_PRINTER);
+        SYSTEM_BUS.enableDevice(FUJI_DEVICEID_PRINTER);
     else
-        SYSTEM_BUS.disableDevice(ADAMNET_DEVICE_ID_PRINTER);
+        SYSTEM_BUS.disableDevice(FUJI_DEVICEID_PRINTER);
 
 #ifdef VIRTUAL_ADAM_DEVICES
     Debug_printf("Physical Device Scanning...\r\n");

@@ -41,13 +41,6 @@ struct adamnet_message_t
 #define NM_SEND 0x0B   // response.data (send)
 #define NM_NACK 0x0C   // response.control (nack)
 
-#define ADAMNET_DEVICE_ID_KEYBOARD 0x01
-#define ADAMNET_DEVICE_ID_PRINTER  0x02
-#define ADAMNET_DEVICEID_DISK      0x04
-#define ADAMNET_DEVICE_TAPE        0x08
-#define ADAMNET_DEVICE_NETWORK     0x0E
-#define ADAMNET_DEVICE_FUJINET     0x0F
-
 #define ADAMNET_RESET_DEBOUNCE_PERIOD 100 // in ms
 
 class systemBus;
@@ -180,7 +173,7 @@ protected:
     /**
      * The response sent in adamnet_response_status()
      */
-    uint8_t status_response[6] = {0x80,0x00,0x00,0x01,0x00,0x00};
+    AdamNetPacket status_response;
 
     /**
      * Response buffer

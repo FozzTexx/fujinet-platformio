@@ -300,7 +300,7 @@ netProtoErr_t NetworkProtocolFS::status_file(NetworkStatus *status)
 
     status->connected = remaining > 0 ? 1 : 0;
     if (is_write)
-        status->error = 1;
+        status->error = NETWORK_ERROR_SUCCESS;
     else
         status->error = remaining > 0 ? error : NETWORK_ERROR_END_OF_FILE;
 

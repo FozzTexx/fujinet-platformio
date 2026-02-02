@@ -244,9 +244,9 @@ netProtoErr_t NetworkProtocolSSH::write(unsigned short len)
 
 netProtoErr_t NetworkProtocolSSH::status(NetworkStatus *status)
 {
-    bool isEOF = ssh_channel_is_eof(channel) == 0;
-    status->connected = isEOF ? 1 : 0;
-    status->error = isEOF ? 1 : NETWORK_ERROR_END_OF_FILE;
+    bool notEOF = ssh_channel_is_eof(channel) == 0;
+    status->connected = notEOF ? 1 : 0;
+    status->error = notEOF ? NETWORK_ERROR_SUCCESS : NETWORK_ERROR_END_OF_FILE;
     NetworkProtocol::status(status);
     return NETPROTO_ERR_NONE;
 }

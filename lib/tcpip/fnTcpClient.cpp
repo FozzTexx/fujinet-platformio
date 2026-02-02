@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include <esp_debug_helpers.h>
+
 #ifndef ESP_PLATFORM
 # if defined(_WIN32)
 // this only eliminates compilation errors on Windows
@@ -502,7 +504,8 @@ uint8_t fnTcpClient::connected()
         }
         else if (res == 0)
         {
-            Debug_printf("fnTcpClient disconnected\r\n");
+            Debug_printf("fnTcpClient disconnected because no bytes to read\r\n");
+            esp_backtrace_print(5);
             _connected = false;
         }
         else

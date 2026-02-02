@@ -358,6 +358,6 @@ bool FNJSON::status(NetworkStatus *s)
 {
     // Debug_printf("FNJSON::status(%u) %s\r\n", json_bytes_remaining, getValue(_item).c_str());
     s->connected = true;
-    s->error = _json_bytes_remaining == 0 ? 136 : 0;
+    s->error = _json_bytes_remaining == 0 ? NETWORK_ERROR_END_OF_FILE : NETWORK_ERROR_SUCCESS;
     return false;
 }

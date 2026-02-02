@@ -210,7 +210,8 @@ netProtoErr_t NetworkProtocolTCP::status(NetworkStatus *status)
 void NetworkProtocolTCP::status_client(NetworkStatus *status)
 {
     status->connected = client.connected();
-    status->error = status->connected ? error : 136;
+    status->error = status->connected ? error : NETWORK_ERROR_END_OF_FILE;
+    Debug_printf("TCP::status_client C:%d E:%d\n", status->connected, status->error);
 }
 
 void NetworkProtocolTCP::status_server(NetworkStatus *status)
@@ -221,6 +222,7 @@ void NetworkProtocolTCP::status_server(NetworkStatus *status)
     {
         status->connected = server->hasClient();
         status->error = error;
+        Debug_printf("TCP::status_server C:%d E:%d\n", status->connected, status->error);
     }
 }
 

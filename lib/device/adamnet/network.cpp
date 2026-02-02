@@ -12,7 +12,9 @@
 
 #include "../../include/debug.h"
 
+#include "fnSystem.h"
 #include "utils.h"
+#include "fuji_endian.h"
 
 #include "status_error_codes.h"
 #include "ProtocolParser.h"
@@ -28,9 +30,8 @@ using namespace std;
  */
 adamNetwork::adamNetwork()
 {
-    status_response[1] = 0x00;
-    status_response[2] = 0x04; // 1024 bytes
-    status_response[3] = 0x00; // Character device
+    status_response.length = htole16(1024);
+    status_response.devtype = ADAMNET_DEVTYPE_CHAR;
 
     receiveBuffer = new string();
     transmitBuffer = new string();
@@ -158,7 +159,7 @@ void adamNetwork::open(unsigned short s)
     if (protocol->open(urlParser.get(), (netProtoOpenMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) == true)
     {
         statusByte.bits.client_error = true;
-        Debug_printf("Protocol unable to make connection. Error: %d\n", err);
+        Debug_printf("Protocol unable to make connection.\n");
         delete protocol;
         protocol = nullptr;
         if (protocolParser != nullptr)
@@ -175,6 +176,7 @@ void adamNetwork::open(unsigned short s)
     // Clear response
     memset(response, 0, sizeof(response));
     response_len = 0;
+    Debug_printf("::open() complete err=%d\n", statusByte.bits.client_error);
 }
 
 /**
@@ -254,7 +256,7 @@ void adamNetwork::write(uint16_t num_bytes)
     adamnet_response_ack();
 
     *transmitBuffer += string((char *)response, num_bytes);
-    err = adamnet_write_channel(num_bytes) == NETPROTO_ERR_NONE ? NETWORK_ERROR_SUCCESS : NETWORK_ERROR_GENERAL;
+    adamnet_write_channel(num_bytes);
 }
 
 /**
@@ -264,19 +266,19 @@ void adamNetwork::write(uint16_t num_bytes)
  */
 netProtoErr_t adamNetwork::adamnet_write_channel(unsigned short num_bytes)
 {
-    netProtoErr_t err = NETPROTO_ERR_NONE;
+    netProtoErr_t err_net = NETPROTO_ERR_NONE;
 
     switch (channelMode)
     {
     case PROTOCOL:
-        err = protocol->write(num_bytes);
+        err_net = protocol->write(num_bytes);
         break;
     case JSON:
         Debug_printf("JSON Not Handled.\n");
-        err = NETPROTO_ERR_UNSPECIFIED;
+        err_net = NETPROTO_ERR_UNSPECIFIED;
         break;
     }
-    return err;
+    return err_net;
 }
 
 /**
@@ -304,7 +306,7 @@ void adamNetwork::status()
     switch (channelMode)
     {
     case PROTOCOL:
-        err = protocol->status(&ns) == NETPROTO_ERR_NONE ? NETWORK_ERROR_SUCCESS : NETWORK_ERROR_GENERAL;
+        protocol->status(&ns);
         break;
     case JSON:
         // err = json.status(&status);
@@ -722,10 +724,8 @@ void adamNetwork::adamnet_response_status()
         statusByte.bits.client_error = s.error > 1;
     }
 
-    status_response[1] = 2; // max packet size 1026 bytes, maybe larger?
-    status_response[2] = 4;
-
-    status_response[4] = statusByte.byte;
+    status_response.length = htole16(1026); // max packet size 1026 bytes, maybe larger?
+    status_response.status = statusByte.byte;
 
     int64_t t = esp_timer_get_time() - SYSTEM_BUS.start_time;
 
@@ -923,7 +923,6 @@ inline void adamNetwork::adamnet_control_receive_channel_protocol()
     if (protocol->read(response_len)) // protocol adapter returned error
     {
         statusByte.bits.client_error = true;
-        err = protocol->error;
         adamnet_response_nack();
         return;
     }
@@ -1063,7 +1062,6 @@ void adamNetwork::parse_and_instantiate_protocol(string d)
         Debug_printf("Invalid devicespec: %s\n", deviceSpec.c_str());
         statusByte.byte = 0x00;
         statusByte.bits.client_error = true;
-        err = NETWORK_ERROR_INVALID_DEVICESPEC;
         return;
     }
 
@@ -1075,7 +1073,6 @@ void adamNetwork::parse_and_instantiate_protocol(string d)
         Debug_printf("Could not open protocol.\n");
         statusByte.byte = 0x00;
         statusByte.bits.client_error = true;
-        err = NETWORK_ERROR_GENERAL;
         return;
     }
 }
@@ -1108,14 +1105,15 @@ void adamNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
     SYSTEM_BUS.start_time = esp_timer_get_time();
     adamnet_response_ack();
 
-    auto data = string((char *)response, pkt_len);
-    parse_and_instantiate_protocol(data);
+    statusByte.byte = 0x00;
+
+    parse_and_instantiate_protocol(string((char *)response, pkt_len));
 
     // Make sure this is really a FS protocol instance
     NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
     if (!fs)
     {
-        err = NETWORK_ERROR_GENERAL;
+        statusByte.bits.client_error = true;
         return;
     }
 
@@ -1147,16 +1145,18 @@ void adamNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
     }
 
     if (cmd_err != NETPROTO_ERR_NONE)
-        err = NETWORK_ERROR_GENERAL;
+        statusByte.bits.client_error = true;
 }
 
 void adamNetwork::process_tcp(fujiCommandID_t cmd)
 {
+    statusByte.byte = 0x00;
+
     // Make sure this is really a TCP protocol instance
     NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol);
     if (!tcp)
     {
-        err = NETWORK_ERROR_GENERAL;
+        statusByte.bits.client_error = true;
         return;
     }
 
@@ -1164,7 +1164,20 @@ void adamNetwork::process_tcp(fujiCommandID_t cmd)
     switch (cmd)
     {
     case NETCMD_CONTROL:
-        cmd_err = tcp->accept_connection();
+        cmd_err = NETPROTO_ERR_NONE;
+
+        // Because we're not handling Adam bus very well, sometimes it
+        // retries and we've already accepted which will return an
+        // error. Don't do accept if client is already connected.
+        {
+            NetworkStatus status;
+            tcp->status(&status);
+            if (!status.connected)
+            {
+                cmd_err = tcp->accept_connection();
+                Debug_printf("ACCEPT %x CHANMODE %d ERR: %d\n", _devnum, channelMode, cmd_err);
+            }
+        }
         break;
     case NETCMD_CLOSE_CLIENT:
         cmd_err = tcp->close_client_connection();
@@ -1175,16 +1188,18 @@ void adamNetwork::process_tcp(fujiCommandID_t cmd)
     }
 
     if (cmd_err != NETPROTO_ERR_NONE)
-        err = NETWORK_ERROR_GENERAL;
+        statusByte.bits.client_error = true;
 }
 
 void adamNetwork::process_http(fujiCommandID_t cmd)
 {
+    statusByte.byte = 0x00;
+
     // Make sure this is really a HTTP protocol instance
     NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol);
     if (!http)
     {
-        err = NETWORK_ERROR_GENERAL;
+        statusByte.bits.client_error = true;
         return;
     }
 
@@ -1200,16 +1215,18 @@ void adamNetwork::process_http(fujiCommandID_t cmd)
     }
 
     if (cmd_err != NETPROTO_ERR_NONE)
-        err = NETWORK_ERROR_GENERAL;
+        statusByte.bits.client_error = true;
 }
 
 void adamNetwork::process_udp(fujiCommandID_t cmd)
 {
+    statusByte.byte = 0x00;
+
     // Make sure this is really a UDP protocol instance
     NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol);
     if (!udp)
     {
-        err = NETWORK_ERROR_GENERAL;
+        statusByte.bits.client_error = true;
         return;
     }
 
@@ -1229,11 +1246,11 @@ void adamNetwork::process_udp(fujiCommandID_t cmd)
             size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));
             cmd_err = udp->set_destination(spData, bytes_read);
             if (cmd_err != NETPROTO_ERR_NONE)
-                err = NETWORK_ERROR_GENERAL;
+                statusByte.bits.client_error = true;
         }
         break;
     default:
-        err = NETWORK_ERROR_GENERAL;
+        statusByte.bits.client_error = true;
         break;
     }
 }

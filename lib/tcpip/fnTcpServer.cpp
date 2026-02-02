@@ -10,6 +10,7 @@
 
 #include "../../include/debug.h"
 
+#include <esp_debug_helpers.h>
 
 // Configures a listening TCP socket on given port
 // Returns 0 for error, 1 for success.
@@ -95,10 +96,12 @@ bool fnTcpServer::hasClient()
     struct sockaddr_in _client;
     int cs = sizeof(struct sockaddr_in);
     _accepted_sockfd = ::accept(_sockfd, (struct sockaddr *)&_client, (socklen_t *)&cs);
+    Debug_printf("hasClient accepted %d\n", _accepted_sockfd);
 
     if (_accepted_sockfd >= 0)
     {
         Debug_printf("TcpServer accepted connection from %s\r\n", inet_ntoa(_client.sin_addr));
+        esp_backtrace_print(5);
         return true;
     }
 
