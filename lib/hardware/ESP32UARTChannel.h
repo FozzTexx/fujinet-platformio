@@ -17,6 +17,12 @@
 #  define FN_UART_BUS   UART_NUM_2
 #endif
 
+// Context to pass to ISR
+typedef struct {
+    int uart_num;
+    QueueHandle_t rx_queue;
+} uart_isr_context_t;
+
 struct RS232ControlPins
 {
     int rx, tx, rts, cts, dtr, dsr, dcd, ri;
@@ -131,6 +137,7 @@ private:
     uart_port_t _uart_num;
     QueueHandle_t _uart_q;
     RS232ControlPins controlPins;
+    uart_isr_context_t isr_context;
 
 protected:
     bool getPin(int pin);
