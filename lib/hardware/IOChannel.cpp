@@ -40,9 +40,10 @@ size_t IOChannel::dataIn(void *buffer, size_t length)
     return total;
 }
 
-void IOChannel::discardInput()
+size_t IOChannel::discardInput()
 {
     uint64_t now, start;
+    size_t count = 0;
 
     _fifo.clear();
     now = start = GET_TIMESTAMP();
@@ -51,12 +52,13 @@ void IOChannel::discardInput()
         now = GET_TIMESTAMP();
         if (available())
         {
+            count += _fifo.size();
             _fifo.clear();
             start = now;
         }
     }
 
-    return;
+    return count;
 }
 
 size_t IOChannel::read(void *buffer, size_t length)

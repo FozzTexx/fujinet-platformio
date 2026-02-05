@@ -6,11 +6,13 @@
 #include "adamnet.h"
 
 #include "../../include/debug.h"
+#include "../../utils/utils.h"
 
 #include "fnSystem.h"
 #include "led.h"
 #include <cstring>
 #include "adamFuji.h"
+#include <sstream>
 
 #define IDLE_TIME 180 // Idle tolerance in microseconds
 
@@ -169,10 +171,11 @@ void virtualDevice::adamnet_control_ready()
     adamnet_response_ack();
 }
 
-void systemBus::wait_for_idle()
+size_t systemBus::wait_for_idle()
 {
-    _port.discardInput();
+    size_t count = _port.discardInput();
     fnSystem.yield();
+    return count;
 }
 
 void virtualDevice::adamnet_process(uint8_t b)
@@ -224,11 +227,14 @@ void virtualDevice::adamnet_idle()
 void systemBus::_adamnet_process_cmd()
 {
     uint8_t b;
+    int64_t rx_timestamp, now = esp_timer_get_time();
 
-    b = _port.read();
+    b = SYSTEM_BUS.read();
+    rx_timestamp = _port.lastByteTimestamp;
     start_time = esp_timer_get_time();
 
     uint8_t d = b & 0x0F;
+    bool handled = false;
 
     // Find device ID and pass control to it
     if (_daisyChain.count(d) < 1)
@@ -236,14 +242,52 @@ void systemBus::_adamnet_process_cmd()
     }
     else if (_daisyChain[d]->device_active == true)
     {
+        _end_time = 0;
         // turn on AdamNet Indicator LED
         fnLedManager.set(eLed::LED_BUS, true);
         _daisyChain[d]->adamnet_process(b);
         // turn off AdamNet Indicator LED
         fnLedManager.set(eLed::LED_BUS, false);
+        handled = true;
+#if 1
+        Debug_printf("CMD: %02X processing lag: %lld response %lld\n", b,
+                     now - rx_timestamp,
+                     _end_time ? _end_time - rx_timestamp : _end_time);
+#endif
+
+        if (debug_rx_buffer.size()) {
+#if 0
+            std::string hex = util_hexdump(debug_rx_buffer.data(), debug_rx_buffer.size());
+            std::stringstream ss_hex(hex);
+            std::string line;
+
+            while (std::getline(ss_hex, line))
+                Debug_printf("UART READ: %s\n", line.c_str());
+#endif
+            debug_rx_buffer.clear();
+        }
+
+        if (debug_tx_buffer.size()) {
+#if 0
+            std::string hex = util_hexdump(debug_tx_buffer.data(), debug_tx_buffer.size());
+            std::stringstream ss_hex(hex);
+            std::string line;
+
+            while (std::getline(ss_hex, line))
+                Debug_printf("UART WRITE: %s\n", line.c_str());
+#endif
+            debug_tx_buffer.clear();
+        }
     }
 
-    wait_for_idle(); // to avoid failing edge case where device is connected but disabled.
+    if (!handled)
+    {
+        size_t count = wait_for_idle(); // to avoid failing edge case where device is connected but disabled.
+#if 1
+        if (count)
+            Debug_printf("UART %02x DISCARD: %u\n", b, count);
+#endif
+    }
 }
 
 void systemBus::_adamnet_process_queue()
@@ -295,6 +339,7 @@ void systemBus::setup()
                 .readTimeout(0.180)
                 .discardTimeout(0.180)
                 .rxThreshold(1)
+                .halfDuplex(true)
                 );
 }
 
@@ -397,4 +442,55 @@ void systemBus::disableDevice(uint8_t device_id)
     if (_daisyChain.find(device_id) != _daisyChain.end())
         _daisyChain[device_id]->device_active = false;
 }
+
+// Hex dump everything read or written
+
+size_t systemBus::read(void *buffer, size_t length)
+{
+    size_t count;
+    count = _port.read(buffer, length);
+    debug_rx_buffer.insert(debug_rx_buffer.end(), (char *) buffer, (char *) buffer + length);
+    return count;
+}
+
+int systemBus::read()
+{
+#if 0
+    uint8_t c = _port.read();
+    debug_rx_buffer.push_back(c);
+    return c;
+#else
+    uint8_t c;
+    read(&c, 1);
+    return c;
+#endif
+}
+
+size_t systemBus::write(const void *buffer, size_t length)
+{
+    if (!_end_time)
+        _end_time = esp_timer_get_time();
+
+    debug_tx_buffer.insert(debug_tx_buffer.end(), (char *) buffer, (char *) buffer + length);
+#if 0
+    return _port.write(buffer, length);
+#else
+    size_t count  = _port.write(buffer, length);
+    return count;
+#endif
+}
+
+size_t systemBus::write(int n)
+{
+#if 0
+    if (!_end_time)
+        _end_time = esp_timer_get_time();
+    debug_tx_buffer.push_back(n);
+    return _port.write(n);
+#else
+    uint8_t c = n;
+    return write(&c, 1);
+#endif
+}
+
 #endif /* BUILD_ADAM */

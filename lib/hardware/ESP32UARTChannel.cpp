@@ -41,8 +41,11 @@ static void IRAM_ATTR uart_isr_handler(void *arg)
             rx_data.byte = uart->fifo.rw_byte;
             rx_data.timestamp_us = esp_timer_get_time();
 
-            // Send to queue
-            xQueueSendFromISR(ctx->rx_queue, &rx_data, &xHigherPriorityTaskWoken);
+            if (!ctx->discard_rx)
+            {
+                // Send to queue
+                xQueueSendFromISR(ctx->rx_queue, &rx_data, &xHigherPriorityTaskWoken);
+            }
         }
 
         // Clear interrupt flags
@@ -91,6 +94,7 @@ void ESP32UARTChannel::begin(const ChannelConfig& conf)
     if (conf.isInverted)
         uart_set_line_inverse(_uart_num, UART_SIGNAL_TXD_INV | UART_SIGNAL_RXD_INV);
 
+    halfDuplex = conf.isHalfDuplex;
     controlPins = conf.pins;
 
     if (controlPins.rts >= 0)
@@ -139,6 +143,7 @@ void ESP32UARTChannel::begin(const ChannelConfig& conf)
     {
         // Setup ISR
         isr_context.uart_num = _uart_num;
+        isr_context.discard_rx = false;
         isr_context.rx_queue = xQueueCreate(128, sizeof(uart_rx_data_t));
         // Get UART hardware register base
         uart_dev_t *uart = (_uart_num == 0) ? &UART0 : (_uart_num == 1) ? &UART1 : &UART2;
@@ -219,6 +224,7 @@ void ESP32UARTChannel::updateFIFO()
     while (xQueueReceive(isr_context.rx_queue, &event, 0))
     {
         _fifo += (char) event.byte;
+        lastByteTimestamp = event.timestamp_us;
         //Debug_printf("updateFIFO added byte %02x from %lld\n", event.byte, event.timestamp_us);
     }
 
@@ -260,6 +266,9 @@ size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
     if (_uart_num == FN_UART_DEBUG)
         return uart_write_bytes(_uart_num, (const char *)buffer, size);
 
+    if (halfDuplex)
+        isr_context.discard_rx = true;
+
     uart_dev_t *uart = UART_LL_GET_HW(_uart_num);
     size_t count = 0;
     uint8_t *data = (uint8_t *) buffer;
@@ -272,6 +281,12 @@ size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
             uart_ll_write_txfifo(uart, &data[count], chunk);
             count += chunk;
         }
+    }
+
+    if (halfDuplex)
+    {
+        flushOutput();
+        isr_context.discard_rx = false;
     }
 
     return count;

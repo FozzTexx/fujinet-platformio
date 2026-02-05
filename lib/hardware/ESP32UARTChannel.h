@@ -20,6 +20,7 @@
 // Context to pass to ISR
 typedef struct {
     int uart_num;
+    bool discard_rx;
     QueueHandle_t rx_queue;
 } uart_isr_context_t;
 
@@ -44,6 +45,7 @@ struct ChannelConfig
         }
     };
     bool isInverted = false;
+    bool isHalfDuplex = false;
     uart_port_t device;
     double read_timeout_ms = IOCHANNEL_DEFAULT_TIMEOUT;
     double discard_timeout_ms = IOCHANNEL_DEFAULT_TIMEOUT;
@@ -99,6 +101,9 @@ struct ChannelConfig
     ChannelConfig& inverted(bool inv) {
         isInverted = inv; return *this;
     }
+    ChannelConfig& halfDuplex(bool flag) {
+        isHalfDuplex = flag; return *this;
+    }
     ChannelConfig& deviceID(uart_port_t num) {
         device = num; return *this;
     }
@@ -138,6 +143,7 @@ private:
     QueueHandle_t _uart_q;
     RS232ControlPins controlPins;
     uart_isr_context_t isr_context;
+    bool halfDuplex;
 
 protected:
     bool getPin(int pin);
@@ -147,6 +153,8 @@ protected:
     size_t dataOut(const void *buffer, size_t length) override;
 
 public:
+    int64_t lastByteTimestamp;
+
     void begin(const ChannelConfig& conf);
     void end() override;
 

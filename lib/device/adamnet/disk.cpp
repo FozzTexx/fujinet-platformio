@@ -138,6 +138,9 @@ void adamDisk::adamnet_control_send_block_num()
 {
     uint8_t x[8];
 
+    if (_media == nullptr)
+        return;
+
     for (uint16_t i = 0; i < 5; i++)
         x[i] = adamnet_recv();
 

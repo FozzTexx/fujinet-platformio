@@ -65,7 +65,7 @@ public:
 
     // Handled by IOChannel, not implemented by subclass
     size_t available();
-    void discardInput();
+    size_t discardInput();
 
     /* Convenience methods, just wrappers for dataIn()/dataOut() methods above */
     size_t read(void *buffer, size_t length);

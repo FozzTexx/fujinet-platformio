@@ -242,6 +242,10 @@ private:
 
     UARTChannel _port;
 
+    int64_t _end_time;
+
+    std::string debug_rx_buffer, debug_tx_buffer;
+
     void _adamnet_process_cmd();
     void _adamnet_process_queue();
 
@@ -254,7 +258,7 @@ public:
     /**
      * @brief Wait for AdamNet bus to become idle.
      */
-    void wait_for_idle();
+    size_t wait_for_idle();
 
     /**
      * stopwatch
@@ -278,10 +282,10 @@ public:
 
     // Everybody thinks "oh I know how a serial port works, I'll just
     // access it directly and bypass the bus!" ಠ_ಠ
-    size_t read(void *buffer, size_t length) { return _port.read(buffer, length); }
-    size_t read() { return _port.read(); }
-    size_t write(const void *buffer, size_t length) { return _port.write(buffer, length); }
-    size_t write(int n) { return _port.write(n); }
+    size_t read(void *buffer, size_t length);
+    int read();
+    size_t write(const void *buffer, size_t length);
+    size_t write(int n);
     size_t available() { return _port.available(); }
     void flush() { _port.flushOutput(); }
     size_t print(int n, int base = 10) { return _port.print(n, base); }
