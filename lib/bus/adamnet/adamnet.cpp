@@ -249,7 +249,7 @@ void systemBus::_adamnet_process_cmd()
         // turn off AdamNet Indicator LED
         fnLedManager.set(eLed::LED_BUS, false);
         handled = true;
-#if 1
+#if 0
         Debug_printf("CMD: %02X processing lag: %lld response %lld\n", b,
                      now - rx_timestamp,
                      _end_time ? _end_time - rx_timestamp : _end_time);
@@ -283,7 +283,7 @@ void systemBus::_adamnet_process_cmd()
     if (!handled)
     {
         size_t count = wait_for_idle(); // to avoid failing edge case where device is connected but disabled.
-#if 1
+#if 0
         if (count)
             Debug_printf("UART %02x DISCARD: %u\n", b, count);
 #endif

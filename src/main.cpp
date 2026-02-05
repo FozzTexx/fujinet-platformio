@@ -556,7 +556,7 @@ void fn_service_loop(void *param)
         SYSTEM_BUS.service();
 
 #ifdef ESP_PLATFORM
-        taskYIELD(); // Allow other tasks to run
+        //taskYIELD(); // Allow other tasks to run
 #else
 // !ESP_PLATFORM
         fnHTTPD.service();

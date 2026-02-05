@@ -280,15 +280,15 @@ size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
             size_t chunk = std::min(size - count, space);
             uart_ll_write_txfifo(uart, &data[count], chunk);
             count += chunk;
+            flushOutput();
         }
     }
 
     if (halfDuplex)
     {
-        flushOutput();
+        //flushOutput();
         isr_context.discard_rx = false;
     }
-
     return count;
 }
 
