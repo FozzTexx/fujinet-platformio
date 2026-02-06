@@ -94,8 +94,10 @@ uint8_t virtualDevice::adamnet_recv()
 {
     uint8_t b;
 
+#if 0
     while (SYSTEM_BUS.available() <= 0)
         fnSystem.yield();
+#endif
 
     b = SYSTEM_BUS.read();
 
@@ -174,7 +176,7 @@ void virtualDevice::adamnet_control_ready()
 size_t systemBus::wait_for_idle()
 {
     size_t count = _port.discardInput();
-    fnSystem.yield();
+    //fnSystem.yield();
     return count;
 }
 
@@ -249,7 +251,7 @@ void systemBus::_adamnet_process_cmd()
         // turn off AdamNet Indicator LED
         fnLedManager.set(eLed::LED_BUS, false);
         handled = true;
-#if 0
+#if 1
         Debug_printf("CMD: %02X processing lag: %lld response %lld\n", b,
                      now - rx_timestamp,
                      _end_time ? _end_time - rx_timestamp : _end_time);
