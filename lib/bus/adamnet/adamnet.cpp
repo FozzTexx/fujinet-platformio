@@ -252,9 +252,10 @@ void systemBus::_adamnet_process_cmd()
         fnLedManager.set(eLed::LED_BUS, false);
         handled = true;
 #if 1
-        Debug_printf("CMD: %02X processing lag: %lld response %lld\n", b,
+        Debug_printf("CMD: %02X processing lag: %lld response %lld%s\n", b,
                      now - rx_timestamp,
-                     _end_time ? _end_time - rx_timestamp : _end_time);
+                     _end_time ? _end_time - rx_timestamp : _end_time,
+                     now - rx_timestamp > 160 ? " TOO LATE" : "");
 #endif
 
         if (debug_rx_buffer.size()) {
