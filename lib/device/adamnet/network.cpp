@@ -94,12 +94,17 @@ void adamNetwork::get_error()
  */
 void adamNetwork::open(unsigned short s)
 {
-    uint8_t _aux1 = adamnet_recv();
-    uint8_t _aux2 = adamnet_recv();
+    uint8_t _aux1 = 0, _aux2 = 0;
     string d;
 
-    s--;
-    s--;
+    if (s) {
+        _aux1 = adamnet_recv();
+        s--;
+    }
+    if (s) {
+        _aux2 = adamnet_recv();
+        s--;
+    }
 
     memset(response, 0, sizeof(response));
     adamnet_recv_buffer(response, s);
@@ -292,7 +297,7 @@ void adamNetwork::status()
     {
         status->avail = 0;
         status->conn = 0;
-        status->err = 165; // invalid spec.
+        status->err = NETWORK_ERROR_INVALID_DEVICESPEC;
         response_len = sizeof(*status);
         return;
     }
@@ -633,8 +638,14 @@ void adamNetwork::do_inquiry(fujiCommandID_t inq_cmd)
  */
 void adamNetwork::adamnet_special_00(unsigned short s)
 {
-    cmdFrame.aux1 = adamnet_recv();
-    cmdFrame.aux2 = adamnet_recv();
+    if (s) {
+        cmdFrame.aux1 = adamnet_recv();
+        s--;
+    }
+    if (s) {
+        cmdFrame.aux2 = adamnet_recv();
+        s--;
+    }
 
     adamnet_recv(); // CK
 
