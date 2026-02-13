@@ -105,21 +105,21 @@ bool D64MStream::allocateBlock(uint8_t track, uint8_t sector)
     // int offset;
     // byte bitmask;
 
-    // offset = (track-1) * 4 + 4;							// offset to correct Track-Info
+    // offset = (track-1) * 4 + 4;                                                      // offset to correct Track-Info
     // if (bam->GetRawSector()[offset] > 0)
     // {
-    // 	bam->GetRawSector()[offset] -= 1;				// reduce free Sectors
+    //  bam->GetRawSector()[offset] -= 1;                               // reduce free Sectors
     // }
-    // offset++;											// Move to Bitmask
-    // offset += (sector >> 3);							// move to the correct byte (sector div 8)
-    // bitmask = (byte)(1 << (sector % 8));				// generate Bitmask for Sector
-    // if ((bam->GetRawSector()[offset] & bitmask) == 0)	// was already set to 'used' ?
+    // offset++;                                                                                        // Move to Bitmask
+    // offset += (sector >> 3);                                                 // move to the correct byte (sector div 8)
+    // bitmask = (byte)(1 << (sector % 8));                             // generate Bitmask for Sector
+    // if ((bam->GetRawSector()[offset] & bitmask) == 0)        // was already set to 'used' ?
     // {
-    // 	return false;
+    //  return false;
     // }
-    // bitmask ^= 255;										// invert bitmask (0 means "Sector is used")
-    // bam->GetRawSector()[offset] &= bitmask;				// clear bit in BAM
-    // WriteSector(bam);									// Write back to Image
+    // bitmask ^= 255;                                                                          // invert bitmask (0 means "Sector is used")
+    // bam->GetRawSector()[offset] &= bitmask;                          // clear bit in BAM
+    // WriteSector(bam);                                                                        // Write back to Image
     return true;
 }
 
@@ -128,17 +128,17 @@ bool D64MStream::deallocateBlock(uint8_t track, uint8_t sector)
     // int offset;
     // byte bitmask;
 
-    // offset = (track - 1) * 4 + 4;						// offset to correct Track-Info
-    // bam->GetRawSector()[offset] += 1;					// increase free Sectors
-    // offset++;											// Move to Bitmask
-    // offset += (sector >> 3);							// move to the correct byte (sector div 8)
-    // bitmask = (byte)(1 << (sector % 8));				// generate Bitmask for Sector
-    // if ((bam->GetRawSector()[offset] & bitmask) == 1)	// Sector already free ?
+    // offset = (track - 1) * 4 + 4;                                            // offset to correct Track-Info
+    // bam->GetRawSector()[offset] += 1;                                        // increase free Sectors
+    // offset++;                                                                                        // Move to Bitmask
+    // offset += (sector >> 3);                                                 // move to the correct byte (sector div 8)
+    // bitmask = (byte)(1 << (sector % 8));                             // generate Bitmask for Sector
+    // if ((bam->GetRawSector()[offset] & bitmask) == 1)        // Sector already free ?
     // {
-    // 	return false;
+    //  return false;
     // }
-    // bam->GetRawSector()[offset] |= bitmask;				// clear bit in BAM (1 means "Sector is free")
-    // WriteSector(bam);									// Write back to Image
+    // bam->GetRawSector()[offset] |= bitmask;                          // clear bit in BAM (1 means "Sector is free")
+    // WriteSector(bam);                                                                        // Write back to Image
     return true;
 }
 
@@ -194,7 +194,7 @@ bool D64MStream::isBlockFree(uint8_t track, uint8_t sector)
     // byte bitmask;
 
     // offset = (track-1) * 4 + 4;                 // offset to correct Track-Info
-    // offset++;									// Move to Bitmask
+    // offset++;                                                                        // Move to Bitmask
     // offset += (sector >> 3);                    // move to the correct byte (sector div 8)
     // bitmask = (byte)(1 << (sector % 8));        // generate Bitmask for Sector
     // return (bam->GetRawSector()[offset] & bitmask) == bitmask;
@@ -399,7 +399,7 @@ uint32_t D64MStream::readFile(uint8_t *buf, uint32_t size)
     {
         if (size > available())
             size = available();
-        
+
         // Only read up to the bytes remaining in this sector
         size = std::min(size, (uint32_t) (block_size - sector_offset % block_size));
 
@@ -445,7 +445,7 @@ uint32_t D64MStream::writeFile(uint8_t *buf, uint32_t size)
     {
         if (size > available())
             size = available();
-        
+
         // Only read up to the bytes remaining in this sector
         size = std::min(size, (uint32_t) (block_size - sector_offset % block_size));
 
@@ -586,7 +586,7 @@ MFile *D64MFile::getNextFileInDir()
         // Debug_printv( "entry[%s]", (streamFile->url + "/" + filename).c_str() );
         auto file = MFSOwner::File(streamFile->url + "/" + filename);
         file->extension = image->decodeType(image->entry.file_type);
-        file->size = UINT16_FROM_LE_UINT16(image->entry.blocks);
+        file->size = le16toh(image->entry.blocks);
 
         return file;
     }
@@ -625,4 +625,3 @@ bool D64MFile::exists()
     // Debug_printv("here");
     return true;
 }
-
