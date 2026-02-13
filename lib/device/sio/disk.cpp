@@ -9,6 +9,7 @@
 
 #include "sioFuji.h"
 #include "utils.h"
+#include "endianness.h"
 
 sioDisk::sioDisk()
 {
