@@ -39,9 +39,9 @@ void rc2014Disk::read()
 
     uint16_t readcount;
 
-    Debug_printf("disk READ: sector = %d\n", UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1));
+    Debug_printf("disk READ: sector = %d\n", le16toh(cmdFrame.aux12));
 
-    bool err = _media->read(UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1), &readcount);
+    bool err = _media->read(le16toh(cmdFrame.aux12), &readcount);
 
     Debug_printf("disk READ: readcount = %d\n", readcount);
 
@@ -60,7 +60,7 @@ void rc2014Disk::write(bool verify)
 
     if (_media != nullptr)
     {
-        uint16_t sectorNum = UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1);
+        uint16_t sectorNum = le16toh(cmdFrame.aux12);
         uint16_t sectorSize = _media->sector_size(sectorNum);
 
         memset(_media->_media_sectorbuff, 0, DISK_BYTES_PER_SECTOR_SINGLE);

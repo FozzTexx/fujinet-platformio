@@ -29,8 +29,8 @@ protected:
     struct Entry {
         uint8_t entry_type;
         uint8_t file_type;
-        uint8_t start_address[2];
-        uint8_t end_address[2];
+        uint16_t start_address;
+        uint16_t end_address;
         uint16_t free_1;
         uint32_t data_offset;
         uint32_t free_2;
@@ -41,7 +41,7 @@ protected:
         containerStream->seek(0x28);
         if (containerStream->read((uint8_t*)&header, 24))
             return true;
-        
+
         return false;
     }
 
@@ -75,7 +75,7 @@ public:
         media_image = name;
         isPETSCII = true;
     };
-    
+
     ~T64MFile() {
         // don't close the stream here! It will be used by shared ptr D64Util to keep reading image params
     }

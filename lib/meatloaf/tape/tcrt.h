@@ -29,9 +29,9 @@ protected:
     struct Entry {
         char filename[16];
         uint8_t file_type;
-        uint8_t file_start_address[2]; // from tcrt file system at 0xD8
+        uint16_t file_start_address; // from tcrt file system at 0xD8
         uint8_t file_size[3];
-        uint8_t file_load_address[2];
+        uint16_t file_load_address;
         uint16_t bundle_compatibility;
         uint16_t bundle_main_start;
         uint16_t bundle_main_length;
@@ -76,7 +76,7 @@ public:
         media_image = name;
         isPETSCII = true;
     };
-    
+
     ~TCRTMFile() {
         // don't close the stream here! It will be used by shared ptr D64Util to keep reading image params
     }

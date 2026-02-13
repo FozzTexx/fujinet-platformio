@@ -117,7 +117,7 @@ int tnfs_mount(tnfsMountInfo *m_info)
         // Success
         if (packet.payload[0] == TNFS_RESULT_SUCCESS)
         {
-            m_info->session = TNFS_UINT16_FROM_HILOBYTES(packet.session_idh, packet.session_idl);
+            m_info->session = le16toh(packet.session_id);
             m_info->server_version = TNFS_UINT16_FROM_HILOBYTES(packet.payload[2], packet.payload[1]);
             m_info->min_retry_ms = TNFS_UINT16_FROM_HILOBYTES(packet.payload[4], packet.payload[3]);
 
@@ -1408,7 +1408,7 @@ bool _tnfs_transaction(tnfsMountInfo *m_info, tnfsPacket &pkt, uint16_t payload_
             // fallback to retry
             break;
         }
-        
+
         // Make sure we wait before retrying
         fnSystem.delay(m_info->min_retry_ms);
     }
@@ -1485,7 +1485,7 @@ _tnfs_send_recv_result _tnfs_send_recv(fnUDP &udp, tnfsMountInfo *m_info, tnfsPa
         m_info->protocol = TNFS_PROTOCOL_UDP;
         return RESET;
     }
-    
+
     Debug_printf("Timeout after %d milliseconds. Retrying\r\n", m_info->timeout_ms);
     return FAILED;
 }

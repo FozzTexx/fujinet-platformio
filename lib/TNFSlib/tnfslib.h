@@ -127,8 +127,7 @@
 union tnfsPacket {
     struct
     {
-        uint8_t session_idl;
-        uint8_t session_idh;
+        uint16_t session_id;
         uint8_t sequence_num;
         uint8_t command;
         uint8_t payload[TNFS_PAYLOAD_SIZE];
@@ -145,28 +144,6 @@ struct tnfsStat
     uint32_t c_time;
     uint16_t mode;
 };
-
-// Retruns a uint16 value given two bytes in high-low order
-#define TNFS_UINT16_FROM_HILOBYTES(high, low) ((uint16_t)high << 8 | low)
-
-// Returns a uint16 value from a pointer to two bytes in little-ending order
-#define TNFS_UINT16_FROM_LOHI_BYTEPTR(bytep) ((uint16_t)(*(bytep + 1)) << 8 | (*(bytep + 0)))
-// Returns a uint32 value from a pointer to four bytes in little-ending order
-#define TNFS_UINT32_FROM_LOHI_BYTEPTR(bytep) ((uint32_t)(*(bytep + 3)) << 24 | (uint32_t)(*(bytep + 2)) << 16 | (uint32_t)(*(bytep + 1)) << 8 | (*(bytep + 0)))
-
-// Takes UINT32 value and pushes it into 4 consecutive bytes in little-endian order
-#define TNFS_UINT32_TO_LOHI_BYTEPTR(value, bytep) \
-    {                                             \
-        (bytep)[0] = value & 0xFFUL;              \
-        (bytep)[1] = value >> 8 & 0xFFUL;         \
-        (bytep)[2] = value >> 16 & 0xFFUL;        \
-        (bytep)[3] = value >> 24 & 0xFFUL;        \
-    }
-
-// Returns the high byte (MSB) of a uint16 value
-#define TNFS_HIBYTE_FROM_UINT16(value) ((uint8_t)((value >> 8) & 0xFF))
-// Returns the low byte (LSB) of a uint16 value
-#define TNFS_LOBYTE_FROM_UINT16(value) ((uint8_t)(value & 0xFF))
 
 // Checks that value is >= 0 and <= 255
 #define TNFS_VALID_AS_UINT8(value) (value >= 0 && value <= 255)

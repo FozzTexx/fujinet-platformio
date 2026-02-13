@@ -1,15 +1,25 @@
+// FIXME - get rid of this file
 
-// Retruns a uint16 value given two bytes in high-low order
+#ifndef ENDIANNESS_H
+#define ENDIANNESS_H
+
+#include "fuji_endian.h"
+
+// Returns a uint16 value given two bytes in high-low order
 #define UINT16_FROM_HILOBYTES(high, low) ((uint16_t)high << 8 | low)
 
+#if 0
 // Returns a uint16 value from the little-endian version
 #define UINT16_FROM_LE_UINT16(_ui16) \
     (_ui16 << 8 | _ui16 >> 8)
 // Returns a uint32 value from the little-endian version
 #define UINT32_FROM_LE_UINT32(_ui32) \
     ((_ui32 >> 24 & 0x000000FF) | (_ui32 >> 8 & 0x0000FF00) | (_ui32 << 8 & 0x00FF0000) | (_ui32 << 24 & 0xFF000000))
+#endif
 
 // Returns the high byte (MSB) of a uint16 value
 #define HIBYTE_FROM_UINT16(value) ((uint8_t)((value >> 8) & 0xFF))
 // Returns the low byte (LSB) of a uint16 value
 #define LOBYTE_FROM_UINT16(value) ((uint8_t)(value & 0xFF))
+
+#endif /* ENDIANNESS_H */

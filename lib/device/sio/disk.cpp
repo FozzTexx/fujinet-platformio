@@ -31,7 +31,7 @@ void sioDisk::sio_read()
 
     uint16_t readcount;
 
-    bool err = _disk->read(UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1), &readcount);
+    bool err = _disk->read(le16toh(cmdFrame.aux12), &readcount);
 
     // Send result to Atari
     bus_to_computer(_disk->_disk_sectorbuff, readcount, err);
@@ -44,7 +44,7 @@ void sioDisk::sio_write(bool verify)
 
     if (_disk != nullptr)
     {
-        uint16_t sectorNum = UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1);
+        uint16_t sectorNum = le16toh(cmdFrame.aux12);
         uint16_t sectorSize = _disk->sector_size(sectorNum);
 
         memset(_disk->_disk_sectorbuff, 0, DISK_SECTORBUF_SIZE);
@@ -295,7 +295,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
     switch (cmdFrame.comnd)
     {
     case DISKCMD_READ:
-        if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
+        if (le16toh(cmdFrame.aux12) > _disk->_disk_num_sectors)
         {
             sio_nak();
             return;
@@ -320,7 +320,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
         }
         break;
     case DISKCMD_PUT:
-        if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
+        if (le16toh(cmdFrame.aux12) > _disk->_disk_num_sectors)
         {
             sio_nak();
             return;
@@ -339,7 +339,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
     case DISKCMD_HSIO_PUT:
         if (_disk->_allow_hsio)
         {
-            if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
+            if (le16toh(cmdFrame.aux12) > _disk->_disk_num_sectors)
             {
                 sio_nak();
                 return;
@@ -384,7 +384,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
         }
         return;
     case DISKCMD_WRITE:
-        if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
+        if (le16toh(cmdFrame.aux12) > _disk->_disk_num_sectors)
         {
             sio_nak();
             return;
@@ -403,7 +403,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
     case DISKCMD_HSIO_WRITE:
         if (_disk->_allow_hsio)
         {
-            if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
+            if (le16toh(cmdFrame.aux12) > _disk->_disk_num_sectors)
             {
                 sio_nak();
                 return;

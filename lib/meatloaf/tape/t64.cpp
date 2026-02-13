@@ -83,7 +83,7 @@ bool T64MStream::seekEntry( uint16_t index )
     //Debug_printv("r[%d] file_type[%02X] file_name[%.16s]", r, entry.file_type, entry.filename);
 
     //if ( next_track == 0 && next_sector == 0xFF )
-    entry_index = index + 1;    
+    entry_index = index + 1;
     if ( entry.file_type == 0x00 )
         return false;
     else
@@ -128,9 +128,9 @@ bool T64MStream::seekPath(std::string path) {
     {
         //auto entry = containerImage->entry;
         auto type = decodeType(entry.file_type).c_str();
-        uint32_t start_address = UINT16_FROM_HILOBYTES(entry.start_address[1], entry.start_address[0]);
-        uint32_t end_address = UINT16_FROM_HILOBYTES(entry.end_address[1], entry.end_address[0]);
-        uint32_t data_offset = UINT32_FROM_LE_UINT32(entry.data_offset);
+        uint32_t start_address = le16toh(entry.start_address);
+        uint32_t end_address = le16toh(entry.end_address);
+        uint32_t data_offset = le32toh(entry.data_offset);
         Debug_printv("filename [%.16s] type[%s] start_address[%lu] end_address[%lu] data_offset[%lu]", entry.filename, type, start_address, end_address, data_offset);
 
         // Calculate file size
@@ -214,12 +214,12 @@ MFile* T64MFile::getNextFileInDir() {
         auto file = MFSOwner::File(streamFile->url + "/" + filename);
         file->extension = image->decodeType(image->entry.file_type);
 
-        size_t end_address = UINT16_FROM_HILOBYTES(image->entry.end_address[1], image->entry.end_address[0]);
-        size_t start_address = UINT16_FROM_HILOBYTES(image->entry.start_address[1], image->entry.start_address[0]);
+        size_t end_address = le16toh(image->entry.end_address);
+        size_t start_address = le16toh(image->entry.start_address);
         file->size = ( end_address - start_address ) + 2; // 2 bytes for load address
 
         Debug_printv( "entry[%s] ext[%s]", filename.c_str(), file->extension.c_str() );
-        
+
         return file;
     }
 
@@ -228,4 +228,3 @@ exit:
     dirIsOpen = false;
     return nullptr;
 }
-

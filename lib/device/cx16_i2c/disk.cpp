@@ -27,7 +27,7 @@ void cx16Disk::sio_read()
 
     uint16_t readcount;
 
-    bool err = _disk->read(UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1), &readcount);
+    bool err = _disk->read(le16toh(cmdFrame.aux12), &readcount);
 
     // Send result to Atari
     bus_to_computer(_disk->_media_blockbuff, readcount, err);
@@ -110,7 +110,7 @@ void cx16Disk::process(uint32_t commanddata, uint8_t checksum)
     switch (cmdFrame.comnd)
     {
     case DISKCMD_READ:
-        if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_media_last_block)
+        if (le16toh(cmdFrame.aux12) > _disk->_media_last_block)
         {
             cx16_nak();
             return;
@@ -135,7 +135,7 @@ void cx16Disk::process(uint32_t commanddata, uint8_t checksum)
         }
         break;
     case DISKCMD_PUT:
-        if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_media_last_block)
+        if (le16toh(cmdFrame.aux12) > _disk->_media_last_block)
         {
             cx16_nak();
             return;
@@ -154,7 +154,7 @@ void cx16Disk::process(uint32_t commanddata, uint8_t checksum)
     case DISKCMD_HSIO_PUT:
         if (_disk->_allow_hsio)
         {
-            if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_media_last_block)
+            if (le16toh(cmdFrame.aux12) > _disk->_media_last_block)
             {
                 cx16_nak();
                 return;
@@ -188,7 +188,7 @@ void cx16Disk::process(uint32_t commanddata, uint8_t checksum)
         }
         return;
     case DISKCMD_WRITE:
-        if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_media_last_block)
+        if (le16toh(cmdFrame.aux12) > _disk->_media_last_block)
         {
             cx16_nak();
             return;
@@ -207,7 +207,7 @@ void cx16Disk::process(uint32_t commanddata, uint8_t checksum)
     case DISKCMD_HSIO_WRITE:
         if (_disk->_allow_hsio)
         {
-            if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_media_last_block)
+            if (le16toh(cmdFrame.aux12) > _disk->_media_last_block)
             {
                 cx16_nak();
                 return;

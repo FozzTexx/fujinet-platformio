@@ -554,7 +554,7 @@ void cx16Fuji::close_app_key()
 */
 void cx16Fuji::sio_write_app_key()
 {
-    uint16_t keylen = UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1);
+    uint16_t keylen = le16toh(cmdFrame.aux12);
 
     Debug_printf("Fuji cmd: WRITE APPKEY (keylen = %hu)\n", keylen);
 
@@ -891,7 +891,7 @@ void cx16Fuji::set_directory_position()
     Debug_println("Fuji cmd: SET DIRECTORY POSITION");
 
     // DAUX1 and DAUX2 hold the position to seek to in low/high order
-    uint16_t pos = UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1);
+    uint16_t pos = le16toh(cmdFrame.aux12);
 
     // Make sure we have a current open directory
     if (_current_open_directory_slot == -1)
