@@ -16,7 +16,7 @@
 #include "tnfslib_udp.h"
 
 #include "utils.h"
-
+#include "endianness.h"
 
 // ESTALE, ENOSTR and ENODATA not in errno.h on Windows/MinGW
 #ifndef ESTALE
@@ -118,8 +118,8 @@ int tnfs_mount(tnfsMountInfo *m_info)
         if (packet.payload[0] == TNFS_RESULT_SUCCESS)
         {
             m_info->session = le16toh(packet.session_id);
-            m_info->server_version = TNFS_UINT16_FROM_HILOBYTES(packet.payload[2], packet.payload[1]);
-            m_info->min_retry_ms = TNFS_UINT16_FROM_HILOBYTES(packet.payload[4], packet.payload[3]);
+            m_info->server_version = UINT16_FROM_HILOBYTES(packet.payload[2], packet.payload[1]);
+            m_info->min_retry_ms = UINT16_FROM_HILOBYTES(packet.payload[4], packet.payload[3]);
 
             // Check server version
             if(m_info->server_version < 0x0102)
@@ -197,11 +197,11 @@ int tnfs_open(tnfsMountInfo *m_info, const char *filepath, uint16_t open_mode, u
     tnfsPacket packet;
     packet.command = TNFS_CMD_OPEN;
 
-    packet.payload[0] = TNFS_LOBYTE_FROM_UINT16(open_mode);
-    packet.payload[1] = TNFS_HIBYTE_FROM_UINT16(open_mode);
+    packet.payload[0] = LOBYTE_FROM_UINT16(open_mode);
+    packet.payload[1] = HIBYTE_FROM_UINT16(open_mode);
 
-    packet.payload[2] = TNFS_LOBYTE_FROM_UINT16(create_perms);
-    packet.payload[3] = TNFS_HIBYTE_FROM_UINT16(create_perms);
+    packet.payload[2] = LOBYTE_FROM_UINT16(create_perms);
+    packet.payload[3] = HIBYTE_FROM_UINT16(create_perms);
 
     int offset_filename = 4; // Where the filename starts in the buffer
 
@@ -392,8 +392,8 @@ int _tnfs_fill_cache(tnfsMountInfo *m_info, tnfsFileHandleInfo *pFHI)
         // How many bytes to read in this call
         uint16_t bytes_to_read = bytes_remaining_to_load > TNFS_MAX_READWRITE_PAYLOAD ? TNFS_MAX_READWRITE_PAYLOAD : bytes_remaining_to_load;
 
-        packet.payload[1] = TNFS_LOBYTE_FROM_UINT16(bytes_to_read);
-        packet.payload[2] = TNFS_HIBYTE_FROM_UINT16(bytes_to_read);
+        packet.payload[1] = LOBYTE_FROM_UINT16(bytes_to_read);
+        packet.payload[2] = HIBYTE_FROM_UINT16(bytes_to_read);
 
         #ifdef VERBOSE_TNFS
         Debug_printf("_tnfs_fill_cache requesting %u bytes\r\n", bytes_to_read);
@@ -406,7 +406,7 @@ int _tnfs_fill_cache(tnfsMountInfo *m_info, tnfsFileHandleInfo *pFHI)
             {
                 // Copy the actual number of bytes returned to us into our cache
                 // (offset by how many bytes we've already put in the cache)
-                uint16_t bytes_read = TNFS_UINT16_FROM_LOHI_BYTEPTR(packet.payload + 1);
+                uint16_t bytes_read = UINT16_FROM_LOHI_BYTEPTR(packet.payload + 1);
                 memcpy(pFHI->cache + (sizeof(pFHI->cache) - bytes_remaining_to_load),
                        packet.payload + 3, bytes_read);
 
@@ -554,8 +554,8 @@ int tnfs_write(tnfsMountInfo *m_info, int16_t file_handle, uint8_t *buffer, uint
     tnfsPacket packet;
     packet.command = TNFS_CMD_WRITE;
     packet.payload[0] = file_handle;
-    packet.payload[1] = TNFS_LOBYTE_FROM_UINT16(bufflen);
-    packet.payload[2] = TNFS_HIBYTE_FROM_UINT16(bufflen);
+    packet.payload[1] = LOBYTE_FROM_UINT16(bufflen);
+    packet.payload[2] = HIBYTE_FROM_UINT16(bufflen);
 
     memcpy(packet.payload + 3, buffer, bufflen);
 
@@ -563,7 +563,7 @@ int tnfs_write(tnfsMountInfo *m_info, int16_t file_handle, uint8_t *buffer, uint
     {
         if (packet.payload[0] == TNFS_RESULT_SUCCESS)
         {
-            *resultlen = TNFS_UINT16_FROM_LOHI_BYTEPTR(packet.payload + 1);
+            *resultlen = UINT16_FROM_LOHI_BYTEPTR(packet.payload + 1);
             // Keep track of our file position
             uint32_t new_pos = pFileInf->file_position + *resultlen;
             // Debug_printf("tnfs_write prev_pos: %u, read: %u, new_pos: %u\r\n", pFileInf->file_position, *resultlen, new_pos);
@@ -650,7 +650,7 @@ int tnfs_lseek(tnfsMountInfo *m_info, int16_t file_handle, int32_t position, uin
     packet.command = TNFS_CMD_LSEEK;
     packet.payload[0] = file_handle;
     packet.payload[1] = type;
-    TNFS_UINT32_TO_LOHI_BYTEPTR(position, packet.payload + 2);
+    UINT32_TO_LOHI_BYTEPTR(position, packet.payload + 2);
 
     if (_tnfs_transaction(m_info, packet, 6))
     {
@@ -668,7 +668,7 @@ int tnfs_lseek(tnfsMountInfo *m_info, int16_t file_handle, int32_t position, uin
 
             if(new_position != nullptr)
                 *new_position = pFileInf->file_position;
-            uint32_t response_pos = TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + 1);
+            uint32_t response_pos = UINT32_FROM_LOHI_BYTEPTR(packet.payload + 1);
 #ifdef TNFS_DEBUG
             Debug_printf("tnfs_lseek success, new pos=%u, response pos=%u\r\n", pFileInf->file_position, response_pos);
 #endif
@@ -714,8 +714,8 @@ int tnfs_opendirx(tnfsMountInfo *m_info, const char *directory, uint8_t sortopts
     packet.payload[OFFSET_OPENDIRX_DIROPT] = diropts;
     packet.payload[OFFSET_OPENDIRX_SORTOPT] = sortopts;
 
-    packet.payload[OFFSET_OPENDIRX_MAXRESULTS] = TNFS_LOBYTE_FROM_UINT16(maxresults);
-    packet.payload[OFFSET_OPENDIRX_MAXRESULTS + 1] = TNFS_HIBYTE_FROM_UINT16(maxresults);
+    packet.payload[OFFSET_OPENDIRX_MAXRESULTS] = LOBYTE_FROM_UINT16(maxresults);
+    packet.payload[OFFSET_OPENDIRX_MAXRESULTS + 1] = HIBYTE_FROM_UINT16(maxresults);
 
     // Copy the pattern or an empty string
     strlcpy((char *)(packet.payload + OFFSET_OPENDIRX_PATTERN),
@@ -737,7 +737,7 @@ int tnfs_opendirx(tnfsMountInfo *m_info, const char *directory, uint8_t sortopts
         if (packet.payload[0] == TNFS_RESULT_SUCCESS)
         {
             m_info->dir_handle = packet.payload[1];
-            m_info->dir_entries = TNFS_UINT16_FROM_LOHI_BYTEPTR(packet.payload + 2);
+            m_info->dir_entries = UINT16_FROM_LOHI_BYTEPTR(packet.payload + 2);
             Debug_printf("Directory opened, handle ID: %hd, entries: %u\r\n", m_info->dir_handle, m_info->dir_entries);
         }
         return packet.payload[0];
@@ -820,7 +820,7 @@ int tnfs_readdirx(tnfsMountInfo *m_info, tnfsStat *filestat, char *dir_entry, in
         {
             uint8_t response_count = packet.payload[1];
             uint8_t response_status = packet.payload[2];
-            uint16_t dirpos = TNFS_UINT16_FROM_LOHI_BYTEPTR(packet.payload + 3);
+            uint16_t dirpos = UINT16_FROM_LOHI_BYTEPTR(packet.payload + 3);
 
             // Set our EOF flag if the server tells us there's no more after this
             if(response_status & TNFS_READDIRX_STATUS_EOF)
@@ -839,11 +839,11 @@ int tnfs_readdirx(tnfsMountInfo *m_info, tnfsStat *filestat, char *dir_entry, in
                     pEntry->flags =
                         packet.payload[current_offset + OFFSET_READDIRX_FLAGS];
                     pEntry->filesize =
-                        TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + current_offset + OFFSET_READDIRX_SIZE);
+                        UINT32_FROM_LOHI_BYTEPTR(packet.payload + current_offset + OFFSET_READDIRX_SIZE);
                     pEntry->m_time =
-                        TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + current_offset + OFFSET_READDIRX_MTIME);
+                        UINT32_FROM_LOHI_BYTEPTR(packet.payload + current_offset + OFFSET_READDIRX_MTIME);
                     pEntry->c_time =
-                        TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + current_offset + OFFSET_READDIRX_CTIME);
+                        UINT32_FROM_LOHI_BYTEPTR(packet.payload + current_offset + OFFSET_READDIRX_CTIME);
 
                     int name_len = strlcpy(pEntry->entryname,
                         (char *)packet.payload + current_offset + OFFSET_READDIRX_PATH, sizeof(pEntry->entryname));
@@ -900,7 +900,7 @@ int tnfs_telldir(tnfsMountInfo *m_info, uint16_t *position)
     {
         if (packet.payload[0] == TNFS_RESULT_SUCCESS)
         {
-            *position = TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + 1);
+            *position = UINT32_FROM_LOHI_BYTEPTR(packet.payload + 1);
         }
         return packet.payload[0];
     }
@@ -922,7 +922,7 @@ int tnfs_seekdir(tnfsMountInfo *m_info, uint16_t position)
     packet.command = TNFS_CMD_SEEKDIR;
     packet.payload[0] = m_info->dir_handle;
     uint32_t pos = position;
-    TNFS_UINT32_TO_LOHI_BYTEPTR(pos, packet.payload + 1);
+    UINT32_TO_LOHI_BYTEPTR(pos, packet.payload + 1);
 
     if (_tnfs_transaction(m_info, packet, 5))
         return packet.payload[0];
@@ -1033,17 +1033,17 @@ int tnfs_stat(tnfsMountInfo *m_info, tnfsStat *filestat, const char *filepath)
         if (packet.payload[0] == TNFS_RESULT_SUCCESS)
         {
 
-            filestat->mode = TNFS_UINT16_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_FILEMODE);
+            filestat->mode = UINT16_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_FILEMODE);
             filestat->isDir = (filestat->mode & S_IFDIR) ? true : false;
 
-            uint16_t uid = TNFS_UINT16_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_UID);
-            uint16_t gid = TNFS_UINT16_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_GID);
+            uint16_t uid = UINT16_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_UID);
+            uint16_t gid = UINT16_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_GID);
 
-            filestat->filesize = TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_FILESIZE);
+            filestat->filesize = UINT32_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_FILESIZE);
 
-            filestat->a_time = TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_ATIME);
-            filestat->m_time = TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_MTIME);
-            filestat->c_time = TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_CTIME);
+            filestat->a_time = UINT32_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_ATIME);
+            filestat->m_time = UINT32_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_MTIME);
+            filestat->c_time = UINT32_FROM_LOHI_BYTEPTR(packet.payload + OFFSET_STAT_CTIME);
 
             /*
             Debug_printf("\ttnfs_stat: mode: %ho, uid: %hu, gid: %hu, dir: %d, size: %u, atime: 0x%04x, mtime: 0x%04x, ctime: 0x%04x\r\n",
@@ -1118,8 +1118,8 @@ int tnfs_chmod(tnfsMountInfo *m_info, const char *filepath, uint16_t mode)
     tnfsPacket packet;
     packet.command = TNFS_CMD_CHMOD;
 
-    packet.payload[0] = TNFS_LOBYTE_FROM_UINT16(mode);
-    packet.payload[1] = TNFS_HIBYTE_FROM_UINT16(mode);
+    packet.payload[0] = LOBYTE_FROM_UINT16(mode);
+    packet.payload[1] = HIBYTE_FROM_UINT16(mode);
 
     int len = _tnfs_adjust_with_full_path(m_info, (char *)packet.payload + 2, filepath, sizeof(packet.payload) - 2);
 
@@ -1149,7 +1149,7 @@ int tnfs_size(tnfsMountInfo *m_info, uint32_t *size)
     {
         if (packet.payload[0] == 0)
         {
-            *size = TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + 1);
+            *size = UINT32_FROM_LOHI_BYTEPTR(packet.payload + 1);
         }
         return packet.payload[0];
     }
@@ -1173,7 +1173,7 @@ int tnfs_free(tnfsMountInfo *m_info, uint32_t *size)
     {
         if (packet.payload[0] == 0)
         {
-            *size = TNFS_UINT32_FROM_LOHI_BYTEPTR(packet.payload + 1);
+            *size = UINT32_FROM_LOHI_BYTEPTR(packet.payload + 1);
         }
         return packet.payload[0];
     }
@@ -1385,8 +1385,7 @@ bool _tnfs_transaction(tnfsMountInfo *m_info, tnfsPacket &pkt, uint16_t payload_
 
     // Set our session ID
     tnfsPacket reqPkt = pkt;
-    reqPkt.session_idl = TNFS_LOBYTE_FROM_UINT16(m_info->session);
-    reqPkt.session_idh = TNFS_HIBYTE_FROM_UINT16(m_info->session);
+    reqPkt.session_id = htole16(m_info->session);
 
     // Set sequence number before the transaction loop
     reqPkt.sequence_num = m_info->current_sequence_num++;
@@ -1527,7 +1526,7 @@ _tnfs_recv_result _tnfs_recv_and_validate(fnUDP &udp, tnfsMountInfo *m_info, tnf
     if (res_pkt.payload[0] == TNFS_RESULT_TRY_AGAIN)
     {
         // Server should tell us how long it wants us to wait
-        uint16_t backoffms = TNFS_UINT16_FROM_LOHI_BYTEPTR(res_pkt.payload + 1);
+        uint16_t backoffms = UINT16_FROM_LOHI_BYTEPTR(res_pkt.payload + 1);
         Debug_printf("Server asked us to TRY AGAIN after %ums\r\n", backoffms);
         if (backoffms > TNFS_MAX_BACKOFF_DELAY)
             backoffms = TNFS_MAX_BACKOFF_DELAY;
@@ -1550,8 +1549,7 @@ _tnfs_recv_result _tnfs_recv_and_validate(fnUDP &udp, tnfsMountInfo *m_info, tnf
             return RESP_VALID;
         }
         // retry the command using new session
-        req_pkt.session_idl = TNFS_LOBYTE_FROM_UINT16(m_info->session);
-        req_pkt.session_idh = TNFS_HIBYTE_FROM_UINT16(m_info->session);
+        req_pkt.session_id = htole16(m_info->session);
         return SESSION_RECOVERED;
     }
 
