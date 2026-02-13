@@ -1,4 +1,5 @@
 #include "tcrt.h"
+#include "endianness.h"
 
 //#include "meat_broker.h"
 
@@ -47,7 +48,7 @@ std::string TCRTMStream::decodeType(uint8_t file_type, bool show_hidden)
     //     return "PRG";
 
     // 0xfe: System file! This file is (part of) the program that launches at power up.
-    // No other program should ever rename/delete this file or relocate the blocks. 
+    // No other program should ever rename/delete this file or relocate the blocks.
     // (The entry within the FS however can be moved around. This may cover the FS itself, but it's not required.)
     if ( file_type == 0xFE )
        type = "DEL";
@@ -123,7 +124,7 @@ bool TCRTMStream::seekEntry( uint16_t index )
 
     //Debug_printv("file_name[%.16s] file_type[%02X] data_offset[%X] file_size[%d] load_address[%04X]", entry.filename, entry.file_type, file_start_address, file_size, file_load_address);
 
-    entry_index = index + 1;    
+    entry_index = index + 1;
     if ( entry.file_type == 0xFF )
         return false;
     else
@@ -137,7 +138,7 @@ uint32_t TCRTMStream::readFile(uint8_t* buf, uint32_t size) {
     {
         //Debug_printv("send load address[%4X]", _load_address);
 
-        buf[0] = _load_address[_position];
+        buf[0] = ((uint8_t *) &_load_address)[_position];
         bytesRead = size;
         // if ( size > 1 )
         // {
@@ -172,16 +173,15 @@ bool TCRTMStream::seekPath(std::string path) {
         _size = (entry.file_size[0] | (entry.file_size[1] << 8) | (entry.file_size[2] << 16)) + 2; // 2 bytes for load address
 
         // Load Address
-        _load_address[0] = entry.file_load_address[0];
-        _load_address[1] = entry.file_load_address[1];
+        _load_address = entry.file_load_address;
 
         // Set position to beginning of file
         _position = 0;
-        uint32_t file_start_address = (0xD8 + (entry.file_start_address[0] << 8 | entry.file_start_address[1] << 16));
+        uint32_t file_start_address = (0xD8 + le16toh(entry.file_start_address));
         containerStream->seek(file_start_address);
 
         Debug_printv("File Size: size[%ld] available[%ld]", _size, available());
-        
+
         return true;
     }
     else
@@ -229,7 +229,7 @@ bool TCRTMFile::rewindDirectory() {
     return true;
 }
 
-MFile* TCRTMFile::getNextFileInDir() 
+MFile* TCRTMFile::getNextFileInDir()
 {
     bool r = false;
 
@@ -245,7 +245,7 @@ MFile* TCRTMFile::getNextFileInDir()
     {
         r = image->getNextImageEntry();
     } while ( r && image->entry.file_type >= 0xFE); // Skip SYSTEM files
-    
+
     if ( r )
     {
         std::string filename = image->entry.filename;
@@ -266,5 +266,3 @@ exit:
     dirIsOpen = false;
     return nullptr;
 }
-
-

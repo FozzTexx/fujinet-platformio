@@ -98,7 +98,7 @@ uint32_t T64MStream::readFile(uint8_t* buf, uint32_t size) {
     {
         //Debug_printv("position[%d] load00[%d] load01[%d]", _position, _load_address[0], _load_address[1]);
 
-        buf[0] = _load_address[_position];
+        buf[0] = ((uint8_t *) &_load_address)[_position];
         bytesRead = size;
         // if ( size > 1 )
         // {
@@ -137,8 +137,7 @@ bool T64MStream::seekPath(std::string path) {
         _size = ( end_address - start_address ) + 2; // 2 bytes for load address
 
         // Load Address
-        _load_address[0] = entry.start_address[0];
-        _load_address[1] = entry.start_address[1];
+        _load_address = entry.start_address;
 
         // Set position to beginning of file
         _position = 0;

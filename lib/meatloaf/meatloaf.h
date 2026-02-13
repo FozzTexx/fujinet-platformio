@@ -51,12 +51,12 @@ static const std::ios_base::iostate ndabit = _MEAT_NO_DATA_AVAIL;
 // TCP_CLENT_SOCKET = clear bit 5
 // TCP_SERVER_SOCKET = set bit 5
 
-class MStream 
+class MStream
 {
 protected:
     uint32_t _size = 0;
     uint32_t _position = 0;
-    uint8_t _load_address[2] = {0, 0};
+    uint16_t _load_address = 0;
     uint8_t _error = 0;
 
 public:
@@ -101,15 +101,15 @@ public:
         //Debug_printv("_size[%d] _available[%d] _position[%d]", _size, available(), _position);
         if ( available() <= 0 )
             return true;
-        
+
         return false;
     }
-    virtual void reset() 
+    virtual void reset()
     {
         _size = block_size;
         _position = 0;
     };
-    
+
     virtual bool isOpen() = 0;
     virtual bool isBrowsable() { return false; };
     virtual bool isRandomAccess() { return false; };
@@ -222,7 +222,7 @@ public:
     virtual bool rmDir() { return false; };
     virtual bool exists();
     virtual bool remove() = 0;
-    virtual bool rename(std::string dest) = 0;    
+    virtual bool rename(std::string dest) = 0;
     virtual time_t getLastWrite() = 0 ;
     virtual time_t getCreationTime() = 0 ;
     virtual uint64_t getAvailableSpace();
@@ -269,7 +269,7 @@ public:
     }
 
     // Determine file type by file contents
-    static std::string byContent(const char* header) 
+    static std::string byContent(const char* header)
     {
         std::string extension;
 
@@ -340,7 +340,7 @@ public:
     }
 
     // Determine file type by file size
-    static std::string bySize(size_t size) 
+    static std::string bySize(size_t size)
     {
         std::string extension;
 
@@ -504,7 +504,7 @@ namespace Meat {
 class FileBroker {
     static std::unordered_map<std::string, MFile*> file_repo;
 public:
-    template<class T> static T* obtain(std::string url, MFile* sourceFile) 
+    template<class T> static T* obtain(std::string url, MFile* sourceFile)
     {
         //Debug_printv("streams[%d] url[%s]", file_repo.size(), url.c_str());
 
@@ -531,7 +531,7 @@ public:
             {
                 Debug_printv("SINGLE FILE... DON'T CACHE [%s]", url.c_str());
             }
-            
+
             return newFile;
         }
 
@@ -553,14 +553,14 @@ public:
     }
 
     static void validate() {
-        
+
     }
 };
 
 class StreamBroker {
     static std::unordered_map<std::string, MStream*> stream_repo;
 public:
-    template<class T> static T* obtain(std::string url, std::ios_base::openmode mode) 
+    template<class T> static T* obtain(std::string url, std::ios_base::openmode mode)
     {
         //Debug_printv("streams[%d] url[%s]", stream_repo.size(), url.c_str());
 
@@ -589,7 +589,7 @@ public:
             {
                 Debug_printv("SINGLE FILE... DON'T CACHE [%s]", url.c_str());
             }
-            
+
             return newStream;
         }
 
@@ -611,7 +611,7 @@ public:
     }
 
     static void validate() {
-        
+
     }
 };
 #endif // MEATLOAF_FILE
