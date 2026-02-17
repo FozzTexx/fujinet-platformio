@@ -266,7 +266,7 @@ void NetworkProtocol::errno_to_error()
     {
 #if defined(_WIN32)
     case WSAEWOULDBLOCK:
-        error = 1; // This is okay.
+        error = NETWORK_ERROR_SUCCESS; // This is okay.
         compat_setsockerr(0); // Short circuit and say it's okay.
     case WSAEADDRINUSE:
         error = NETWORK_ERROR_ADDRESS_IN_USE;
