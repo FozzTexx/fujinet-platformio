@@ -146,9 +146,11 @@ public:
     void process_http(fujiCommandID_t cmd);
     void process_udp(fujiCommandID_t cmd);
 
+#ifdef OBSOLETE
     void del(uint16_t s);
     void rename(uint16_t s);
     void mkdir(uint16_t s);
+#endif /* OBSOLETE */
 
 private:
     /**

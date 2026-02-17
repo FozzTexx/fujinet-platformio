@@ -436,6 +436,7 @@ void adamNetwork::set_password(uint16_t s)
     password = string((char *)passwordspec, s);
 }
 
+#ifdef OBSOLETE
 void adamNetwork::del(uint16_t s)
 {
     string d;
@@ -516,6 +517,7 @@ void adamNetwork::mkdir(uint16_t s)
     memset(response, 0, sizeof(response));
     response_len = 0;
 }
+#endif /* OBSOLETE */
 
 void adamNetwork::channel_mode()
 {
@@ -746,6 +748,7 @@ void adamNetwork::adamnet_control_send()
 
     switch (cmd)
     {
+#ifdef OBSOLETE
     case NETCMD_RENAME:
         rename(s);
         break;
@@ -755,8 +758,9 @@ void adamNetwork::adamnet_control_send()
     case NETCMD_MKDIR:
         mkdir(s);
         break;
+#endif /* OBSOLETE */
     case NETCMD_CHDIR:
-        set_prefix(s);
+        set_prefix(pkt_len);
         break;
     case NETCMD_GETCWD:
         get_prefix();
@@ -765,7 +769,7 @@ void adamNetwork::adamnet_control_send()
         get_error();
         break;
     case NETCMD_OPEN:
-        open(s);
+        open(pkt_len);
         break;
     case NETCMD_CLOSE:
         close();
@@ -774,7 +778,7 @@ void adamNetwork::adamnet_control_send()
         status();
         break;
     case NETCMD_WRITE:
-        write(s);
+        write(pkt_len);
         break;
     case NETCMD_CHANNEL_MODE:
         channel_mode();

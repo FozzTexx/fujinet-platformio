@@ -43,6 +43,19 @@ struct adamnet_message_t
 
 #define ADAMNET_RESET_DEBOUNCE_PERIOD 100 // in ms
 
+#define ADAMNET_DEVTYPE_BLOCK 0x01
+#define ADAMNET_DEVTYPE_CHAR 0x00
+
+struct AdamNetPacket
+{
+    uint8_t cmd_dev;
+    uint16_t length;
+    uint8_t devtype;
+    uint8_t status;
+    uint8_t checksum;
+} __attribute__((packed));
+static_assert(sizeof(AdamNetPacket) == 6, "AdamNetPacket must be 6 bytes");
+
 class systemBus;
 class adamFuji;     // declare here so can reference it, but define in fuji.h
 class adamPrinter;
