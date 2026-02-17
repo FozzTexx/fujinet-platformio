@@ -16,6 +16,10 @@
 
 #include "status_error_codes.h"
 #include "ProtocolParser.h"
+#include "TCP.h"
+#include "UDP.h"
+#include "HTTP.h"
+#include "FS.h"
 
 using namespace std;
 
@@ -116,7 +120,7 @@ void lynxNetwork::open(unsigned short len)
     }
 
     // Attempt protocol open
-    if (protocol->open(urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
+    if (protocol->open(urlParser.get(), (fileAccessMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) != PROTOCOL_ERROR::NONE)
     {
         statusByte.bits.client_error = true;
         Debug_printf("Protocol unable to make connection. Error: %d\n", err);
@@ -165,7 +169,7 @@ void lynxNetwork::close()
     // Delete the protocol object
     delete protocol;
     protocol = nullptr;
-    
+
     transaction_complete();
 }
 
@@ -283,7 +287,7 @@ void lynxNetwork::status()
     status.avail = avail;
     status.conn = s.connected;
     status.err = s.error;
-    
+
     //response_len = sizeof(*status);     // need this? -SJ
     receiveMode = STATUS;               // need this? -SJ
 
@@ -387,6 +391,7 @@ void lynxNetwork::set_password(uint16_t len)
     transaction_complete();
 }
 
+#ifdef OBSOLETE
 void lynxNetwork::del(uint16_t len)
 {
     string d;
@@ -458,6 +463,7 @@ void lynxNetwork::mkdir(uint16_t len)
     }
     transaction_complete();
 }
+#endif /* OBSOLETE */
 
 void lynxNetwork::set_channel_mode()
 {
@@ -568,6 +574,7 @@ void lynxNetwork::json_parse()
     transaction_complete();
 }
 
+#ifdef OBSOLETE
 /**
  * @brief Do an inquiry to determine whether a protoocol supports a particular command.
  * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -633,7 +640,7 @@ void lynxNetwork::comlynx_special_inquiry()
  * @brief called to handle special protocol interactions when DSTATS=$00, meaning there is no payload.
  * Essentially, call the protocol action
  * and based on the return, signal comlynx_complete() or error().
- * 
+ *
  */
 void lynxNetwork::comlynx_special_00(unsigned short len)
 {
@@ -688,6 +695,7 @@ void lynxNetwork::comlynx_special_80(unsigned short len)
     else
         transaction_error();
 }
+#endif /* OBSOLETE */
 
 
 void lynxNetwork::read_channel()
@@ -778,9 +786,9 @@ void lynxNetwork::read_channel_protocol()
  */
 void lynxNetwork::comlynx_process()
 {
-    fujiCommandID_t c;
+    fujiCommandID_t cmd;
 
-   
+
     // Get the entire payload from Lynx
     uint16_t len = comlynx_recv_length();
     Debug_printf("lynxNetwork::comlynx_process - len: %ld, ", len);
@@ -797,12 +805,13 @@ void lynxNetwork::comlynx_process()
     }
 
     // get command
-    transaction_get(&c, 1);
-    Debug_printf("lynxNetwork::comlynx_process - command: %02X\n", c);
+    transaction_get(&cmd, 1);
+    Debug_printf("lynxNetwork::comlynx_process - command: %02X\n", cmd);
     len--;      // we received command already
-    
-    switch (c)
+
+    switch (cmd)
     {
+#ifdef OBSOLETE
     case NETCMD_RENAME:
         rename(len);
         break;
@@ -812,6 +821,7 @@ void lynxNetwork::comlynx_process()
     case NETCMD_MKDIR:
         mkdir(len);
         break;
+#endif /* OBSOLETE */
     case NETCMD_CHDIR:
         set_prefix(len);
         break;
@@ -850,6 +860,35 @@ void lynxNetwork::comlynx_process()
     case NETCMD_PASSWORD: // password
         set_password(len);
         break;
+
+    case NETCMD_RENAME:
+    case NETCMD_DELETE:
+    case NETCMD_LOCK:
+    case NETCMD_UNLOCK:
+    case NETCMD_MKDIR:
+    case NETCMD_RMDIR:
+        process_fs(cmd, len);
+        break;
+
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+        process_tcp(cmd);
+        break;
+
+    case NETCMD_UNLISTEN:
+        process_http(cmd);
+        break;
+
+    case NETCMD_GET_REMOTE:
+    case NETCMD_SET_DESTINATION:
+        process_udp(cmd);
+        break;
+
+    default:
+        statusByte.bits.client_error = true;
+        break;
+
+#ifdef OBSOLETE
     default:
         /*switch (channelMode)
         {
@@ -881,6 +920,7 @@ void lynxNetwork::comlynx_process()
             break;
         //}
         //do_inquiry(c);   // need this at all? -SJ
+#endif /* OBSOLETE */
     }
 }
 
@@ -974,13 +1014,13 @@ void lynxNetwork::transaction_error()
 {
     Debug_println("transaction_error - send NAK");
     comlynx_response_nack();
-    
+
     // throw away any waiting bytes
     while (SYSTEM_BUS.available() > 0)
         SYSTEM_BUS.read();
 }
-    
-bool lynxNetwork::transaction_get(void *data, size_t len) 
+
+bool lynxNetwork::transaction_get(void *data, size_t len)
 {
     size_t remaining = recvbuffer_len - (recvbuf_pos - recvbuffer);
     size_t to_copy = (len > remaining) ? remaining : len;
