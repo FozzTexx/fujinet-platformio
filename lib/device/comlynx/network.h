@@ -61,13 +61,13 @@ public:
      * Called for LYNX Command 'O' to open a connection to a network protocol, allocate all buffers,
      * and start the receive PROCEED interrupt.
      */
-    virtual void open(unsigned short s);
+    void open(unsigned short s);
 
     /**
      * Called for LYNX Command 'C' to close a connection to a network protocol, de-allocate all buffers,
      * and stop the receive PROCEED interrupt.
      */
-    virtual void close();
+    void close();
 
 
     /**
@@ -75,7 +75,7 @@ public:
      * Write # of bytes specified by aux1/aux2 from tx_buffer out to LYNX. If protocol is unable to return requested
      * number of bytes, return ERROR.
      */
-    virtual void write(uint16_t num_bytes);
+    void write(uint16_t num_bytes);
 
     /**
      * LYNX Special, called as a default for any other LYNX command not processed by the other comlynx_ functions.
@@ -83,38 +83,38 @@ public:
      * process the special command. Otherwise, the command is handled locally. In either case, either comlynx_complete()
      * or comlynx_error() is called.
      */
-    virtual void status();
+    void status();
 
-    virtual void comlynx_control_ack();
-    virtual void comlynx_control_clr();
-    virtual void comlynx_control_receive();
-    virtual void comlynx_control_receive_channel();
-    virtual void comlynx_control_receive_channel_json();
-    virtual void comlynx_control_receive_channel_protocol();
-    virtual void comlynx_control_send();
+    void comlynx_control_ack();
+    void comlynx_control_clr();
+    void comlynx_control_receive();
+    void comlynx_control_receive_channel();
+    void comlynx_control_receive_channel_json();
+    void comlynx_control_receive_channel_protocol();
+    void comlynx_control_send();
 
-    virtual void comlynx_response_status() override;
-    virtual void comlynx_response_send();
+    void comlynx_response_status() override;
+    void comlynx_response_send();
 
     /**
      * @brief Called to set prefix
      */
-    virtual void set_prefix(unsigned short s);
+    void set_prefix(unsigned short s);
 
     /**
      * @brief Called to get prefix
      */
-    virtual void get_prefix();
+    void get_prefix();
 
     /**
      * @brief called to set login
      */
-    virtual void set_login(uint16_t s);
+    void set_login(uint16_t s);
 
     /**
      * @brief called to set password
      */
-    virtual void set_password(uint16_t s);
+    void set_password(uint16_t s);
 
     /**
      * @brief set channel mode
@@ -141,11 +141,17 @@ public:
      * Process incoming LYNX command for device 0x7X
      * @param b The incoming command byte
      */
-    virtual void comlynx_process(uint8_t b) override;
+    void comlynx_process(uint8_t b) override;
+    void process_fs(fujiCommandID_t cmd, unsigned pkt_len);
+    void process_tcp(fujiCommandID_t cmd);
+    void process_http(fujiCommandID_t cmd);
+    void process_udp(fujiCommandID_t cmd);
 
-    virtual void del(uint16_t s);
-    virtual void rename(uint16_t s);
-    virtual void mkdir(uint16_t s);
+#ifdef OBSOLETE
+    void del(uint16_t s);
+    void rename(uint16_t s);
+    void mkdir(uint16_t s);
+#endif /* OBSOLETE */
 
 
 private:
@@ -251,10 +257,12 @@ private:
      */
     uint8_t trans_aux2 = 0;
 
+#ifdef OBSOLETE
     /**
      * Return value for DSTATS inquiry
      */
     AtariSIODirection inq_dstats = SIO_DIRECTION_INVALID;
+#endif /* OBSOLETE */
 
     /**
      * The login to use for a protocol action
@@ -363,6 +371,7 @@ private:
      */
     void comlynx_status_channel();
 
+#ifdef OBSOLETE
     /**
      * @brief Do an inquiry to determine whether a protoocol supports a particular command.
      * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -393,17 +402,20 @@ private:
      * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
      */
     void comlynx_special_80(unsigned short s);
+#endif /* OBSOLETE */
 
     /**
      * Called to pulse the PROCEED interrupt, rate limited by the interrupt timer.
      */
     void comlynx_assert_interrupt();
 
+#ifdef OBSOLETE
     /**
      * @brief Perform the inquiry, handle both local and protocol commands.
      * @param inq_cmd the command to check against.
      */
     void do_inquiry(fujiCommandID_t inq_cmd);
+#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.

@@ -16,6 +16,10 @@
 
 #include "status_error_codes.h"
 #include "ProtocolParser.h"
+#include "TCP.h"
+#include "UDP.h"
+#include "HTTP.h"
+#include "FS.h"
 
 using namespace std;
 
@@ -127,7 +131,7 @@ void lynxNetwork::open(unsigned short s)
     }
 
     // Attempt protocol open
-    if (protocol->open(urlParser.get(), &cmdFrame) == true)
+    if (protocol->open(urlParser.get(), (netProtoOpenMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) == true)
     {
         statusByte.bits.client_error = true;
         Debug_printf("Protocol unable to make connection. Error: %d\n", err);
@@ -274,7 +278,7 @@ void lynxNetwork::status()
         if (protocol == nullptr) {
             Debug_printf("ERROR: Calling status on a null protocol.\r\n");
             err = true;
-            s.error = true;
+            s.error = NETWORK_ERROR_NOT_CONNECTED;
         } else {
             err = protocol->status(&s);
         }
@@ -419,6 +423,7 @@ void lynxNetwork::set_password(uint16_t s)
     password = string((char *)passwordspec, s);
 }
 
+#ifdef OBSOLETE
 void lynxNetwork::del(uint16_t s)
 {
     string d;
@@ -501,6 +506,7 @@ void lynxNetwork::mkdir(uint16_t s)
         return;
     }
 }
+#endif /* OBSOLETE */
 
 void lynxNetwork::channel_mode()
 {
@@ -607,6 +613,7 @@ void lynxNetwork::json_parse()
     json.parse();
 }
 
+#ifdef OBSOLETE
 /**
  * @brief Do an inquiry to determine whether a protoocol supports a particular command.
  * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
@@ -728,6 +735,7 @@ void lynxNetwork::comlynx_special_80(unsigned short s)
     else
         comlynx_response_nack();
 }
+#endif /* OBSOLETE */
 
 void lynxNetwork::comlynx_response_status()
 {
@@ -755,30 +763,32 @@ void lynxNetwork::comlynx_control_ack()
 
 void lynxNetwork::comlynx_control_send()
 {
-    uint16_t s = comlynx_recv_length(); // receive length
-    fujiCommandID_t c = (fujiCommandID_t) comlynx_recv();         // receive command
+    uint16_t pkt_len = comlynx_recv_length(); // receive length
+    fujiCommandID_t cmd = (fujiCommandID_t) comlynx_recv();         // receive command
 
-    s--; // Because we've popped the command off the stack
+    pkt_len--; // Because we've popped the command off the stack
 
-    switch (c)
+    switch (cmd)
     {
+#ifdef OBSOLETE
     case NETCMD_RENAME:
-        rename(s);
+        rename(pkt_len);
         break;
     case NETCMD_DELETE:
-        del(s);
+        del(pkt_len);
         break;
     case NETCMD_MKDIR:
-        mkdir(s);
+        mkdir(pkt_len);
         break;
+#endif /* OBSOLETE */
     case NETCMD_CHDIR:
-        set_prefix(s);
+        set_prefix(pkt_len);
         break;
     case NETCMD_GETCWD:
         get_prefix();
         break;
     case NETCMD_OPEN:
-        open(s);
+        open(pkt_len);
         break;
     case NETCMD_CLOSE:
         close();
@@ -787,27 +797,63 @@ void lynxNetwork::comlynx_control_send()
         status();
         break;
     case NETCMD_WRITE:
-        write(s);
+        write(pkt_len);
         break;
     case NETCMD_CHANNEL_MODE:
         channel_mode();
         break;
     case NETCMD_USERNAME: // login
-        set_login(s);
+        set_login(pkt_len);
         break;
     case NETCMD_PASSWORD: // password
-        set_password(s);
+        set_password(pkt_len);
         break;
+
+    case NETCMD_PARSE:
+        json_parse();
+        break;
+    case NETCMD_QUERY:
+        json_query(cmd);
+        break;
+
+    case NETCMD_RENAME:
+    case NETCMD_DELETE:
+    case NETCMD_LOCK:
+    case NETCMD_UNLOCK:
+    case NETCMD_MKDIR:
+    case NETCMD_RMDIR:
+        process_fs(cmd, pkt_len);
+        break;
+
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+        process_tcp(cmd);
+        break;
+
+    case NETCMD_UNLISTEN:
+        process_http(cmd);
+        break;
+
+    case NETCMD_GET_REMOTE:
+    case NETCMD_SET_DESTINATION:
+        process_udp(cmd);
+        break;
+
+    default:
+        statusByte.bits.client_error = true;
+        break;
+
+#ifdef OBSOLETE
     default:
         switch (channelMode)
         {
         case PROTOCOL:
             if (inq_dstats == SIO_DIRECTION_NONE)
-                comlynx_special_00(s);
+                comlynx_special_00(pkt_len);
             else if (inq_dstats == SIO_DIRECTION_READ)
-                comlynx_special_40(s);
+                comlynx_special_40(pkt_len);
             else if (inq_dstats == SIO_DIRECTION_WRITE)
-                comlynx_special_80(s);
+                comlynx_special_80(pkt_len);
             else
                 Debug_printf("comlynx_control_send() - Unknown Command: %02x\n", c);
             break;
@@ -818,7 +864,7 @@ void lynxNetwork::comlynx_control_send()
                 json_parse();
                 break;
             case NETCMD_QUERY:
-                json_query(s);
+                json_query(pkt_len);
                 break;
             default:
                 break;
@@ -829,6 +875,7 @@ void lynxNetwork::comlynx_control_send()
             break;
         }
         do_inquiry(c);
+#endif /* OBSOLETE */
     }
 }
 
@@ -1079,6 +1126,164 @@ void lynxNetwork::comlynx_set_timer_rate()
     //     timer_start();
 
     // comlynx_complete();
+}
+
+void lynxNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
+{
+    comlynx_recv_buffer(response, pkt_len);
+    comlynx_recv(); // CK
+
+    SYSTEM_BUS.start_time = esp_timer_get_time();
+    comlynx_response_ack();
+
+    statusByte.byte = 0x00;
+
+    parse_and_instantiate_protocol(string((char *)response, pkt_len));
+
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
+    if (!fs)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
+    netProtoErr_t cmd_err;
+    auto url = urlParser.get();
+    switch (cmd)
+    {
+    case NETCMD_RENAME:
+        cmd_err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        cmd_err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        cmd_err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        cmd_err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        cmd_err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        cmd_err = fs->rmdir(url);
+        break;
+    default:
+        cmd_err = NETPROTO_ERR_UNSPECIFIED;
+        break;
+    }
+
+    if (cmd_err != NETPROTO_ERR_NONE)
+        statusByte.bits.client_error = true;
+}
+
+void lynxNetwork::process_tcp(fujiCommandID_t cmd)
+{
+    statusByte.byte = 0x00;
+
+    // Make sure this is really a TCP protocol instance
+    NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol);
+    if (!tcp)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
+    netProtoErr_t cmd_err;
+    switch (cmd)
+    {
+    case NETCMD_CONTROL:
+        cmd_err = NETPROTO_ERR_NONE;
+
+        // Because we're not handling Adam bus very well, sometimes it
+        // retries and we've already accepted which will return an
+        // error. Don't do accept if client is already connected.
+        {
+            NetworkStatus status;
+            tcp->status(&status);
+            if (!status.connected)
+            {
+                cmd_err = tcp->accept_connection();
+                Debug_printf("ACCEPT %x CHANMODE %d ERR: %d\n", _devnum, channelMode, cmd_err);
+            }
+        }
+        break;
+    case NETCMD_CLOSE_CLIENT:
+        cmd_err = tcp->close_client_connection();
+        break;
+    default:
+        cmd_err = NETPROTO_ERR_UNSPECIFIED;
+        break;
+    }
+
+    if (cmd_err != NETPROTO_ERR_NONE)
+        statusByte.bits.client_error = true;
+}
+
+void lynxNetwork::process_http(fujiCommandID_t cmd)
+{
+    statusByte.byte = 0x00;
+
+    // Make sure this is really a HTTP protocol instance
+    NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol);
+    if (!http)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
+    netProtoErr_t cmd_err;
+    switch (cmd)
+    {
+    case NETCMD_UNLISTEN:
+        cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
+        break;
+    default:
+        cmd_err = NETPROTO_ERR_UNSPECIFIED;
+        return;
+    }
+
+    if (cmd_err != NETPROTO_ERR_NONE)
+        statusByte.bits.client_error = true;
+}
+
+void lynxNetwork::process_udp(fujiCommandID_t cmd)
+{
+    statusByte.byte = 0x00;
+
+    // Make sure this is really a UDP protocol instance
+    NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol);
+    if (!udp)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
+    netProtoErr_t cmd_err;
+    switch (cmd)
+    {
+#ifndef ESP_PLATFORM
+    case NETCMD_GET_REMOTE:
+        receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
+        cmd_err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
+        response += *receiveBuffer;
+        break;
+#endif /* ESP_PLATFORM */
+    case NETCMD_SET_DESTINATION:
+        {
+            uint8_t spData[SPECIAL_BUFFER_SIZE];
+            size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));
+            cmd_err = udp->set_destination(spData, bytes_read);
+            if (cmd_err != NETPROTO_ERR_NONE)
+                statusByte.bits.client_error = true;
+        }
+        break;
+    default:
+        statusByte.bits.client_error = true;
+        break;
+    }
 }
 
 #endif /* BUILD_LYNX */

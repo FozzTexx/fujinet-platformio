@@ -298,7 +298,7 @@ void adamNetwork::status()
     {
         status->avail = 0;
         status->conn = 0;
-        status->err = 165; // invalid spec.
+        status->err = NETWORK_ERROR_INVALID_DEVICESPEC;
         response_len = sizeof(*status);
         return;
     }
