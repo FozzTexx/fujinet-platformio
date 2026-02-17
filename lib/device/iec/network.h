@@ -178,6 +178,7 @@ private:
      */
     void iec_command();
 
+#ifdef OBSOLETE
     /**
      * @brief called to ask protocol to perform an operation with no payload
      */
@@ -192,6 +193,7 @@ private:
      * @brief called to ask protocol to perform an operation with no payload
      */
     void perform_special_80();
+#endif /* OBSOLETE */
 
     /**
      * @brief changes the open mode for the channel (e.g. to DELETE)

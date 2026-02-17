@@ -152,13 +152,10 @@ void NetworkProtocolFS::update_dir_filename(PeoplesUrlParser *url)
         filename = "*";
 }
 
-void NetworkProtocolFS::set_open_params(uint8_t p1, uint8_t p2)
+void NetworkProtocolFS::set_open_params(fileAccessMode_t access, netProtoTranslation_t translate)
 {
-    streamMode = (fileAccessMode_t) p1;
-#ifdef OBSOLETE
-    a2flags = (apple2Flag_t) p2;
-#endif /* OBSOLETE */
-    translation_mode = (netProtoTranslation_t) (p2 & 0x7F);
+    streamMode = (fileAccessMode_t) access;
+    translation_mode = (netProtoTranslation_t) (translate & 0x7F);
 #ifdef VERBOSE_PROTOCOL
     Debug_printf("Changed open params to streamMode = %d, a2flags = %d. Set translation_mode to %d\r\n", p1, p2, translation_mode);
 #endif

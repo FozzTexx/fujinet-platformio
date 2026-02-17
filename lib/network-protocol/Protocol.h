@@ -210,7 +210,7 @@ public:
      * @brief change the values passed to open for platforms that need to do it after the open (looking at you IEC)
      */
     // FIXME - only used by FS class hierarchy, doesn't belong here
-    virtual void set_open_params(uint8_t p1, uint8_t p2) { abort(); };
+    virtual void set_open_params(fileAccessMode_t access, netProtoTranslation_t translate) { abort(); };
 
     virtual off_t seek(off_t offset, int whence) { return -1; }
 

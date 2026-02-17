@@ -369,7 +369,7 @@ protected:
     /**
      * @brief change the values passed to open for platforms that need to do it after the open (looking a you IEC)
      */
-    void set_open_params(uint8_t p1, uint8_t p2) override;
+    void set_open_params(fileAccessMode_t access, netProtoTranslation_t translate) override;
 };
 
 #endif /* NETWORKPROTOCOL_FS */
