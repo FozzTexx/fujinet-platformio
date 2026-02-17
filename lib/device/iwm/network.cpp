@@ -1127,11 +1127,13 @@ void iwmNetwork::process_udp(fujiCommandID_t control_code)
     protocolError_t cmd_err;
     switch (control_code)
     {
+#ifndef ESP_PLATFORM
     case NETCMD_GET_REMOTE:
         cmd_err = udp->get_remote(data_buffer, SPECIAL_BUFFER_SIZE);
         SYSTEM_BUS.iwm_send_packet(id(), iwm_packet_type_t::data, 0,
                                    data_buffer, SPECIAL_BUFFER_SIZE);
         break;
+#endif /* ESP_PLATFORM */
     case NETCMD_SET_DESTINATION:
         {
             cmd_err = udp->set_destination(data_buffer, data_len);
