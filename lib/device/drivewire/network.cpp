@@ -1402,8 +1402,10 @@ void drivewireNetwork::process_fs()
     }
 
     if (err != NETPROTO_ERR_NONE)
+    {
         ns.reset();
         ns.error = NETWORK_ERROR_GENERAL;
+    }
 }
 
 void drivewireNetwork::process_tcp()
@@ -1432,8 +1434,10 @@ void drivewireNetwork::process_tcp()
     }
 
     if (err != NETPROTO_ERR_NONE)
+    {
         ns.reset();
         ns.error = NETWORK_ERROR_GENERAL;
+    }
 }
 
 void drivewireNetwork::process_http()
@@ -1459,8 +1463,10 @@ void drivewireNetwork::process_http()
     }
 
     if (err != NETPROTO_ERR_NONE)
+    {
         ns.reset();
         ns.error = NETWORK_ERROR_GENERAL;
+    }
 }
 
 void drivewireNetwork::process_udp()
@@ -1477,11 +1483,13 @@ void drivewireNetwork::process_udp()
     netProtoErr_t err;
     switch (cmdFrame.comnd)
     {
+#ifndef ESP_PLATFORM
     case NETCMD_GET_REMOTE:
         receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
         err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
         response += *receiveBuffer;
         break;
+#endif /* ESP_PLATFORM */
     case NETCMD_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
