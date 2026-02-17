@@ -859,11 +859,13 @@ void rs232Network::process_udp()
     netProtoErr_t err;
     switch (cmdFrame.comnd)
     {
+#ifndef ESP_PLATFORM
     case NETCMD_GET_REMOTE:
         rs232_ack();
         err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
         bus_to_computer((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err);
         break;
+#endif /* ESP_PLATFORM */
     case NETCMD_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
