@@ -1483,11 +1483,13 @@ void drivewireNetwork::process_udp()
     protocolError_t err;
     switch (cmdFrame.comnd)
     {
+#ifndef ESP_PLATFORM
     case NETCMD_GET_REMOTE:
         receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
         err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
         response += *receiveBuffer;
         break;
+#endif /* ESP_PLATFORM */
     case NETCMD_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
