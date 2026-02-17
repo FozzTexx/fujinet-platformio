@@ -415,7 +415,7 @@ void rs232Network::rs232_status_local()
 bool rs232Network::rs232_status_channel_json(NetworkStatus *ns)
 {
     ns->connected = json_bytes_remaining > 0;
-    ns->error = json_bytes_remaining > 0 ? 1 : 136;
+    ns->error = json_bytes_remaining > 0 ? NETWORK_ERROR_SUCCESS : NETWORK_ERROR_END_OF_FILE;
     return false; // for now
 }
 
@@ -436,7 +436,7 @@ void rs232Network::rs232_status_channel()
         if (protocol == nullptr) {
             Debug_printf("ERROR: Calling rs232_status_channel on a null protocol.\r\n");
             err = true;
-            status.error = true;
+            status.error = NETWORK_ERROR_NOT_CONNECTED;
         } else {
             err = protocol->status(&status);
             avail = protocol->available();
@@ -767,11 +767,11 @@ void rs232Network::process_tcp()
     netProtoErr_t err;
     switch (cmdFrame.comnd)
     {
-    case FUJICMD_CONTROL:
+    case NETCMD_CONTROL:
         rs232_ack();
         err = tcp->accept_connection();
         break;
-    case FUJICMD_CLOSE_CLIENT:
+    case NETCMD_CLOSE_CLIENT:
         rs232_ack();
         err = tcp->close_client_connection();
         break;
@@ -799,7 +799,7 @@ void rs232Network::process_http()
     netProtoErr_t err;
     switch (cmdFrame.comnd)
     {
-    case FUJICMD_UNLISTEN:
+    case NETCMD_UNLISTEN:
         rs232_ack();
         err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
         break;
@@ -859,12 +859,12 @@ void rs232Network::process_udp()
     netProtoErr_t err;
     switch (cmdFrame.comnd)
     {
-    case FUJICMD_GET_REMOTE:
+    case NETCMD_GET_REMOTE:
         rs232_ack();
         err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
         bus_to_computer((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err);
         break;
-    case FUJICMD_SET_DESTINATION:
+    case NETCMD_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
             bus_to_peripheral(spData, sizeof(spData));
@@ -1009,9 +1009,11 @@ void rs232Network::rs232_process(cmdFrame_t *cmd_ptr)
         rs232_ack();
         rs232_set_channel_mode();
         break;
+#ifdef OBSOLETE
     case NETCMD_SPECIAL_INQUIRY:
         rs232_special_inquiry();
         break;
+#endif /* OBSOLETE */
     case NETCMD_SEEK:
         rs232_seek();
         break;
@@ -1021,7 +1023,7 @@ void rs232Network::rs232_process(cmdFrame_t *cmd_ptr)
     case NETCMD_TRANSLATION:
         rs232_set_translation();
         break;
-    case NETCMD_TIMER:
+    case NETCMD_SET_INT_RATE:
         rs232_set_timer_rate();
         break;
     case NETCMD_GETCWD:
