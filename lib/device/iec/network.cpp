@@ -121,7 +121,8 @@ void iecNetwork::iec_open()
 
     Debug_printv("Protocol %s opened.", channel_data.urlParser->scheme.c_str());
 
-    if (channel_data.protocol->open(channel_data.urlParser.get(), &cmdFrame)) {
+
+    if (channel_data.protocol->open(channel_data.urlParser.get(), (netProtoOpenMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2)) {
         Debug_printv("Protocol unable to make connection.");
         channel_data.protocol.reset(); // Clean up the protocol
 
@@ -482,6 +483,7 @@ void iecNetwork::iec_command()
         fsop(NETCMD_MKDIR);
     else if (pt[0] == "rmdir")
         fsop(NETCMD_RMDIR);
+#ifdef OBSOLETE
     else // Protocol command processing here.
     {
         if (pt.size() > 1)
@@ -511,8 +513,10 @@ void iecNetwork::iec_command()
                 perform_special_80();
         }
     }
+#endif /* OBSOLETE */
 }
 
+#ifdef OBSOLETE
 void iecNetwork::perform_special_00()
 {
     int channel = 0;
@@ -695,6 +699,7 @@ void iecNetwork::perform_special_80()
         iecStatus.msg = "ok";
     }
 }
+#endif /* OBSOLETE */
 
 void iecNetwork::set_channel_mode()
 {
@@ -921,6 +926,7 @@ void iecNetwork::set_device_id()
     iecStatus.channel = commanddata.channel;
 }
 
+#ifdef OBSOLETE
 void iecNetwork::fsop(fujiCommandID_t comnd)
 {
     Debug_printf("fsop(%u)", comnd);
@@ -949,6 +955,77 @@ void iecNetwork::fsop(fujiCommandID_t comnd)
 
     iec_close();
 }
+#else
+void iecNetwork::fsop(fujiCommandID_t comnd)
+{
+    Debug_printf("fsop(%u)", comnd);
+
+    if (pt.size() < 2)
+    {
+        iecStatus.error = NETWORK_ERROR_INVALID_DEVICESPEC;
+        iecStatus.channel = commanddata.channel;
+        iecStatus.connected = 0;
+        iecStatus.msg = "invalid # of parameters";
+        return;
+    }
+
+    // Overwrite payload, we no longer need command
+    payload = pt[1];
+
+    iec_open();
+
+    int channel = commanddata.channel;
+    auto& channel_data = network_data_map[channel];
+
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(channel_data.protocol.get());
+    if (!fs)
+    {
+        iecStatus.error = NETWORK_ERROR_NOT_IMPLEMENTED;
+        iecStatus.channel = commanddata.channel;
+        iecStatus.connected = 0;
+        iecStatus.msg = "not supported by protocol";
+        return;
+    }
+
+    netProtoErr_t err;
+    auto url = channel_data.urlParser.get();
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_RENAME:
+        err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        err = fs->rmdir(url);
+        break;
+    default:
+        err = NETPROTO_ERR_UNSPECIFIED;
+        return;
+    }
+
+    if (err != NETPROTO_ERR_NONE)
+    {
+        iecStatus.error = NETWORK_ERROR_GENERAL;
+        iecStatus.channel = commanddata.channel;
+        iecStatus.connected = 0;
+        iecStatus.msg = "network error";
+    }
+
+    iec_close();
+}
+#endif /* OBSOLETE */
 
 void iecNetwork::set_open_params()
 {
@@ -963,12 +1040,11 @@ void iecNetwork::set_open_params()
     }
 
     int channel = atoi(pt[1].c_str());
-    int mode = atoi(pt[2].c_str());
-    int trans = atoi(pt[3].c_str());
+    netProtoTranslation_t mode = (netProtoTranslation_t) atoi(pt[2].c_str());
 
     auto& channel_data = network_data_map[channel];
 
-    channel_data.protocol->set_open_params(mode, trans);
+    channel_data.protocol->set_open_params(mode);
 
     iecStatus.error = 0;
     iecStatus.msg = "ok";
