@@ -147,9 +147,9 @@ public:
     void process_udp(fujiCommandID_t cmd);
 
 #ifdef OBSOLETE
-    virtual void del(uint16_t s);
-    virtual void rename(uint16_t s);
-    virtual void mkdir(uint16_t s);
+    void del(uint16_t s);
+    void rename(uint16_t s);
+    void mkdir(uint16_t s);
 #endif /* OBSOLETE */
 
 private:

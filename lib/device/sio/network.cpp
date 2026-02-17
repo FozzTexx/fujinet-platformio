@@ -999,7 +999,7 @@ void sioNetwork::sio_process(uint32_t commanddata, uint8_t checksum)
         sio_ack();
         sio_set_password();
         return;
-        
+
     case NETCMD_RENAME:
     case NETCMD_DELETE:
     case NETCMD_LOCK:

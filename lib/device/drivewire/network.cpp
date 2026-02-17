@@ -1330,7 +1330,7 @@ void drivewireNetwork::process()
     case NETCMD_PASSWORD:
         set_password();
         return;
-        
+
     case NETCMD_RENAME:
     case NETCMD_DELETE:
     case NETCMD_LOCK:
@@ -1402,8 +1402,10 @@ void drivewireNetwork::process_fs()
     }
 
     if (err != PROTOCOL_ERROR::NONE)
+    {
         ns.reset();
         ns.error = NDEV_STATUS::GENERAL;
+    }
 }
 
 void drivewireNetwork::process_tcp()
@@ -1432,8 +1434,10 @@ void drivewireNetwork::process_tcp()
     }
 
     if (err != PROTOCOL_ERROR::NONE)
+    {
         ns.reset();
         ns.error = NDEV_STATUS::GENERAL;
+    }
 }
 
 void drivewireNetwork::process_http()
@@ -1459,8 +1463,10 @@ void drivewireNetwork::process_http()
     }
 
     if (err != PROTOCOL_ERROR::NONE)
+    {
         ns.reset();
         ns.error = NDEV_STATUS::GENERAL;
+    }
 }
 
 void drivewireNetwork::process_udp()
