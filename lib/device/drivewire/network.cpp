@@ -496,7 +496,7 @@ void drivewireNetwork::status_local()
 bool drivewireNetwork::status_channel_json(NetworkStatus *ns)
 {
     ns->connected = json_bytes_remaining > 0;
-    ns->error = json_bytes_remaining > 0 ? 1 : 136;
+    ns->error = json_bytes_remaining > 0 ? NETWORK_ERROR_SUCCESS : NETWORK_ERROR_END_OF_FILE;
     return false; // for now
 }
 
@@ -1310,7 +1310,7 @@ void drivewireNetwork::process()
     case NETCMD_TRANSLATION:
         set_translation();
         break;
-    case NETCMD_GET_SCAN_RESULT: // SET CHANNEL MODE
+    case NETCMD_CHANNEL_MODE:
         set_channel_mode();
         break;
 
@@ -1330,7 +1330,7 @@ void drivewireNetwork::process()
     case NETCMD_PASSWORD:
         set_password();
         return;
-        
+
     case NETCMD_RENAME:
     case NETCMD_DELETE:
     case NETCMD_LOCK:
