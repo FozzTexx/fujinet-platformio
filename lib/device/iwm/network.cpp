@@ -252,6 +252,7 @@ void iwmNetwork::set_password()
     Debug_printf("Password is %s\n", current_network_data.password.c_str()); // GREAT LOGGING
 }
 
+#ifdef OBSOLETE
 void iwmNetwork::del()
 {
     auto& current_network_data = network_data_map[current_network_unit];
@@ -305,6 +306,7 @@ void iwmNetwork::mkdir()
         return;
     }
 }
+#endif /* OBSOLETE */
 
 void iwmNetwork::channel_mode()
 {
@@ -772,6 +774,7 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
 
     switch (control_code)
     {
+#ifdef OBSOLETE
     case NETCMD_RENAME:
         rename();
         break;
@@ -781,6 +784,7 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
     case NETCMD_MKDIR:
         mkdir();
         break;
+#endif /* OBSOLETE */
     case NETCMD_CHDIR:
         set_prefix();
         break;

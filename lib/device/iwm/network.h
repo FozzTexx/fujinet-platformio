@@ -155,9 +155,11 @@ public:
      */
     void json_query(iwm_decoded_cmd_t cmd);
 
+#ifdef OBSOLETE
     virtual void del();
     virtual void rename();
     virtual void mkdir();
+#endif /* OBSOLETE */
 
     std::unordered_map<uint8_t, NetworkData> network_data_map;
     uint8_t current_network_unit = 1;
