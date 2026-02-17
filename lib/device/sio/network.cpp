@@ -487,7 +487,7 @@ void sioNetwork::sio_status_local()
 bool sioNetwork::sio_status_channel_json(NetworkStatus *ns)
 {
     ns->connected = json_bytes_remaining > 0;
-    ns->error = json_bytes_remaining > 0 ? 1 : 136;
+    ns->error = json_bytes_remaining > 0 ? NETWORK_ERROR_SUCCESS : NETWORK_ERROR_END_OF_FILE;
     return false; // for now
 }
 
@@ -510,7 +510,7 @@ void sioNetwork::sio_status_channel()
         if (protocol == nullptr) {
             Debug_printf("ERROR: Calling status on a null protocol.\r\n");
             err = true;
-            status.error = true;
+            status.error = NETWORK_ERROR_NOT_CONNECTED;
         } else {
             err = protocol->status(&status);
             avail = protocol->available();
@@ -949,6 +949,7 @@ void sioNetwork::sio_process(uint32_t commanddata, uint8_t checksum)
     case NETCMD_STATUS:
         sio_status();
         break;
+#ifdef OBSOLETE
     case NETCMD_SPECIAL_INQUIRY:
         sio_special_inquiry();
         break;
@@ -962,15 +963,15 @@ void sioNetwork::sio_process(uint32_t commanddata, uint8_t checksum)
         sio_ack();
         sio_set_translation();
         break;
-    case NETCMD_TIMER:
+    case NETCMD_SET_INT_RATE:
         sio_ack();
         sio_set_timer_rate();
         break;
-    case NETCMD_SET_SSID: // JSON parameter wrangling
+    case NETCMD_SET_PARAMETERS: // JSON parameter wrangling
         sio_ack();
         sio_set_json_parameters();
         break;
-    case NETCMD_GET_SCAN_RESULT: // SET CHANNEL MODE
+    case NETCMD_CHANNEL_MODE:
         sio_ack();
         sio_set_channel_mode();
         break;
@@ -996,7 +997,7 @@ void sioNetwork::sio_process(uint32_t commanddata, uint8_t checksum)
         sio_ack();
         sio_set_password();
         return;
-        
+
     case NETCMD_RENAME:
     case NETCMD_DELETE:
     case NETCMD_LOCK:
