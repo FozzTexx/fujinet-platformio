@@ -211,7 +211,6 @@ void NetworkProtocolTCP::status_client(NetworkStatus *status)
 {
     status->connected = client.connected();
     status->error = status->connected ? error : NETWORK_ERROR_END_OF_FILE;
-    Debug_printf("TCP::status_client C:%d E:%d\n", status->connected, status->error);
 }
 
 void NetworkProtocolTCP::status_server(NetworkStatus *status)
