@@ -709,6 +709,76 @@ void iecNetwork::set_device_id()
     iecStatus.channel = commanddata.channel;
 }
 
+void iecNetwork::fsop(fujiCommandID_t comnd)
+{
+    Debug_printf("fsop(%u)", comnd);
+
+    if (pt.size() < 2)
+    {
+        iecStatus.error = NDEV_STATUS::INVALID_DEVICESPEC;
+        iecStatus.channel = commanddata.channel;
+        iecStatus.connected = 0;
+        iecStatus.msg = "invalid # of parameters";
+        return;
+    }
+
+    // Overwrite payload, we no longer need command
+    payload = pt[1];
+
+    iec_open();
+
+    int channel = commanddata.channel;
+    auto& channel_data = network_data_map[channel];
+
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(channel_data.protocol.get());
+    if (!fs)
+    {
+        iecStatus.error = NDEV_STATUS::NOT_IMPLEMENTED;
+        iecStatus.channel = commanddata.channel;
+        iecStatus.connected = 0;
+        iecStatus.msg = "not supported by protocol";
+        return;
+    }
+
+    protocolError_t err;
+    auto url = channel_data.urlParser.get();
+    switch (cmdFrame.comnd)
+    {
+    case NETCMD_RENAME:
+        err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        err = fs->rmdir(url);
+        break;
+    default:
+        err = PROTOCOL_ERROR::UNSPECIFIED;
+        return;
+    }
+
+    if (err != PROTOCOL_ERROR::NONE)
+    {
+        iecStatus.error = NDEV_STATUS::GENERAL;
+        iecStatus.channel = commanddata.channel;
+        iecStatus.connected = 0;
+        iecStatus.msg = "network error";
+    }
+
+    iec_close();
+}
+
 void iecNetwork::set_open_params()
 {
     // openparams,<channel>,<mode>,<trans>
