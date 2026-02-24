@@ -761,6 +761,164 @@ void lynxNetwork::parse_and_instantiate_protocol(string d)
 {
 }*/
 
+void lynxNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
+{
+    comlynx_recv_buffer(response, pkt_len);
+    comlynx_recv(); // CK
+
+    SYSTEM_BUS.start_time = esp_timer_get_time();
+    comlynx_response_ack();
+
+    statusByte.byte = 0x00;
+
+    parse_and_instantiate_protocol(string((char *)response, pkt_len));
+
+    // Make sure this is really a FS protocol instance
+    NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
+    if (!fs)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
+    protocolError_t cmd_err;
+    auto url = urlParser.get();
+    switch (cmd)
+    {
+    case NETCMD_RENAME:
+        cmd_err = fs->rename(url);
+        break;
+    case NETCMD_DELETE:
+        cmd_err = fs->del(url);
+        break;
+    case NETCMD_LOCK:
+        cmd_err = fs->lock(url);
+        break;
+    case NETCMD_UNLOCK:
+        cmd_err = fs->unlock(url);
+        break;
+    case NETCMD_MKDIR:
+        cmd_err = fs->mkdir(url);
+        break;
+    case NETCMD_RMDIR:
+        cmd_err = fs->rmdir(url);
+        break;
+    default:
+        cmd_err = PROTOCOL_ERROR::UNSPECIFIED;
+        break;
+    }
+
+    if (cmd_err != PROTOCOL_ERROR::NONE)
+        statusByte.bits.client_error = true;
+}
+
+void lynxNetwork::process_tcp(fujiCommandID_t cmd)
+{
+    statusByte.byte = 0x00;
+
+    // Make sure this is really a TCP protocol instance
+    NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol);
+    if (!tcp)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
+    protocolError_t cmd_err;
+    switch (cmd)
+    {
+    case NETCMD_CONTROL:
+        cmd_err = PROTOCOL_ERROR::NONE;
+
+        // Because we're not handling Adam bus very well, sometimes it
+        // retries and we've already accepted which will return an
+        // error. Don't do accept if client is already connected.
+        {
+            NetworkStatus status;
+            tcp->status(&status);
+            if (!status.connected)
+            {
+                cmd_err = tcp->accept_connection();
+                Debug_printf("ACCEPT %x CHANMODE %d ERR: %d\n", _devnum, channelMode, cmd_err);
+            }
+        }
+        break;
+    case NETCMD_CLOSE_CLIENT:
+        cmd_err = tcp->close_client_connection();
+        break;
+    default:
+        cmd_err = PROTOCOL_ERROR::UNSPECIFIED;
+        break;
+    }
+
+    if (cmd_err != PROTOCOL_ERROR::NONE)
+        statusByte.bits.client_error = true;
+}
+
+void lynxNetwork::process_http(fujiCommandID_t cmd)
+{
+    statusByte.byte = 0x00;
+
+    // Make sure this is really a HTTP protocol instance
+    NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol);
+    if (!http)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
+    protocolError_t cmd_err;
+    switch (cmd)
+    {
+    case NETCMD_UNLISTEN:
+        cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
+        break;
+    default:
+        cmd_err = PROTOCOL_ERROR::UNSPECIFIED;
+        return;
+    }
+
+    if (cmd_err != PROTOCOL_ERROR::NONE)
+        statusByte.bits.client_error = true;
+}
+
+void lynxNetwork::process_udp(fujiCommandID_t cmd)
+{
+    statusByte.byte = 0x00;
+
+    // Make sure this is really a UDP protocol instance
+    NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol);
+    if (!udp)
+    {
+        statusByte.bits.client_error = true;
+        return;
+    }
+
+    protocolError_t cmd_err;
+    switch (cmd)
+    {
+#ifndef ESP_PLATFORM
+    case NETCMD_GET_REMOTE:
+        receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
+        cmd_err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
+        response += *receiveBuffer;
+        break;
+#endif /* ESP_PLATFORM */
+    case NETCMD_SET_DESTINATION:
+        {
+            uint8_t spData[SPECIAL_BUFFER_SIZE];
+            size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));
+            cmd_err = udp->set_destination(spData, bytes_read);
+            if (cmd_err != PROTOCOL_ERROR::NONE)
+                statusByte.bits.client_error = true;
+        }
+        break;
+    default:
+        statusByte.bits.client_error = true;
+        break;
+    }
+}
+
 void lynxNetwork::transaction_complete()
 {
     Debug_println("transaction_complete - sent ACK");
