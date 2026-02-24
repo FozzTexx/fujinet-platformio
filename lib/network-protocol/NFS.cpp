@@ -217,6 +217,7 @@ protocolError_t NetworkProtocolNFS::write_file_handle(uint8_t *buf, unsigned sho
     return PROTOCOL_ERROR::NONE;
 }
 
+#ifdef OBSOLETE
 AtariSIODirection NetworkProtocolNFS::special_inquiry(fujiCommandID_t cmd)
 {
     return SIO_DIRECTION_INVALID;
@@ -236,18 +237,19 @@ protocolError_t NetworkProtocolNFS::special_80(uint8_t *sp_buf, unsigned short l
 {
     return PROTOCOL_ERROR::NONE;
 }
+#endif /* OBSOLETE */
 
-protocolError_t NetworkProtocolNFS::rename(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolNFS::rename(PeoplesUrlParser *url)
 {
     return PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolNFS::del(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolNFS::del(PeoplesUrlParser *url)
 {
     return PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolNFS::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolNFS::mkdir(PeoplesUrlParser *url)
 {
     mount(url);
 
@@ -262,7 +264,7 @@ protocolError_t NetworkProtocolNFS::mkdir(PeoplesUrlParser *url, cmdFrame_t *cmd
     return PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolNFS::rmdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolNFS::rmdir(PeoplesUrlParser *url)
 {
     mount(url);
 
@@ -287,12 +289,12 @@ protocolError_t NetworkProtocolNFS::stat()
     return ret != 0 ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolNFS::lock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolNFS::lock(PeoplesUrlParser *url)
 {
     return PROTOCOL_ERROR::NONE;
 }
 
-protocolError_t NetworkProtocolNFS::unlock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame)
+protocolError_t NetworkProtocolNFS::unlock(PeoplesUrlParser *url)
 {
     return PROTOCOL_ERROR::NONE;
 }

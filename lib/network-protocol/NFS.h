@@ -21,6 +21,7 @@ public:
      */
     virtual ~NetworkProtocolNFS();
 
+#ifdef OBSOLETE
     /**
      * @brief Return a DSTATS byte for a requested COMMAND byte.
      * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
@@ -49,6 +50,7 @@ public:
      * @param len length of the special buffer, typically SPECIAL_BUFFER_SIZE
      */
     protocolError_t special_80(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame) override;
+#endif /* OBSOLETE */
 
     /**
      * @brief Rename file specified by incoming devicespec.
@@ -56,7 +58,7 @@ public:
      * @param cmdFrame the command frame
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t rename(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t rename(PeoplesUrlParser *url) override;
 
     /**
      * @brief Delete file specified by incoming devicespec.
@@ -64,7 +66,7 @@ public:
      * @param cmdFrame the command frame
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t del(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t del(PeoplesUrlParser *url) override;
 
     /**
      * @brief Make directory specified by incoming devicespec.
@@ -72,7 +74,7 @@ public:
      * @param cmdFrame the command frame
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t mkdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t mkdir(PeoplesUrlParser *url) override;
 
     /**
      * @brief Remove directory specified by incoming devicespec.
@@ -80,7 +82,7 @@ public:
      * @param cmdFrame the command frame
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t rmdir(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t rmdir(PeoplesUrlParser *url) override;
 
     /**
      * @brief lock file specified by incoming devicespec.
@@ -88,7 +90,7 @@ public:
      * @param cmdFrame the command frame
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t lock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t lock(PeoplesUrlParser *url) override;
 
     /**
      * @brief unlock file specified by incoming devicespec.
@@ -96,7 +98,7 @@ public:
      * @param cmdFrame the command frame
      * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
      */
-    protocolError_t unlock(PeoplesUrlParser *url, cmdFrame_t *cmdFrame) override;
+    protocolError_t unlock(PeoplesUrlParser *url) override;
 
     off_t seek(off_t offset, int whence) override;
 
