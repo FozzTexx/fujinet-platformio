@@ -220,29 +220,6 @@ protocolError_t NetworkProtocolTNFS::write_file_handle(uint8_t *buf, unsigned sh
     return tnfs_error != TNFS_RESULT_SUCCESS ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-#ifdef OBSOLETE
-AtariSIODirection NetworkProtocolTNFS::special_inquiry(fujiCommandID_t cmd)
-{
-    AtariSIODirection ret;
-
-    switch (cmd)
-    {
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
-        ret = SIO_DIRECTION_WRITE; // Atari to peripheral.
-        break;
-    default:
-        return NetworkProtocolFS::special_inquiry(cmd);
-    }
-
-    Debug_printf("NetworkProtocolTNFS:::special_inquiry(%u) - 0x%02x\r\n", cmd, ret);
-
-    return ret;
-}
-#endif /* OBSOLETE */
-
 protocolError_t NetworkProtocolTNFS::rename(PeoplesUrlParser *url)
 {
     if (NetworkProtocolFS::rename(url) != PROTOCOL_ERROR::NONE)

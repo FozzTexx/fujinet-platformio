@@ -40,9 +40,6 @@ protocolError_t NetworkProtocolFS::open(PeoplesUrlParser *urlParser,
     NetworkProtocol::open(urlParser, access, translate);
     fileSize = 0;
     streamMode = access;
-#ifdef OBSOLETE
-    a2flags = (apple2Flag_t) translate;
-#endif /* OBSOLETE */
 
     update_dir_filename(opened_url);
 
@@ -377,35 +374,6 @@ void NetworkProtocolFS::resolve()
     if (streamMode == ACCESS_MODE::WRITE)
         fileSize = 0;
 }
-
-#ifdef OBSOLETE
-protocolError_t NetworkProtocolFS::perform_idempotent_80(PeoplesUrlParser *url, fujiCommandID_t cmd)
-{
-#ifdef VERBOSE_PROTOCOL
-    Debug_printf("NetworkProtocolFS::perform_idempotent_80, url: %s cmd: 0x%02X\r\n", url->url.c_str(), cmd);
-#endif
-    switch (cmd)
-    {
-    case NETCMD_RENAME:
-        return rename(url);
-    case NETCMD_DELETE:
-        return del(url);
-    case NETCMD_LOCK:
-        return lock(url);
-    case NETCMD_UNLOCK:
-        return unlock(url);
-    case NETCMD_MKDIR:
-        return mkdir(url);
-    case NETCMD_RMDIR:
-        return rmdir(url);
-    default:
-#ifdef VERBOSE_PROTOCOL
-        Debug_printf("Uncaught idempotent command: 0x%02X\r\n", cmd);
-#endif
-        return PROTOCOL_ERROR::UNSPECIFIED;
-    }
-}
-#endif /* OBSOLETE */
 
 protocolError_t NetworkProtocolFS::rename(PeoplesUrlParser *url)
 {

@@ -213,30 +213,6 @@ protocolError_t NetworkProtocolSD::write_file_handle(uint8_t *buf, unsigned shor
     return NDEV_STATUS::SUCCESS != error ? PROTOCOL_ERROR::UNSPECIFIED : PROTOCOL_ERROR::NONE;
 }
 
-
-#ifdef OBSOLETE
-AtariSIODirection NetworkProtocolSD::special_inquiry(fujiCommandID_t cmd)
-{
-    AtariSIODirection ret;
-
-    switch (cmd)
-    {
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
-        ret = SIO_DIRECTION_WRITE; // Atari to peripheral.
-        break;
-    default:
-        return NetworkProtocolFS::special_inquiry(cmd);
-    }
-
-    Debug_printf("NetworkProtocolSD:::special_inquiry(%u) - 0x%02x\r\n", cmd, ret);
-
-    return ret;
-}
-#endif /* OBSOLETE */
-
 protocolError_t NetworkProtocolSD::rename(PeoplesUrlParser *url)
 {
     interruptEnable = false; // no need for network interrupts

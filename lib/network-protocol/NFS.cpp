@@ -217,28 +217,6 @@ protocolError_t NetworkProtocolNFS::write_file_handle(uint8_t *buf, unsigned sho
     return PROTOCOL_ERROR::NONE;
 }
 
-#ifdef OBSOLETE
-AtariSIODirection NetworkProtocolNFS::special_inquiry(fujiCommandID_t cmd)
-{
-    return SIO_DIRECTION_INVALID;
-}
-
-protocolError_t NetworkProtocolNFS::special_00(cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolNFS::special_40(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-
-protocolError_t NetworkProtocolNFS::special_80(uint8_t *sp_buf, unsigned short len, cmdFrame_t *cmdFrame)
-{
-    return PROTOCOL_ERROR::NONE;
-}
-#endif /* OBSOLETE */
-
 protocolError_t NetworkProtocolNFS::rename(PeoplesUrlParser *url)
 {
     return PROTOCOL_ERROR::NONE;

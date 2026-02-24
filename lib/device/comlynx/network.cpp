@@ -391,80 +391,6 @@ void lynxNetwork::set_password(uint16_t len)
     transaction_complete();
 }
 
-#ifdef OBSOLETE
-void lynxNetwork::del(uint16_t len)
-{
-    string d;
-
-    memset(response, 0, sizeof(response));
-    //comlynx_recv_buffer(response, s);
-    transaction_get(response, len);
-
-    d = string((char *)response, len);
-    parse_and_instantiate_protocol(d);
-
-    if (protocol == nullptr) {
-        transaction_error();
-        return;
-    }
-
-    cmdFrame.comnd = NETCMD_DELETE;
-
-    if (protocol->perform_idempotent_80(urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
-    {
-        statusByte.bits.client_error = true;
-        transaction_error();
-        return;
-    }
-
-    transaction_complete();
-}
-
-void lynxNetwork::rename(uint16_t len)
-{
-    string d;
-
-    memset(response, 0, sizeof(response));
-    //comlynx_recv_buffer(response, s);
-    transaction_get(response, len);
-
-    d = string((char *)response, len);
-    parse_and_instantiate_protocol(d);
-
-    cmdFrame.comnd = NETCMD_RENAME;
-
-    if (protocol->perform_idempotent_80(urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
-    {
-        statusByte.bits.client_error = true;
-        transaction_error();
-        return;
-    }
-
-    transaction_complete();
-}
-
-void lynxNetwork::mkdir(uint16_t len)
-{
-    string d;
-
-    memset(response, 0, sizeof(response));
-    transaction_get(response, len);
-
-    d = string((char *)response, len);
-    parse_and_instantiate_protocol(d);
-
-    cmdFrame.comnd = NETCMD_MKDIR;
-
-    if (protocol->perform_idempotent_80(urlParser.get(), &cmdFrame) != PROTOCOL_ERROR::NONE)
-    {
-        statusByte.bits.client_error = true;
-        transaction_error();
-        return;
-    }
-    transaction_complete();
-}
-#endif /* OBSOLETE */
-
 void lynxNetwork::set_channel_mode()
 {
     unsigned char m;
@@ -573,130 +499,6 @@ void lynxNetwork::json_parse()
     json.parse();
     transaction_complete();
 }
-
-#ifdef OBSOLETE
-/**
- * @brief Do an inquiry to determine whether a protoocol supports a particular command.
- * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
- * or $FF - Command not supported, which should then be used as a DSTATS value by the
- * Atari when making the N: LYNX call.
- */
-void lynxNetwork::comlynx_special_inquiry()
-{
-}
-
-/*void lynxNetwork::do_inquiry(fujiCommandID_t inq_cmd)
-{
-    // Reset inq_dstats
-    inq_dstats = SIO_DIRECTION_INVALID;
-
-    cmdFrame.comnd = inq_cmd;
-
-    // Ask protocol for dstats, otherwise get it locally.
-    if (protocol != nullptr)
-        inq_dstats = protocol->special_inquiry(inq_cmd);
-
-    // If we didn't get one from protocol, or unsupported, see if supported globally.
-    if (inq_dstats == SIO_DIRECTION_INVALID)
-    {
-        switch (inq_cmd)
-        {
-        case NETCMD_RENAME:
-        case NETCMD_DELETE:
-        case NETCMD_LOCK:
-        case NETCMD_UNLOCK:
-        case NETCMD_MKDIR:
-        case NETCMD_RMDIR:
-        case NETCMD_CHDIR:
-        case NETCMD_USERNAME:
-        case NETCMD_PASSWORD:
-            inq_dstats = SIO_DIRECTION_WRITE;
-            break;
-        case NETCMD_GETCWD:
-            inq_dstats = SIO_DIRECTION_READ;
-            break;
-        case NETCMD_SET_INT_RATE: // Set interrupt rate
-            inq_dstats = SIO_DIRECTION_NONE;
-            break;
-        case NETCMD_TRANSLATION: // Set Translation
-            inq_dstats = SIO_DIRECTION_NONE;
-            break;
-        case NETCMD_PARSE_ALT: // JSON Parse
-            inq_dstats = SIO_DIRECTION_NONE;
-            break;
-        case NETCMD_QUERY_ALT: // JSON Query
-            inq_dstats = SIO_DIRECTION_WRITE;
-            break;
-        default:
-            inq_dstats = SIO_DIRECTION_INVALID; // not supported
-            break;
-        }
-    }
-
-    Debug_printf("inq_dstats = %u\n", inq_dstats);
-}*/
-
-/**
- * @brief called to handle special protocol interactions when DSTATS=$00, meaning there is no payload.
- * Essentially, call the protocol action
- * and based on the return, signal comlynx_complete() or error().
- *
- */
-void lynxNetwork::comlynx_special_00(unsigned short len)
-{
-    transaction_get(&cmdFrame.aux1, sizeof(cmdFrame.aux1));
-    transaction_get(&cmdFrame.aux2, sizeof(cmdFrame.aux2));
-
-    if (protocol->special_00(&cmdFrame) == PROTOCOL_ERROR::NONE)
-        transaction_complete();
-    else
-        transaction_error();
-}
-
-/**
- * @brief called to handle protocol interactions when DSTATS=$40, meaning the payload is to go from
- * the peripheral back to the ATARI. Essentially, call the protocol action with the accrued special
- * buffer (containing the devicespec) and based on the return, use bus_to_computer() to transfer the
- * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
- */
-void lynxNetwork::comlynx_special_40(unsigned short len)
-{
-    transaction_get(&cmdFrame.aux1, sizeof(cmdFrame.aux1));
-    transaction_get(&cmdFrame.aux2, sizeof(cmdFrame.aux2));
-
-    if (protocol->special_40(response, 1024, &cmdFrame) == PROTOCOL_ERROR::NONE)
-        transaction_complete();
-    else
-        transaction_error();
-}
-
-/**
- * @brief called to handle protocol interactions when DSTATS=$80, meaning the payload is to go from
- * the ATARI to the pheripheral. Essentially, call the protocol action with the accrued special
- * buffer (containing the devicespec) and based on the return, use bus_to_peripheral() to transfer the
- * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
- */
-void lynxNetwork::comlynx_special_80(unsigned short len)
-{
-    uint8_t spData[SPECIAL_BUFFER_SIZE];
-
-    memset(spData, 0, SPECIAL_BUFFER_SIZE);
-
-    // Get special (devicespec) from computer
-    transaction_get(&cmdFrame.aux1, sizeof(cmdFrame.aux1));
-    transaction_get(&cmdFrame.aux1, sizeof(cmdFrame.aux1));
-    transaction_get(spData, len);
-
-    Debug_printf("lynxNetwork::comlynx_special_80() - %s\n", spData);
-
-    // Do protocol action and return
-    if (protocol->special_80(spData, SPECIAL_BUFFER_SIZE, &cmdFrame) == PROTOCOL_ERROR::NONE)
-        read_channel();
-    else
-        transaction_error();
-}
-#endif /* OBSOLETE */
-
 
 void lynxNetwork::read_channel()
 {
@@ -811,17 +613,6 @@ void lynxNetwork::comlynx_process()
 
     switch (cmd)
     {
-#ifdef OBSOLETE
-    case NETCMD_RENAME:
-        rename(len);
-        break;
-    case NETCMD_DELETE:
-        del(len);
-        break;
-    case NETCMD_MKDIR:
-        mkdir(len);
-        break;
-#endif /* OBSOLETE */
     case NETCMD_CHDIR:
         set_prefix(len);
         break;
@@ -887,40 +678,6 @@ void lynxNetwork::comlynx_process()
     default:
         statusByte.bits.client_error = true;
         break;
-
-#ifdef OBSOLETE
-    default:
-        /*switch (channelMode)
-        {
-        case PROTOCOL:
-            if (inq_dstats == SIO_DIRECTION_NONE)
-                comlynx_special_00(len);
-            else if (inq_dstats == SIO_DIRECTION_READ)
-                comlynx_special_40(len);
-            else if (inq_dstats == SIO_DIRECTION_WRITE)
-                comlynx_special_80(len);
-            else
-                Debug_printf("lynxNetwork::comlynx_process - unknown command: %02x\n", c);
-            break;
-        case JSON:
-            switch (c)
-            {
-            case NETCMD_PUT:
-                json_parse();
-                break;
-            case NETCMD_QUERY:
-                json_query(len);
-                break;
-            default:
-                break;
-            }
-            break;
-        default:*/
-            Debug_println("lynxNetwork::comlynx_process - unknown command");
-            break;
-        //}
-        //do_inquiry(c);   // need this at all? -SJ
-#endif /* OBSOLETE */
     }
 }
 

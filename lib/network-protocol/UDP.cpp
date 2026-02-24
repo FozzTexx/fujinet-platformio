@@ -186,54 +186,6 @@ protocolError_t NetworkProtocolUDP::status(NetworkStatus *status)
     return PROTOCOL_ERROR::NONE;
 }
 
-#ifdef OBSOLETE
-AtariSIODirection NetworkProtocolUDP::special_inquiry(fujiCommandID_t cmd)
-{
-    Debug_printf("NetworkProtocolUDP::special_inquiry(%02x)\r\n", cmd);
-
-    switch (cmd)
-    {
-    case NETCMD_SET_DESTINATION:
-        return SIO_DIRECTION_WRITE;
-#ifndef ESP_PLATFORM
-    case NETCMD_GET_REMOTE:
-        return SIO_DIRECTION_READ;
-#endif
-    default:
-        break;
-    }
-
-    return SIO_DIRECTION_INVALID;
-}
-
-protocolError_t NetworkProtocolUDP::special_40(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd)
-{
-#ifdef ESP_PLATFORM
-    return PROTOCOL_ERROR::UNSPECIFIED; // none implemented.
-#else
-    switch (cmd)
-    {
-    case NETCMD_GET_REMOTE:
-        return get_remote(sp_buf, len);
-    default:
-        return PROTOCOL_ERROR::UNSPECIFIED;
-    }
-#endif
-}
-
-protocolError_t NetworkProtocolUDP::special_80(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd)
-{
-    switch (cmd)
-    {
-    case NETCMD_SET_DESTINATION:
-        return set_destination(sp_buf, len);
-    default:
-        return PROTOCOL_ERROR::UNSPECIFIED;
-    }
-    return PROTOCOL_ERROR::UNSPECIFIED;
-}
-#endif /* OBSOLETE */
-
 protocolError_t NetworkProtocolUDP::set_destination(uint8_t *sp_buf, unsigned short len)
 {
 #ifdef ESP_PLATFORM // TODO review & merge

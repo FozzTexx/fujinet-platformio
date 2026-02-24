@@ -56,30 +56,6 @@ NetworkProtocolHTTP::~NetworkProtocolHTTP()
         delete(client);
 }
 
-#ifdef OBSOLETE
-AtariSIODirection NetworkProtocolHTTP::special_inquiry(fujiCommandID_t cmd)
-{
-    switch (cmd)
-    {
-    case NETCMD_UNLISTEN:
-        return (streamMode > ACCESS_MODE::WRITE ? SIO_DIRECTION_NONE : SIO_DIRECTION_INVALID);
-    default:
-        return SIO_DIRECTION_INVALID;
-    }
-}
-
-protocolError_t NetworkProtocolHTTP::special_00(fujiCommandID_t cmd, uint8_t httpChanMode)
-{
-    switch (cmd)
-    {
-    case NETCMD_UNLISTEN:
-        return special_set_channel_mode((netProtoHTTPChannelMode_t) httpChanMode);
-    default:
-        return PROTOCOL_ERROR::UNSPECIFIED;
-    }
-}
-#endif /* OBSOLETE */
-
 protocolError_t NetworkProtocolHTTP::set_channel_mode(netProtoHTTPChannelMode_t newMode)
 {
     protocolError_t err = PROTOCOL_ERROR::NONE;

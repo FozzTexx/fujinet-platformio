@@ -87,15 +87,6 @@ public:
      */
     virtual void sio_write();
 
-#ifdef OBSOLETE
-    /**
-     * SIO Status Command. First try to populate NetworkStatus object from protocol. If protocol not instantiated,
-     * or Protocol does not want to fill status buffer (e.g. due to unknown aux1/aux2 values), then try to deal
-     * with them locally. Then serialize resulting NetworkStatus object to SIO.
-     */
-    virtual void sio_special();
-#endif /* OBSOLETE */
-
     /**
      * SIO Special, called as a default for any other SIO command not processed by the other sio_ functions.
      * First, the protocol is asked whether it wants to process the command, and if so, the protocol will
@@ -144,7 +135,7 @@ public:
     void process_tcp();
     void process_http();
     void process_udp();
-    
+
 private:
     /**
      * Buffer for holding devicespec
@@ -355,39 +346,6 @@ private:
      */
     bool sio_status_channel_json(NetworkStatus *ns);
 
-#ifdef OBSOLETE
-    /**
-     * @brief Do an inquiry to determine whether a protoocol supports a particular command.
-     * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
-     * or $FF - Command not supported, which should then be used as a DSTATS value by the
-     * Atari when making the N: SIO call.
-     */
-    void sio_special_inquiry();
-
-    /**
-     * @brief called to handle special protocol interactions when DSTATS=$00, meaning there is no payload.
-     * Essentially, call the protocol action
-     * and based on the return, signal sio_complete() or error().
-     */
-    void sio_special_00();
-
-    /**
-     * @brief called to handle protocol interactions when DSTATS=$40, meaning the payload is to go from
-     * the peripheral back to the ATARI. Essentially, call the protocol action with the accrued special
-     * buffer (containing the devicespec) and based on the return, use bus_to_computer() to transfer the
-     * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
-     */
-    void sio_special_40();
-
-    /**
-     * @brief called to handle protocol interactions when DSTATS=$80, meaning the payload is to go from
-     * the ATARI to the pheripheral. Essentially, call the protocol action with the accrued special
-     * buffer (containing the devicespec) and based on the return, use bus_to_peripheral() to transfer the
-     * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
-     */
-    void sio_special_80();
-#endif /* OBSOLETE */
-
     /**
      * Called to pulse the PROCEED interrupt, rate limited by the interrupt timer.
      */
@@ -399,14 +357,6 @@ private:
      */
     void sio_clear_interrupt();
 #endif
-
-#ifdef OBSOLETE
-    /**
-     * @brief Perform the inquiry, handle both local and protocol commands.
-     * @param inq_cmd the command to check against.
-     */
-    void do_inquiry(fujiCommandID_t inq_cmd);
-#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.
@@ -433,13 +383,6 @@ private:
      * @brief Set timer rate for PROCEED timer in ms
      */
     void sio_set_timer_rate();
-
-#ifdef OBSOLETE
-    /**
-     * @brief perform ->FujiNet commands on protocols that do not use an explicit OPEN channel.
-     */
-    void sio_do_idempotent_command_80();
-#endif /* OBSOLETE */
 
     /**
      * @brief parse URL and instantiate protocol

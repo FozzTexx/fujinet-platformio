@@ -232,51 +232,6 @@ size_t NetworkProtocolTCP::available()
     return avail;
 }
 
-#ifdef OBSOLETE
-/**
- * @brief Return a DSTATS byte for a requested COMMAND byte.
- * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
- * @return a 0x00 = No payload, 0x40 = Payload to Atari, 0x80 = Payload to FujiNet, 0xFF = Command not supported.
- */
-AtariSIODirection NetworkProtocolTCP::special_inquiry(fujiCommandID_t cmd)
-{
-    Debug_printf("NetworkProtocolTCP::special_inquiry(%02x)\r\n", cmd);
-
-    switch (cmd)
-    {
-    case NETCMD_CONTROL:
-        return SIO_DIRECTION_NONE;
-    case NETCMD_CLOSE_CLIENT:
-        return SIO_DIRECTION_NONE;
-    default:
-        break;
-    }
-
-    return SIO_DIRECTION_INVALID;
-}
-
-/**
- * @brief execute a command that returns no payload
- * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
- */
-protocolError_t NetworkProtocolTCP::special_00(fujiCommandID_t cmd, uint8_t httpChanMode)
-{
-    Debug_printf("NetworkProtocolTCP::special_00(%c)\n", cmd);
-
-    switch (cmd)
-    {
-    case NETCMD_CONTROL:
-        return special_accept_connection();
-    case NETCMD_CLOSE_CLIENT:
-        Debug_printf("CLOSING CLIENT CONNECTION!!!\n");
-        return special_close_client_connection();
-    default:
-        break;
-    }
-    return PROTOCOL_ERROR::UNSPECIFIED; // error
-}
-#endif /* OBSOLETE */
-
 /**
  * Open a server (listening) connection.
  * @param port bind to port #

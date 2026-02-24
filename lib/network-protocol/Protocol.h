@@ -165,42 +165,6 @@ public:
      */
     virtual protocolError_t status(NetworkStatus *status);
 
-#ifdef OBSOLETE
-    /**
-     * @brief Return a DSTATS byte for a requested COMMAND byte.
-     * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
-     * @return a 0x00 = No payload, 0x40 = Payload to Atari, 0x80 = Payload to FujiNet, 0xFF = Command not supported.
-     */
-    virtual AtariSIODirection special_inquiry(fujiCommandID_t cmd) { return SIO_DIRECTION_INVALID; }
-
-    /**
-     * @brief execute a command that returns no payload
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    virtual protocolError_t special_00(fujiCommandID_t cmd, uint8_t httpChanMode) { return PROTOCOL_ERROR::NONE; }
-
-    /**
-     * @brief execute a command that returns a payload to the atari.
-     * @param sp_buf a pointer to the special buffer
-     * @param len Length of data to request from protocol. Should not be larger than buffer.
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    virtual protocolError_t special_40(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) { return PROTOCOL_ERROR::NONE; }
-
-    /**
-     * @brief execute a command that sends a payload to fujinet (most common, XIO)
-     * @param sp_buf, a pointer to the special buffer, usually a EOL terminated devicespec.
-     * @param len length of the special buffer, typically SPECIAL_BUFFER_SIZE
-     */
-    virtual protocolError_t special_80(uint8_t *sp_buf, unsigned short len, fujiCommandID_t cmd) { return PROTOCOL_ERROR::NONE; }
-
-    /**
-     * @brief perform an idempotent command with DSTATS 0x80, that does not require open channel.
-     * @param url The URL object.
-     */
-    virtual protocolError_t perform_idempotent_80(PeoplesUrlParser *url, fujiCommandID_t cmd) { return PROTOCOL_ERROR::NONE; }
-#endif /* OBSOLETE */
-
     /**
      * @brief return an _atari_ error (>199) based on errno. into error for status reporting.
      */

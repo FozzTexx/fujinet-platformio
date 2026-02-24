@@ -219,27 +219,6 @@ protocolError_t NetworkProtocolFTP::status_file(NetworkStatus *status)
     return PROTOCOL_ERROR::NONE;
 }
 
-#ifdef OBSOLETE
-AtariSIODirection NetworkProtocolFTP::special_inquiry(fujiCommandID_t cmd)
-{
-    AtariSIODirection ret;
-
-    switch (cmd)
-    {
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
-        ret = SIO_DIRECTION_WRITE; // Atari to peripheral.
-        break;
-    default:
-        return NetworkProtocolFS::special_inquiry(cmd);
-    }
-
-    return ret;
-}
-#endif /* OBSOLETE */
-
 size_t NetworkProtocolFTP::available()
 {
     size_t avail = 0;

@@ -54,21 +54,6 @@ public:
      */
     virtual ~NetworkProtocolHTTP();
 
-#ifdef OBSOLETE
-    /**
-     * @brief Return a DSTATS byte for a requested COMMAND byte.
-     * @param cmd The Command (0x00-0xFF) for which DSTATS is requested.
-     * @return a 0x00 = No payload, 0x40 = Payload to Atari, 0x80 = Payload to FujiNet, 0xFF = Command not supported.
-     */
-    AtariSIODirection special_inquiry(fujiCommandID_t cmd) override;
-
-    /**
-     * @brief execute a command that returns no payload
-     * @return PROTOCOL_ERROR::NONE on success, PROTOCOL_ERROR::UNSPECIFIED on error
-     */
-    protocolError_t special_00(fujiCommandID_t cmd, uint8_t httpChanMode) override;
-#endif /* OBSOLETE */
-
     /**
      * @brief Set Channel mode (DATA, HEADERS, etc.)
      */

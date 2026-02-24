@@ -252,62 +252,6 @@ void iwmNetwork::set_password()
     Debug_printf("Password is %s\n", current_network_data.password.c_str()); // GREAT LOGGING
 }
 
-#ifdef OBSOLETE
-void iwmNetwork::del()
-{
-    auto& current_network_data = network_data_map[current_network_unit];
-    string d;
-
-    d = string((char *)data_buffer, 256);
-    parse_and_instantiate_protocol(d);
-
-    if (!current_network_data.protocol)
-        return;
-
-    cmdFrame.comnd = NETCMD_DELETE;
-
-    if (current_network_data.protocol->del(current_network_data.urlParser.get()) != PROTOCOL_ERROR::NONE)
-    {
-        err = SP_ERR_IOERROR;
-        return;
-    }
-}
-
-void iwmNetwork::rename()
-{
-    auto& current_network_data = network_data_map[current_network_unit];
-    string d;
-
-    d = string((char *)data_buffer, 256);
-    parse_and_instantiate_protocol(d);
-
-    cmdFrame.comnd = NETCMD_RENAME;
-
-    if (current_network_data.protocol->rename(current_network_data.urlParser.get()) != PROTOCOL_ERROR::NONE)
-    {
-        err = SP_ERR_IOERROR;
-        return;
-    }
-}
-
-void iwmNetwork::mkdir()
-{
-    auto& current_network_data = network_data_map[current_network_unit];
-    string d;
-
-    d = string((char *)data_buffer, 256);
-    parse_and_instantiate_protocol(d);
-
-    cmdFrame.comnd = NETCMD_MKDIR;
-
-    if (current_network_data.protocol->mkdir(current_network_data.urlParser.get()) != PROTOCOL_ERROR::NONE)
-    {
-        err = SP_ERR_IOERROR;
-        return;
-    }
-}
-#endif /* OBSOLETE */
-
 void iwmNetwork::channel_mode()
 {
     auto& current_network_data = network_data_map[current_network_unit];
@@ -339,134 +283,6 @@ void iwmNetwork::json_parse()
     auto& current_network_data = network_data_map[current_network_unit];
     current_network_data.json->parse();
 }
-
-#ifdef OBSOLETE
-/**
- * @brief Do an inquiry to determine whether a protoocol supports a particular command.
- * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
- * or $FF - Command not supported, which should then be used as a DSTATS value by the
- * Atari when making the N: iwm call.
- */
-void iwmNetwork::iwmnet_special_inquiry()
-{
-}
-
-void iwmNetwork::do_inquiry(fujiCommandID_t inq_cmd)
-{
-    auto& current_network_data = network_data_map[current_network_unit];
-    // Reset inq_dstats
-    inq_dstats = SIO_DIRECTION_INVALID;
-
-    cmdFrame.comnd = inq_cmd;
-
-    // Ask protocol for dstats, otherwise get it locally.
-    if (current_network_data.protocol != nullptr)
-        inq_dstats = current_network_data.protocol->special_inquiry(inq_cmd);
-
-    // If we didn't get one from protocol, or unsupported, see if supported globally.
-    if (inq_dstats == SIO_DIRECTION_INVALID)
-    {
-        switch (inq_cmd)
-        {
-        case NETCMD_RENAME:
-        case NETCMD_DELETE:
-        case NETCMD_LOCK:
-        case NETCMD_UNLOCK:
-        case NETCMD_MKDIR:
-        case NETCMD_RMDIR:
-        case NETCMD_CHDIR:
-        case NETCMD_USERNAME:
-        case NETCMD_PASSWORD:
-            inq_dstats = SIO_DIRECTION_WRITE;
-            break;
-        case NETCMD_GETCWD:
-            inq_dstats = SIO_DIRECTION_READ;
-            break;
-        case NETCMD_SET_INT_RATE: // Set interrupt rate
-            inq_dstats = SIO_DIRECTION_NONE;
-            break;
-        case NETCMD_TRANSLATION:
-            inq_dstats = SIO_DIRECTION_NONE;
-            break;
-        case NETCMD_PARSE_ALT:
-            inq_dstats = SIO_DIRECTION_NONE;
-            break;
-        case NETCMD_QUERY_ALT:
-            inq_dstats = SIO_DIRECTION_WRITE;
-            break;
-        default:
-            inq_dstats = SIO_DIRECTION_INVALID; // not supported
-            break;
-        }
-    }
-
-    Debug_printf("inq_dstats = %u\n", inq_dstats);
-}
-
-/**
- * @brief called to handle special protocol interactions when DSTATS=$00, meaning there is no payload.
- * Essentially, call the protocol action
- * and based on the return, signal iwmnet_complete() or error().
- */
-void iwmNetwork::special_00()
-{
-    auto& current_network_data = network_data_map[current_network_unit];
-    cmdFrame.aux1 = data_buffer[0];
-    cmdFrame.aux2 = data_buffer[1];
-
-    current_network_data.protocol->special_00(&cmdFrame);
-}
-
-/**
- * @brief called to handle protocol interactions when DSTATS=$40, meaning the payload is to go from
- * the peripheral back to the ATARI. Essentially, call the protocol action with the accrued special
- * buffer (containing the devicespec) and based on the return, use bus_to_computer() to transfer the
- * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
- */
-void iwmNetwork::special_40()
-{
-    auto& current_network_data = network_data_map[current_network_unit];
-    cmdFrame.aux1 = data_buffer[0];
-    cmdFrame.aux2 = data_buffer[1];
-
-    if (current_network_data.protocol->special_40(data_buffer, 256, &cmdFrame) == PROTOCOL_ERROR::NONE)
-    {
-        data_len = 256;
-        //send_data_packet(data_len);
-        SYSTEM_BUS.iwm_send_packet(id(), iwm_packet_type_t::data, 0, data_buffer, data_len);
-    }
-    else
-    {
-        send_reply_packet(SP_ERR_BADCMD);
-    }
-}
-
-/**
- * @brief called to handle protocol interactions when DSTATS=$80, meaning the payload is to go from
- * the ATARI to the pheripheral. Essentially, call the protocol action with the accrued special
- * buffer (containing the devicespec) and based on the return, use bus_to_peripheral() to transfer the
- * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
- */
-void iwmNetwork::special_80()
-{
-    auto& current_network_data = network_data_map[current_network_unit];
-    // Get special (devicespec) from computer
-    cmdFrame.aux1 = data_buffer[0];
-    cmdFrame.aux2 = data_buffer[1];
-
-    Debug_printf("iwmNetwork::iwmnet_special_80() - %s\n", &data_buffer[2]);
-
-    // Do protocol action and return
-    if (current_network_data.protocol->special_80(&data_buffer[2], SPECIAL_BUFFER_SIZE, &cmdFrame) == PROTOCOL_ERROR::NONE)
-    {
-        // GOOD - LOL
-    }
-    else
-    {
-        // BAD - STILL LOL
-    }
-}
-#endif /* OBSOLETE */
 
 void iwmNetwork::iwm_open(iwm_decoded_cmd_t cmd)
 {
@@ -775,17 +591,6 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
 
     switch (control_code)
     {
-#ifdef OBSOLETE
-    case NETCMD_RENAME:
-        rename();
-        break;
-    case NETCMD_DELETE:
-        del();
-        break;
-    case NETCMD_MKDIR:
-        mkdir();
-        break;
-#endif /* OBSOLETE */
     case NETCMD_CHDIR:
         set_prefix();
         break;
@@ -844,49 +649,6 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
     default:
         err = SP_ERR_IOERROR;
         break;
-
-#ifdef OBSOLETE
-    default:
-        switch (current_network_data.channelMode)
-        {
-        case NetworkData::PROTOCOL:
-            do_inquiry(control_code);
-            if (inq_dstats == SIO_DIRECTION_NONE)
-                special_00();
-            else if (inq_dstats == SIO_DIRECTION_READ) // MOVE THIS TO STATUS!
-                special_40();
-            else if (inq_dstats == SIO_DIRECTION_WRITE)
-                special_80();
-            else
-                Debug_printf("iwmnet_control_send() - Unknown Command: %02x\n", control_code);
-            break;
-        case NetworkData::JSON:
-            // every open channel creates a json object, so if it's not set, we received a command on non-open network.
-            // This can happen is fuji reset but host application doesn't handle it gracefully.
-            // without this check, the json object usage causes FN to crash. Let's try and warn the app with an IO ERROR
-            if (current_network_data.json == nullptr) {
-                Debug_printv("ERROR: control command on non opened network channel");
-                err_result = SP_ERR_IOERROR;
-                send_reply_packet(err_result);
-            } else {
-                switch (control_code)
-                {
-                case NETCMD_PARSE:
-                    json_parse();
-                    break;
-                case NETCMD_QUERY:
-                    json_query(cmd);
-                    break;
-                default:
-                    break;
-                }
-            }
-            break;
-        default:
-            Debug_printf("Unknown channel mode\n");
-            break;
-        }
-#endif /* OBSOLETE */
     }
 
     if (err != 0)

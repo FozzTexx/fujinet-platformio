@@ -146,12 +146,6 @@ public:
     void process_http(fujiCommandID_t cmd);
     void process_udp(fujiCommandID_t cmd);
 
-#ifdef OBSOLETE
-    void del(uint16_t s);
-    void rename(uint16_t s);
-    void mkdir(uint16_t s);
-#endif /* OBSOLETE */
-
 private:
     /**
      * AdamNet Response Buffer
@@ -250,13 +244,6 @@ private:
      */
     uint8_t trans_aux2;
 
-#ifdef OBSOLETE
-    /**
-     * Return value for DSTATS inquiry
-     */
-    AtariSIODirection inq_dstats = SIO_DIRECTION_INVALID;
-#endif /* OBSOLETE */
-
     /**
      * The login to use for a protocol action
      */
@@ -353,64 +340,10 @@ private:
      */
     protocolError_t adamnet_write_channel(unsigned short num_bytes);
 
-#ifdef UNUSED
-    /**
-     * @brief perform local status commands, if protocol is not bound, based on cmdFrame
-     * value.
-     */
-    void adamnet_status_local();
-
-    /**
-     * @brief perform channel status commands, if there is a protocol bound.
-     */
-    void adamnet_status_channel();
-#endif /* UNUSED */
-
-#ifdef OBSOLETE
-    /**
-     * @brief Do an inquiry to determine whether a protoocol supports a particular command.
-     * The protocol will either return $00 - No Payload, $40 - Atari Read, $80 - Atari Write,
-     * or $FF - Command not supported, which should then be used as a DSTATS value by the
-     * Atari when making the N: ADAM call.
-     */
-    void adamnet_special_inquiry();
-
-    /**
-     * @brief called to handle special protocol interactions when DSTATS=$00, meaning there is no payload.
-     * Essentially, call the protocol action
-     * and based on the return, signal adamnet_complete() or error().
-     */
-    void adamnet_special_00(unsigned short s);
-
-    /**
-     * @brief called to handle protocol interactions when DSTATS=$40, meaning the payload is to go from
-     * the peripheral back to the ATARI. Essentially, call the protocol action with the accrued special
-     * buffer (containing the devicespec) and based on the return, use bus_to_computer() to transfer the
-     * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
-     */
-    void adamnet_special_40(unsigned short s);
-
-    /**
-     * @brief called to handle protocol interactions when DSTATS=$80, meaning the payload is to go from
-     * the ATARI to the pheripheral. Essentially, call the protocol action with the accrued special
-     * buffer (containing the devicespec) and based on the return, use bus_to_peripheral() to transfer the
-     * resulting data. Currently this is assumed to be a fixed 256 byte buffer.
-     */
-    void adamnet_special_80(unsigned short s);
-#endif /* OBSOLETE */
-
     /**
      * Called to pulse the PROCEED interrupt, rate limited by the interrupt timer.
      */
     void adamnet_assert_interrupt();
-
-#ifdef OBSOLETE
-    /**
-     * @brief Perform the inquiry, handle both local and protocol commands.
-     * @param inq_cmd the command to check against.
-     */
-    void do_inquiry(fujiCommandID_t inq_cmd);
-#endif /* OBSOLETE */
 
     /**
      * @brief set translation specified by aux1 to aux2_translation mode.
