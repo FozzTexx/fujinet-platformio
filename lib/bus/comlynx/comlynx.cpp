@@ -212,12 +212,12 @@ void virtualDevice::reset()
 
 void virtualDevice::comlynx_response_ack()
 {
-    comlynx_send(FUJICMD_ACK);
+    comlynx_send((uint8_t) CMD::FUJI_ACK);
 }
 
 void virtualDevice::comlynx_response_nack()
 {
-    comlynx_send(FUJICMD_NAK);
+    comlynx_send((uint8_t) CMD::FUJI_NAK);
 }
 
 bool systemBus::wait_for_idle()

@@ -120,7 +120,7 @@ void lynxFuji::transaction_put(const void *data, size_t len, bool err)
 
     // get ACK or NACK from Lynx, we're ignoring currently
     //uint8_t t = comlynx_recv_timeout(&b, 8000);
-    uint8_t r = comlynx_recv();
+    fujiCommandID_t r = (fujiCommandID_t) comlynx_recv();
     #ifdef DEBUG
         //if (!t)
             if (r == CMD::FUJI_ACK)
@@ -302,7 +302,7 @@ void lynxFuji::fujicmd_get_time()
 
 void lynxFuji::comlynx_process()
 {
-    uint8_t c;
+    fujiCommandID_t cmd;
     uint8_t slot;
 
 
@@ -325,10 +325,10 @@ void lynxFuji::comlynx_process()
     }
 
     // get command
-    transaction_get(&c, sizeof(c));
-    Debug_printf("lynxFuji::process - command: %02X\n", c);
+    transaction_get(&cmd, sizeof(cmd));
+    Debug_printf("lynxFuji::process - command: %02X\n", cmd);
 
-    switch (c)
+    switch (cmd)
     {
     case CMD::FUJI_RESET:
         fujicmd_reset();
@@ -481,7 +481,7 @@ void lynxFuji::comlynx_process()
         fujicmd_enable_udpstream(port);
         break;
     default:
-        Debug_printf("lynxFuji::process - unknown command: %02X\n", c);
+        Debug_printf("lynxFuji::process - unknown command: %02X\n", cmd);
         transaction_error();
         break;
     }

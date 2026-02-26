@@ -962,7 +962,7 @@ void lynxNetwork::transaction_put(const void *data, size_t len, bool err)
 
     // get ACK or NACK from Lynx, we're ignoring currently
     //uint8_t t = comlynx_recv_timeout(&b, 8000);
-    uint8_t r = comlynx_recv();
+    fujiCommandID_t r = (fujiCommandID_t) comlynx_recv();
     #ifdef DEBUG
         //if (!t)
             if (r == CMD::FUJI_ACK)

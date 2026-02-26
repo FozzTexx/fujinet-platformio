@@ -71,7 +71,7 @@ void lynxDisk::transaction_put(const void *data, size_t len, bool err)
     comlynx_send(ck);
 
     // get ACK or NACK from Lynx, we're ignoring currently
-    uint8_t r = comlynx_recv();
+    fujiCommandID_t r = (fujiCommandID_t) comlynx_recv();
     #ifdef DEBUG
             if (r == CMD::FUJI_ACK)
                 Debug_println("transaction_put - Lynx ACKed");
@@ -193,7 +193,7 @@ void lynxDisk::write_block(uint32_t block)
 
 void lynxDisk::comlynx_process()
 {
-    unsigned char c;
+    fujiCommandID_t cmd;
     int32_t block;
 
 
@@ -213,10 +213,10 @@ void lynxDisk::comlynx_process()
     }
 
     // get command
-    transaction_get(&c, sizeof(c));
-    Debug_printf("lynxDisk::comlynx_process - command: %02X\n", c);
+    transaction_get(&cmd, sizeof(cmd));
+    Debug_printf("lynxDisk::comlynx_process - command: %02X\n", cmd);
 
-    switch (c)
+    switch (cmd)
     {
     case CMD::DISK_READ:
         transaction_get(&block, sizeof(block));
@@ -225,6 +225,8 @@ void lynxDisk::comlynx_process()
     case CMD::DISK_WRITE:
         transaction_get(&block, sizeof(block));
         write_block(block);
+        break;
+    default:
         break;
     }
 }
