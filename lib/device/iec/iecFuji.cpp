@@ -266,7 +266,7 @@ void iecFuji::process_cmd()
     if (is_raw_command) {
       Debug_printv("RAW command: %s", dataToHexString((uint8_t *) payload.data(), payload.size()).c_str());
 
-      if (!is_supported(payload[1])) {
+      if (!is_supported((fujiCommandID_t) payload[1])) {
         Debug_printv("ERROR: Unsupported cmd: x%02x, ignoring\r\n", payload[1]);
         last_command = payload[1];
         set_fuji_iec_status(DEVICE_ERROR, "Unrecognised command");
@@ -490,7 +490,7 @@ void iecFuji::process_basic_commands()
 
 }
 
-bool iecFuji::is_supported(uint8_t cmd)
+bool iecFuji::is_supported(fujiCommandID_t cmd)
 {
     bool result = false;
 
@@ -537,6 +537,9 @@ bool iecFuji::is_supported(uint8_t cmd)
     case CMD::FUJI_WRITE_HOST_SLOTS:
         result = true;
         break;
+    default:
+        result = false;
+        break;
     }
 
     return result;
@@ -550,7 +553,12 @@ void iecFuji::process_raw_cmd_data()
 {
     bool was_processed = true;
 
-    switch (current_fuji_cmd)
+    if (current_fuji_cmd == -1) {
+        was_processed = false;
+        return;
+    }
+
+    switch ((fujiCommandID_t) current_fuji_cmd)
     {
     case CMD::FUJI_GET_SCAN_RESULT:
         net_scan_result_raw();
@@ -637,7 +645,12 @@ void iecFuji::process_immediate_raw_cmds()
 {
     bool was_immediate_cmd = true;
 
-    switch (current_fuji_cmd)
+    if (current_fuji_cmd == -1) {
+        was_immediate_cmd = false;
+        return;
+    }
+
+    switch ((fujiCommandID_t) current_fuji_cmd)
     {
     case CMD::FUJI_RESET:
         fujicmd_reset();

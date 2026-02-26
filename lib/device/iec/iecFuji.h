@@ -67,7 +67,7 @@ protected:
     virtual void reset() override;
 
     // is the cmd supported by RAW?
-    bool is_supported(uint8_t cmd);
+    bool is_supported(fujiCommandID_t cmd);
 
     // 0xFE
     void net_get_ssid_basic();
