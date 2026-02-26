@@ -255,13 +255,13 @@ void sioVoice::sio_process(uint32_t commanddata, uint8_t checksum)
     // act like a printer for POC
     switch (cmdFrame.comnd)
     {
-    case 'P': // 0x50
-    case 'W': // 0x57
+    case CMD::PRINTER_PUT: // 0x50
+    case CMD::PRINTER_WRITE: // 0x57
         sio_late_ack();
         sio_write();
         lastAux1 = cmdFrame.aux1;
         break;
-    case 'S': // 0x53
+    case CMD::PRINTER_STATUS: // 0x53
         sio_ack();
         sio_status();
         break;

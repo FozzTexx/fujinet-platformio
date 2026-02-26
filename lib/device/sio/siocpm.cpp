@@ -75,7 +75,7 @@ void sioCPM::sio_process(uint32_t commanddata, uint8_t checksum)
 
     switch (cmdFrame.comnd)
     {
-    case 'G':
+    case CMD::CPM_INIT:
         sio_ack();
         fnSystem.delay(10);
         sio_complete();

@@ -193,7 +193,7 @@ private:
     bool answered=false;
     int ringCount;                  // Keep track of how many incoming RINGs
 
-    void sio_send_firmware(uint8_t loadcommand); // $21 and $26: Booter/Relocator download; Handler download
+    void sio_send_firmware(fujiCommandID_t loadcommand); // $21 and $26: Booter/Relocator download; Handler download
     void sio_poll_1();                           // $3F, '?', Type 1 Poll
     void sio_poll_3(uint8_t device, uint8_t aux1, uint8_t aux2); // $40, '@', Type 3 Poll
     void sio_control();                          // $41, 'A', Control

@@ -262,7 +262,7 @@ void systemBus::_sio_process_cmd()
             // SIO status calls (of the 26 Atari sends) so a real D1:
             // can take over. Once status_waint_count expires, respond
             // normally; if disabled, respond immediately.
-            if (_activeDev->status_wait_count > 0 && tempFrame.comnd == 'R' && _fujiDev->status_wait_enabled)
+            if (_activeDev->status_wait_count > 0 && tempFrame.comnd == CMD::DISK_READ && _fujiDev->status_wait_enabled)
             {
                 Debug_printf("Disabling CONFIG boot.\n");
                 _fujiDev->boot_config = false;

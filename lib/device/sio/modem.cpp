@@ -226,7 +226,7 @@ void modem::sio_poll_1()
 
 // 0x21 / '!' - RELOCATOR DOWNLOAD
 // 0x26 / '&' - HANDLER DOWNLOAD
-void modem::sio_send_firmware(uint8_t loadcommand)
+void modem::sio_send_firmware(fujiCommandID_t loadcommand)
 {
     const char *firmware;
     int firmware_size = 0;

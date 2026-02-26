@@ -180,6 +180,11 @@ typedef enum class CMD : uint8_t {
     PRINTER_WRITE                   = 0x57, // W
     PRINTER_STATUS                  = 0x53, // S
     PRINTER_PUT                     = 0x50, // P
+
+    PCLINK_STATUS                   = 0x53, // S
+    PCLINK_EXEC                     = 0x52, // R
+    PCLINK_PARBLK                   = 0x50, // P
+    PCLINK_HSIO_INDEX               = 0x3F, // ?
 } fujiCommandID_t;
 
 #endif /* FUJI_COMMANDS_H */

@@ -77,34 +77,34 @@ void sioClock::sio_process(uint32_t commanddata, uint8_t checksum)
         bus_to_computer(apeTime.data(), apeTime.size(), false);
         break;
     }
-    case 'T': {
+    case CMD::APETIME_SETTZ_ALT2: {
         // Date and time, easy to be used by general programs
         sio_ack();
         auto simpleTime = Clock::get_current_time_simple(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
         bus_to_computer(simpleTime.data(), simpleTime.size(), false);
         break;
     }
-    case 'P': {
+    case CMD::APETIME_GET_PRODOS: {
         // Date and time, to be used by a ProDOS driver
         sio_ack();
         auto prodosTime = Clock::get_current_time_prodos(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
         bus_to_computer(prodosTime.data(), prodosTime.size(), false);
         break;
     }
-    case 'S': {
+    case CMD::APETIME_GET_SOS: {
         // Date and time, ASCII string in Apple /// SOS format: YYYYMMDD0HHMMSS000
         std::string sosTime = Clock::get_current_time_sos(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
         bus_to_computer((uint8_t *) sosTime.c_str(), sosTime.size() + 1, false);
         break;
     }
-    case 'I': {
+    case CMD::APETIME_GET_ISO_LOCAL: {
         // Date and time, ASCII string in ISO format - making this consistent with APPLE code
         sio_ack();
         std::string utcTime = Clock::get_current_time_iso(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
         bus_to_computer((uint8_t *) utcTime.c_str(), utcTime.size() + 1, false);
         break;
     }
-    case 'Z': {
+    case CMD::APETIME_GET_ISO_UTC: {
         // utc (zulu)
         sio_ack();
         std::string isoTime = Clock::get_current_time_iso("UTC+0");
