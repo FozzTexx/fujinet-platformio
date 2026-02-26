@@ -404,89 +404,89 @@ void adamFuji::adamnet_control_send()
 
     switch (c)
     {
-    case FUJICMD_RESET:
+    case CMD::FUJI_RESET:
         fujicmd_reset();
         break;
-    case FUJICMD_GET_SSID:
+    case CMD::FUJI_GET_SSID:
         fujicmd_net_get_ssid();
         break;
-    case FUJICMD_SCAN_NETWORKS:
+    case CMD::FUJI_SCAN_NETWORKS:
         fujicmd_net_scan_networks();
         break;
-    case FUJICMD_GET_SCAN_RESULT:
+    case CMD::FUJI_GET_SCAN_RESULT:
         fujicmd_net_scan_result(adamnet_recv());
         break;
-    case FUJICMD_SET_SSID:
+    case CMD::FUJI_SET_SSID:
         {
             SSIDConfig cfg;
             adamnet_recv_buffer((uint8_t *)&cfg, s);
             fujicmd_net_set_ssid_success(cfg.ssid, cfg.password, false);
         }
         break;
-    case FUJICMD_GET_WIFISTATUS:
+    case CMD::FUJI_GET_WIFISTATUS:
         fujicmd_net_get_wifi_status();
         break;
-    case FUJICMD_MOUNT_HOST:
+    case CMD::FUJI_MOUNT_HOST:
         fujicmd_mount_host_success(adamnet_recv());
         break;
-    case FUJICMD_UNMOUNT_HOST:
+    case CMD::FUJI_UNMOUNT_HOST:
         fujicmd_unmount_host_success(adamnet_recv());
         break;
-    case FUJICMD_MOUNT_IMAGE:
+    case CMD::FUJI_MOUNT_IMAGE:
         {
             uint8_t slot = adamnet_recv();
             uint8_t mode = adamnet_recv();
             fujicmd_mount_disk_image_success(slot, (disk_access_flags_t) mode);
         }
         break;
-    case FUJICMD_OPEN_DIRECTORY:
+    case CMD::FUJI_OPEN_DIRECTORY:
         fujicmd_open_directory_success(adamnet_recv());
         break;
-    case FUJICMD_READ_DIR_ENTRY:
+    case CMD::FUJI_READ_DIR_ENTRY:
         {
             uint8_t maxlen = adamnet_recv();
             uint8_t addtl = adamnet_recv();
             fujicmd_read_directory_entry(maxlen, addtl);
         }
         break;
-    case FUJICMD_CLOSE_DIRECTORY:
+    case CMD::FUJI_CLOSE_DIRECTORY:
         fujicmd_close_directory();
         break;
-    case FUJICMD_READ_HOST_SLOTS:
+    case CMD::FUJI_READ_HOST_SLOTS:
         fujicmd_read_host_slots();
         break;
-    case FUJICMD_WRITE_HOST_SLOTS:
+    case CMD::FUJI_WRITE_HOST_SLOTS:
         fujicmd_write_host_slots();
         break;
-    case FUJICMD_READ_DEVICE_SLOTS:
+    case CMD::FUJI_READ_DEVICE_SLOTS:
         fujicmd_read_device_slots();
         break;
-    case FUJICMD_WRITE_DEVICE_SLOTS:
+    case CMD::FUJI_WRITE_DEVICE_SLOTS:
         fujicmd_write_device_slots();
         break;
-    case FUJICMD_UNMOUNT_IMAGE:
+    case CMD::FUJI_UNMOUNT_IMAGE:
         fujicmd_unmount_disk_image_success(adamnet_recv());
         break;
-    case FUJICMD_GET_ADAPTERCONFIG:
+    case CMD::FUJI_GET_ADAPTERCONFIG:
         fujicmd_get_adapter_config();
         break;
-    case FUJICMD_GET_ADAPTERCONFIG_EXTENDED:
+    case CMD::FUJI_GET_ADAPTERCONFIG_EXTENDED:
         fujicmd_get_adapter_config_extended();
         break;
-    case FUJICMD_NEW_DISK:
+    case CMD::FUJI_NEW_DISK:
         adamnet_new_disk();
         break;
-    case FUJICMD_GET_DIRECTORY_POSITION:
+    case CMD::FUJI_GET_DIRECTORY_POSITION:
         fujicmd_get_directory_position();
         break;
-    case FUJICMD_SET_DIRECTORY_POSITION:
+    case CMD::FUJI_SET_DIRECTORY_POSITION:
         {
             uint16_t pos = 0;
             adamnet_recv_buffer((uint8_t *)&pos, sizeof(uint16_t));
             fujicmd_set_directory_position(pos);
         }
         break;
-    case FUJICMD_SET_DEVICE_FULLPATH:
+    case CMD::FUJI_SET_DEVICE_FULLPATH:
         {
             uint8_t deviceSlot = adamnet_recv();
             char filename[256];
@@ -496,40 +496,40 @@ void adamFuji::adamnet_control_send()
                                                  std::string(filename, s - 2));
         }
         break;
-    case FUJICMD_GET_DEVICE_FULLPATH:
+    case CMD::FUJI_GET_DEVICE_FULLPATH:
         fujicmd_get_device_filename(adamnet_recv());
         break;
-    case FUJICMD_CONFIG_BOOT:
+    case CMD::FUJI_CONFIG_BOOT:
         adamnet_set_boot_config();
         break;
-    case FUJICMD_ENABLE_DEVICE:
+    case CMD::FUJI_ENABLE_DEVICE:
         adamnet_enable_device();
         break;
-    case FUJICMD_DISABLE_DEVICE:
+    case CMD::FUJI_DISABLE_DEVICE:
         adamnet_disable_device();
         break;
-    case FUJICMD_MOUNT_ALL:
+    case CMD::FUJI_MOUNT_ALL:
         fujicmd_mount_all_success();
         break;
-    case FUJICMD_SET_BOOT_MODE:
+    case CMD::FUJI_SET_BOOT_MODE:
         fujicmd_set_boot_mode(adamnet_recv(), MEDIATYPE_UNKNOWN, &bootdisk);
         break;
-    case FUJICMD_WRITE_APPKEY:
+    case CMD::FUJI_WRITE_APPKEY:
         adamnet_write_app_key();
         break;
-    case FUJICMD_READ_APPKEY:
+    case CMD::FUJI_READ_APPKEY:
         fujicmd_read_app_key();
         break;
-    case FUJICMD_RANDOM_NUMBER:
+    case CMD::FUJI_RANDOM_NUMBER:
         adamnet_random_number();
         break;
-    case FUJICMD_GET_TIME:
+    case CMD::FUJI_GET_TIME:
         adamnet_get_time();
         break;
-    case FUJICMD_DEVICE_ENABLE_STATUS:
+    case CMD::FUJI_DEVICE_ENABLE_STATUS:
         adamnet_device_enable_status();
         break;
-    case FUJICMD_COPY_FILE:
+    case CMD::FUJI_COPY_FILE:
         {
             uint8_t source = adamnet_recv();
             uint8_t dest = adamnet_recv();
@@ -538,7 +538,7 @@ void adamFuji::adamnet_control_send()
             fujicmd_copy_file_success(source, dest, dirpath);
         }
         break;
-    case FUJICMD_GENERATE_GUID:
+    case CMD::FUJI_GENERATE_GUID:
         fujicmd_generate_guid();
         break;
     default:

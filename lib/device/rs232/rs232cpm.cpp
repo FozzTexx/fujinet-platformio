@@ -75,7 +75,7 @@ void rs232CPM::rs232_process(cmdFrame_t *cmd_ptr)
     cmdFrame = *cmd_ptr;
     switch (cmdFrame.comnd)
     {
-    case 'G':
+    case CMD::CPM_INIT:
         rs232_ack();
         fnSystem.delay(10);
         rs232_complete();

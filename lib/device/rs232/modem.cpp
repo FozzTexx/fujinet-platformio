@@ -1615,39 +1615,39 @@ void rs232Modem::rs232_process(cmdFrame_t *cmd_ptr)
         cmdFrame = *cmd_ptr;
         switch (cmdFrame.comnd)
         {
-        case MODEMCMD_CONTROL:
+        case CMD::MODEM_CONTROL:
             rs232_ack();
             rs232_control();
             break;
-        case MODEMCMD_CONFIGURE:
+        case CMD::MODEM_CONFIGURE:
             rs232_ack();
             rs232_config();
             break;
-        case MODEMCMD_SET_DUMP:
+        case CMD::MODEM_SET_DUMP:
             rs232_ack();
             rs232_set_dump();
             break;
-        case MODEMCMD_LISTEN:
+        case CMD::MODEM_LISTEN:
             rs232_listen();
             break;
-        case MODEMCMD_UNLISTEN:
+        case CMD::MODEM_UNLISTEN:
             rs232_unlisten();
             break;
-        case MODEMCMD_BAUDRATELOCK:
+        case CMD::MODEM_BAUDRATELOCK:
             rs232_baudlock();
             break;
-        case MODEMCMD_AUTOANSWER:
+        case CMD::MODEM_AUTOANSWER:
             rs232_autoanswer();
             break;
-        case MODEMCMD_STATUS:
+        case CMD::MODEM_STATUS:
             rs232_ack();
             rs232_status();
             break;
-        case MODEMCMD_WRITE:
+        case CMD::MODEM_WRITE:
             rs232_ack();
             rs232_write();
             break;
-        case MODEMCMD_STREAM:
+        case CMD::MODEM_STREAM:
             rs232_ack();
             rs232_stream();
             break;

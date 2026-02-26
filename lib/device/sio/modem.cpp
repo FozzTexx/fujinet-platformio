@@ -231,14 +231,14 @@ void modem::sio_send_firmware(uint8_t loadcommand)
     const char *firmware;
     int firmware_size = 0;
 
-    if (loadcommand == MODEMCMD_LOAD_RELOCATOR)
+    if (loadcommand == CMD::MODEM_LOAD_RELOCATOR)
     {
         firmware = FIRMWARE_850RELOCATOR;
         firmware_size = fnSystem.load_firmware(firmware, NULL);
     }
     else
     {
-        if (loadcommand == MODEMCMD_LOAD_HANDLER)
+        if (loadcommand == CMD::MODEM_LOAD_HANDLER)
         {
             firmware = FIRMWARE_850HANDLER;
             firmware_size = fnSystem.load_firmware(firmware, NULL);
@@ -268,7 +268,7 @@ void modem::sio_send_firmware(uint8_t loadcommand)
     // Send it
 
     Debug_printf("Modem sending %d bytes of %s code\n", codesize,
-                 loadcommand == MODEMCMD_LOAD_RELOCATOR ? "relocator" : "handler");
+                 loadcommand == CMD::MODEM_LOAD_RELOCATOR ? "relocator" : "handler");
 
     bus_to_computer(code, codesize, false);
 
@@ -1885,17 +1885,17 @@ void modem::sio_process(uint32_t commanddata, uint8_t checksum)
 
         switch (cmdFrame.comnd)
         {
-        case MODEMCMD_LOAD_RELOCATOR:
+        case CMD::MODEM_LOAD_RELOCATOR:
             Debug_printf("MODEM $21 RELOCATOR #%d\n", ++count_ReqRelocator);
             sio_send_firmware(cmdFrame.comnd);
             break;
 
-        case MODEMCMD_LOAD_HANDLER:
+        case CMD::MODEM_LOAD_HANDLER:
             Debug_printf("MODEM $26 HANDLER DL #%d\n", ++count_ReqHandler);
             sio_send_firmware(cmdFrame.comnd);
             break;
 
-        case MODEMCMD_TYPE1_POLL:
+        case CMD::MODEM_TYPE1_POLL:
             Debug_printf("MODEM TYPE 1 POLL #%d\n", ++count_PollType1);
             // The 850 is only supposed to respond to this if AUX1 = 1 or on the 26th poll attempt
             if (cmdFrame.aux1 == 1 || count_PollType1 == 16)
@@ -1905,43 +1905,43 @@ void modem::sio_process(uint32_t commanddata, uint8_t checksum)
             }
             break;
 
-        case MODEMCMD_TYPE3_POLL:
+        case CMD::MODEM_TYPE3_POLL:
             sio_poll_3(cmdFrame.device, cmdFrame.aux1, cmdFrame.aux2);
             break;
 
-        case MODEMCMD_CONTROL:
+        case CMD::MODEM_CONTROL:
             sio_ack();
             sio_control();
             break;
-        case MODEMCMD_CONFIGURE:
+        case CMD::MODEM_CONFIGURE:
             sio_ack();
             sio_config();
             break;
-        case MODEMCMD_SET_DUMP:
+        case CMD::MODEM_SET_DUMP:
             sio_ack();
             sio_set_dump();
             break;
-        case MODEMCMD_LISTEN:
+        case CMD::MODEM_LISTEN:
             sio_listen();
             break;
-        case MODEMCMD_UNLISTEN:
+        case CMD::MODEM_UNLISTEN:
             sio_unlisten();
             break;
-        case MODEMCMD_BAUDRATELOCK:
+        case CMD::MODEM_BAUDRATELOCK:
             sio_baudlock();
             break;
-        case MODEMCMD_AUTOANSWER:
+        case CMD::MODEM_AUTOANSWER:
             sio_autoanswer();
             break;
-        case MODEMCMD_STATUS:
+        case CMD::MODEM_STATUS:
             sio_ack();
             sio_status();
             break;
-        case MODEMCMD_WRITE:
+        case CMD::MODEM_WRITE:
             sio_late_ack();
             sio_write();
             break;
-        case MODEMCMD_STREAM:
+        case CMD::MODEM_STREAM:
             sio_ack();
             sio_stream();
             break;

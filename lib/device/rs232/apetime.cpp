@@ -12,10 +12,6 @@
 #define unsetenv(name) _putenv_s(name, "")
 #endif /* _WIN32 */
 
-#define RS232_APETIMECMD_GETTIME 0x93
-#define RS232_APETIMECMD_SETTZ 0x99
-#define RS232_APETIMECMD_GETTZTIME 0x9A
-
 char * ape_timezone = NULL;
 
 void rs232ApeTime::_rs232_get_time(bool use_timezone)
@@ -95,15 +91,15 @@ void rs232ApeTime::rs232_process(cmdFrame_t *cmd_ptr)
     cmdFrame = *cmd_ptr;
     switch (cmdFrame.comnd)
     {
-    case RS232_APETIMECMD_GETTIME:
+    case CMD::APETIME_GETTIME:
         rs232_ack();
         _rs232_get_time(false);
         break;
-    case RS232_APETIMECMD_SETTZ:
+    case CMD::APETIME_SETTZ:
         rs232_ack();
         _rs232_set_tz();
         break;
-    case RS232_APETIMECMD_GETTZTIME:
+    case CMD::APETIME_GETTZTIME:
         rs232_ack();
         _rs232_get_time(true);
         break;

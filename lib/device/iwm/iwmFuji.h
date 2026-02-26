@@ -24,7 +24,7 @@ using IWMStatusHandlers = std::function<void()>;
 class iwmFuji : public fujiDevice
 {
 private:
-    // Response to SIO_FUJICMD_GET_SCAN_RESULT
+    // Response to SIO_CMD::FUJI_GET_SCAN_RESULT
     struct
     {
         char ssid[MAX_SSID_LEN + 1];

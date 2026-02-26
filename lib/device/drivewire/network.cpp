@@ -1036,78 +1036,78 @@ void drivewireNetwork::process()
 
     switch (cmdFrame.comnd)
     {
-    case NETCMD_DEVICE_READY:
+    case CMD::NET_DEVICE_READY:
         ready(); // Yes.
         break;
-    case NETCMD_SEND_RESPONSE:
+    case CMD::NET_SEND_RESPONSE:
         send_response();
         break;
-    case NETCMD_SEND_ERROR:
+    case CMD::NET_SEND_ERROR:
         send_error();
         break;
-    case NETCMD_OPEN:
+    case CMD::NET_OPEN:
         open();
         break;
-    case NETCMD_CLOSE:
+    case CMD::NET_CLOSE:
         close();
         break;
-    case NETCMD_READ:
+    case CMD::NET_READ:
         read();
         break;
-    case NETCMD_WRITE:
+    case CMD::NET_WRITE:
         write();
         break;
-    case NETCMD_STATUS:
+    case CMD::NET_STATUS:
         status();
         break;
 
-    case NETCMD_PARSE:
+    case CMD::NET_PARSE:
         parse_json();
         break;
-    case NETCMD_TRANSLATION:
+    case CMD::NET_TRANSLATION:
         set_translation();
         break;
-    case NETCMD_CHANNEL_MODE:
+    case CMD::NET_CHANNEL_MODE:
         set_channel_mode();
         break;
 
-    case NETCMD_GETCWD:
+    case CMD::NET_GETCWD:
         get_prefix();
         break;
 
-    case NETCMD_CHDIR:
+    case CMD::NET_CHDIR:
         set_prefix();
         return;
-    case NETCMD_QUERY:
+    case CMD::NET_QUERY:
         json_query();
         return;
-    case NETCMD_USERNAME:
+    case CMD::NET_USERNAME:
         set_login();
         return;
-    case NETCMD_PASSWORD:
+    case CMD::NET_PASSWORD:
         set_password();
         return;
 
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_LOCK:
-    case NETCMD_UNLOCK:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
+    case CMD::NET_RENAME:
+    case CMD::NET_DELETE:
+    case CMD::NET_LOCK:
+    case CMD::NET_UNLOCK:
+    case CMD::NET_MKDIR:
+    case CMD::NET_RMDIR:
         process_fs();
         break;
 
-    case NETCMD_CONTROL:
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CONTROL:
+    case CMD::NET_CLOSE_CLIENT:
         process_tcp();
         break;
 
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         process_http();
         break;
 
-    case NETCMD_GET_REMOTE:
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_GET_REMOTE:
+    case CMD::NET_SET_DESTINATION:
         process_udp();
         break;
 
@@ -1135,22 +1135,22 @@ void drivewireNetwork::process_fs()
     auto url = urlParser.get();
     switch (cmdFrame.comnd)
     {
-    case NETCMD_RENAME:
+    case CMD::NET_RENAME:
         err = fs->rename(url);
         break;
-    case NETCMD_DELETE:
+    case CMD::NET_DELETE:
         err = fs->del(url);
         break;
-    case NETCMD_LOCK:
+    case CMD::NET_LOCK:
         err = fs->lock(url);
         break;
-    case NETCMD_UNLOCK:
+    case CMD::NET_UNLOCK:
         err = fs->unlock(url);
         break;
-    case NETCMD_MKDIR:
+    case CMD::NET_MKDIR:
         err = fs->mkdir(url);
         break;
-    case NETCMD_RMDIR:
+    case CMD::NET_RMDIR:
         err = fs->rmdir(url);
         break;
     default:
@@ -1179,10 +1179,10 @@ void drivewireNetwork::process_tcp()
     protocolError_t err;
     switch (cmdFrame.comnd)
     {
-    case NETCMD_CONTROL:
+    case CMD::NET_CONTROL:
         err = tcp->accept_connection();
         break;
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CLOSE_CLIENT:
         err = tcp->close_client_connection();
         break;
     default:
@@ -1211,7 +1211,7 @@ void drivewireNetwork::process_http()
     protocolError_t err;
     switch (cmdFrame.comnd)
     {
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
         break;
     default:
@@ -1241,13 +1241,13 @@ void drivewireNetwork::process_udp()
     switch (cmdFrame.comnd)
     {
 #ifndef ESP_PLATFORM
-    case NETCMD_GET_REMOTE:
+    case CMD::NET_GET_REMOTE:
         receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
         err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
         response += *receiveBuffer;
         break;
 #endif /* ESP_PLATFORM */
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
             size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));

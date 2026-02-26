@@ -523,64 +523,64 @@ void adamNetwork::adamnet_control_send()
 
     switch (cmd)
     {
-    case NETCMD_CHDIR:
+    case CMD::NET_CHDIR:
         set_prefix(pkt_len);
         break;
-    case NETCMD_GETCWD:
+    case CMD::NET_GETCWD:
         get_prefix();
         break;
-    case NETCMD_GET_ERROR:
+    case CMD::NET_GET_ERROR:
         get_error();
         break;
-    case NETCMD_OPEN:
+    case CMD::NET_OPEN:
         open(pkt_len);
         break;
-    case NETCMD_CLOSE:
+    case CMD::NET_CLOSE:
         close();
         break;
-    case NETCMD_STATUS:
+    case CMD::NET_STATUS:
         status();
         break;
-    case NETCMD_WRITE:
+    case CMD::NET_WRITE:
         write(pkt_len);
         break;
-    case NETCMD_CHANNEL_MODE:
+    case CMD::NET_CHANNEL_MODE:
         channel_mode();
         break;
-    case NETCMD_USERNAME: // login
+    case CMD::NET_USERNAME: // login
         set_login(pkt_len);
         break;
-    case NETCMD_PASSWORD: // password
+    case CMD::NET_PASSWORD: // password
         set_password(pkt_len);
         break;
 
-    case NETCMD_PARSE:
+    case CMD::NET_PARSE:
         json_parse();
         break;
-    case NETCMD_QUERY:
+    case CMD::NET_QUERY:
         json_query(cmd);
         break;
 
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_LOCK:
-    case NETCMD_UNLOCK:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
+    case CMD::NET_RENAME:
+    case CMD::NET_DELETE:
+    case CMD::NET_LOCK:
+    case CMD::NET_UNLOCK:
+    case CMD::NET_MKDIR:
+    case CMD::NET_RMDIR:
         process_fs(cmd, pkt_len);
         break;
 
-    case NETCMD_CONTROL:
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CONTROL:
+    case CMD::NET_CLOSE_CLIENT:
         process_tcp(cmd);
         break;
 
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         process_http(cmd);
         break;
 
-    case NETCMD_GET_REMOTE:
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_GET_REMOTE:
+    case CMD::NET_SET_DESTINATION:
         process_udp(cmd);
         break;
 
@@ -852,22 +852,22 @@ void adamNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
     auto url = urlParser.get();
     switch (cmd)
     {
-    case NETCMD_RENAME:
+    case CMD::NET_RENAME:
         cmd_err = fs->rename(url);
         break;
-    case NETCMD_DELETE:
+    case CMD::NET_DELETE:
         cmd_err = fs->del(url);
         break;
-    case NETCMD_LOCK:
+    case CMD::NET_LOCK:
         cmd_err = fs->lock(url);
         break;
-    case NETCMD_UNLOCK:
+    case CMD::NET_UNLOCK:
         cmd_err = fs->unlock(url);
         break;
-    case NETCMD_MKDIR:
+    case CMD::NET_MKDIR:
         cmd_err = fs->mkdir(url);
         break;
-    case NETCMD_RMDIR:
+    case CMD::NET_RMDIR:
         cmd_err = fs->rmdir(url);
         break;
     default:
@@ -894,7 +894,7 @@ void adamNetwork::process_tcp(fujiCommandID_t cmd)
     protocolError_t cmd_err;
     switch (cmd)
     {
-    case NETCMD_CONTROL:
+    case CMD::NET_CONTROL:
         cmd_err = PROTOCOL_ERROR::NONE;
 
         // Because we're not handling Adam bus very well, sometimes it
@@ -910,7 +910,7 @@ void adamNetwork::process_tcp(fujiCommandID_t cmd)
             }
         }
         break;
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CLOSE_CLIENT:
         cmd_err = tcp->close_client_connection();
         break;
     default:
@@ -937,7 +937,7 @@ void adamNetwork::process_http(fujiCommandID_t cmd)
     protocolError_t cmd_err;
     switch (cmd)
     {
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
         break;
     default:
@@ -965,13 +965,13 @@ void adamNetwork::process_udp(fujiCommandID_t cmd)
     switch (cmd)
     {
 #ifndef ESP_PLATFORM
-    case NETCMD_GET_REMOTE:
+    case CMD::NET_GET_REMOTE:
         receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
         cmd_err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
         response += *receiveBuffer;
         break;
 #endif /* ESP_PLATFORM */
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
             size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));

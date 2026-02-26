@@ -27,12 +27,6 @@
 #include "okimate_10.h"
 #include "png_printer.h"
 
-
-
-#define RS232_PRINTERCMD_PUT 0x50
-#define RS232_PRINTERCMD_WRITE 0x57
-#define RS232_PRINTERCMD_STATUS 0x53
-
 constexpr const char * const rs232Printer::printer_model_str[PRINTER_INVALID];
 
 rs232Printer::~rs232Printer()
@@ -290,15 +284,15 @@ void rs232Printer::rs232_process(cmdFrame_t *cmd_ptr)
         cmdFrame = *cmd_ptr;
         switch (cmdFrame.comnd)
         {
-        case RS232_PRINTERCMD_PUT: // Needed by A822 for graphics mode printing
-        case RS232_PRINTERCMD_WRITE:
+        case CMD::PRINTER_PUT: // Needed by A822 for graphics mode printing
+        case CMD::PRINTER_WRITE:
             _lastaux1 = cmd_ptr->aux1;
             _lastaux2 = cmd_ptr->aux2;
             _last_ms = fnSystem.millis();
             rs232_ack();
             rs232_write(_lastaux1, _lastaux2);
             break;
-        case RS232_PRINTERCMD_STATUS:
+        case CMD::PRINTER_STATUS:
             _last_ms = fnSystem.millis();
             rs232_ack();
             rs232_status();

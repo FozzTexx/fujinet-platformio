@@ -38,13 +38,13 @@ void lynxDisk::transaction_error()
 {
     Debug_println("transaction_error - send NAK");
     comlynx_response_nack();
-    
+
     // throw away any waiting bytes
     while (SYSTEM_BUS.available() > 0)
         SYSTEM_BUS.read();
 }
-    
-bool lynxDisk::transaction_get(void *data, size_t len) 
+
+bool lynxDisk::transaction_get(void *data, size_t len)
 {
     size_t remaining = recvbuffer_len - (recvbuf_pos - recvbuffer);
     size_t to_copy = (len > remaining) ? remaining : len;
@@ -73,7 +73,7 @@ void lynxDisk::transaction_put(const void *data, size_t len, bool err)
     // get ACK or NACK from Lynx, we're ignoring currently
     uint8_t r = comlynx_recv();
     #ifdef DEBUG
-            if (r == FUJICMD_ACK)
+            if (r == CMD::FUJI_ACK)
                 Debug_println("transaction_put - Lynx ACKed");
             else
                 Debug_println("transaction put - Lynx NAKed");
@@ -187,7 +187,7 @@ void lynxDisk::write_block(uint32_t block)
 
     blockNum = 0xFFFFFFFF;
     _media->_media_last_block = 0xFFFFFFFE;
-    
+
     transaction_complete();
 }
 
@@ -196,7 +196,7 @@ void lynxDisk::comlynx_process()
     unsigned char c;
     int32_t block;
 
- 
+
      // Get the entire payload from Lynx
     uint16_t len = comlynx_recv_length();
     Debug_printf("lynxDisk::comlynx_process - len: %ld, ", len);
@@ -218,11 +218,11 @@ void lynxDisk::comlynx_process()
 
     switch (c)
     {
-    case DISKCMD_READ:
+    case CMD::DISK_READ:
         transaction_get(&block, sizeof(block));
         read_block(block);
         break;
-    case DISKCMD_WRITE:
+    case CMD::DISK_WRITE:
         transaction_get(&block, sizeof(block));
         write_block(block);
         break;

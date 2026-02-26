@@ -926,76 +926,76 @@ void sioFuji::sio_process(uint32_t commanddata, uint8_t checksum)
 
     switch (cmdFrame.comnd)
     {
-    case FUJICMD_HSIO_INDEX:
+    case CMD::FUJI_HSIO_INDEX:
         sio_high_speed();
         break;
-    case FUJICMD_SET_HSIO_INDEX:
+    case CMD::FUJI_SET_HSIO_INDEX:
         sio_set_hsio_index();
         break;
-    case FUJICMD_STATUS:
+    case CMD::FUJI_STATUS:
         sio_status();
         break;
-    case FUJICMD_RESET:
+    case CMD::FUJI_RESET:
         fujicmd_reset();
         break;
-    case FUJICMD_SCAN_NETWORKS:
+    case CMD::FUJI_SCAN_NETWORKS:
         fujicmd_net_scan_networks();
         break;
-    case FUJICMD_GET_SCAN_RESULT:
+    case CMD::FUJI_GET_SCAN_RESULT:
         fujicmd_net_scan_result(cmdFrame.aux1);
         break;
-    case FUJICMD_SET_SSID:
+    case CMD::FUJI_SET_SSID:
         sio_net_set_ssid();
         break;
-    case FUJICMD_GET_SSID:
+    case CMD::FUJI_GET_SSID:
         fujicmd_net_get_ssid();
         break;
-    case FUJICMD_GET_WIFISTATUS:
+    case CMD::FUJI_GET_WIFISTATUS:
         fujicmd_net_get_wifi_status();
         break;
-    case FUJICMD_MOUNT_HOST:
+    case CMD::FUJI_MOUNT_HOST:
         fujicmd_mount_host_success(cmdFrame.aux1);
         break;
-    case FUJICMD_MOUNT_IMAGE:
+    case CMD::FUJI_MOUNT_IMAGE:
         fujicmd_mount_disk_image_success(cmdFrame.aux1, (disk_access_flags_t) cmdFrame.aux2);
         break;
-    case FUJICMD_OPEN_DIRECTORY:
+    case CMD::FUJI_OPEN_DIRECTORY:
         fujicmd_open_directory_success(cmdFrame.aux1);
         break;
-    case FUJICMD_READ_DIR_ENTRY:
+    case CMD::FUJI_READ_DIR_ENTRY:
         fujicmd_read_directory_entry(cmdFrame.aux1, cmdFrame.aux2);
         break;
-    case FUJICMD_CLOSE_DIRECTORY:
+    case CMD::FUJI_CLOSE_DIRECTORY:
         fujicmd_close_directory();
         break;
-    case FUJICMD_GET_DIRECTORY_POSITION:
+    case CMD::FUJI_GET_DIRECTORY_POSITION:
         fujicmd_get_directory_position();
         break;
-    case FUJICMD_SET_DIRECTORY_POSITION:
+    case CMD::FUJI_SET_DIRECTORY_POSITION:
         fujicmd_set_directory_position(le16toh(cmdFrame.aux12));
         break;
-    case FUJICMD_READ_HOST_SLOTS:
+    case CMD::FUJI_READ_HOST_SLOTS:
         fujicmd_read_host_slots();
         break;
-    case FUJICMD_WRITE_HOST_SLOTS:
+    case CMD::FUJI_WRITE_HOST_SLOTS:
         fujicmd_write_host_slots();
         break;
-    case FUJICMD_READ_DEVICE_SLOTS:
+    case CMD::FUJI_READ_DEVICE_SLOTS:
         fujicmd_read_device_slots();
         break;
-    case FUJICMD_WRITE_DEVICE_SLOTS:
+    case CMD::FUJI_WRITE_DEVICE_SLOTS:
         fujicmd_write_device_slots();
         break;
-    case FUJICMD_GET_WIFI_ENABLED:
+    case CMD::FUJI_GET_WIFI_ENABLED:
         fujicmd_net_get_wifi_enabled();
         break;
-    case FUJICMD_SET_BAUDRATE:
+    case CMD::FUJI_SET_BAUDRATE:
         sio_set_baudrate();
         break;
-    case FUJICMD_UNMOUNT_IMAGE:
+    case CMD::FUJI_UNMOUNT_IMAGE:
         fujicmd_unmount_disk_image_success(cmdFrame.aux1);
         break;
-    case FUJICMD_GET_ADAPTERCONFIG:
+    case CMD::FUJI_GET_ADAPTERCONFIG:
         // THIS IS STILL NEEDED FOR BACKWARDS COMPATIBILITY WITH
         // FUJINET-LIB THAT SENDS 0xE8 FOR ADAPTER_CONFIG_EXTENDED
         // WITH 0x01 IN THE AUX1 BYTE
@@ -1004,117 +1004,117 @@ void sioFuji::sio_process(uint32_t commanddata, uint8_t checksum)
         else
             fujicmd_get_adapter_config();
         break;
-    case FUJICMD_GET_ADAPTERCONFIG_EXTENDED:
+    case CMD::FUJI_GET_ADAPTERCONFIG_EXTENDED:
         fujicmd_get_adapter_config_extended();
         break;
-    case FUJICMD_NEW_DISK:
+    case CMD::FUJI_NEW_DISK:
         sio_new_disk();
         break;
-    case FUJICMD_UNMOUNT_HOST:
+    case CMD::FUJI_UNMOUNT_HOST:
         fujicmd_unmount_host_success(cmdFrame.aux1);
         break;
-    case FUJICMD_SET_DEVICE_FULLPATH:
+    case CMD::FUJI_SET_DEVICE_FULLPATH:
         fujicmd_set_device_filename_success(cmdFrame.aux1, cmdFrame.aux2 >> 4,
                                             (disk_access_flags_t) (cmdFrame.aux2 & 0x0F));
         break;
-    case FUJICMD_SET_HOST_PREFIX:
+    case CMD::FUJI_SET_HOST_PREFIX:
         fujicmd_set_host_prefix(cmdFrame.aux1);
         break;
-    case FUJICMD_GET_HOST_PREFIX:
+    case CMD::FUJI_GET_HOST_PREFIX:
         fujicmd_get_host_prefix(cmdFrame.aux1);
         break;
-    case FUJICMD_SET_SIO_EXTERNAL_CLOCK:
+    case CMD::FUJI_SET_SIO_EXTERNAL_CLOCK:
         fujicmd_set_sio_external_clock(le16toh(cmdFrame.aux12));
         break;
-    case FUJICMD_WRITE_APPKEY:
+    case CMD::FUJI_WRITE_APPKEY:
         fujicmd_write_app_key(le16toh(cmdFrame.aux12),
                               get_value_or_default(mode_to_keysize, _current_appkey.mode, 64));
         break;
-    case FUJICMD_READ_APPKEY:
+    case CMD::FUJI_READ_APPKEY:
         fujicmd_read_app_key();
         break;
-    case FUJICMD_OPEN_APPKEY:
+    case CMD::FUJI_OPEN_APPKEY:
         fujicmd_open_app_key();
         break;
-    case FUJICMD_CLOSE_APPKEY:
+    case CMD::FUJI_CLOSE_APPKEY:
         fujicmd_close_app_key();
         break;
-    case FUJICMD_GET_DEVICE_FULLPATH:
+    case CMD::FUJI_GET_DEVICE_FULLPATH:
         fujicmd_get_device_filename(cmdFrame.aux1);
         break;
-    case FUJICMD_CONFIG_BOOT:
+    case CMD::FUJI_CONFIG_BOOT:
         fujicmd_set_boot_config(cmdFrame.aux1);
         break;
-    case FUJICMD_COPY_FILE:
+    case CMD::FUJI_COPY_FILE:
         sio_copy_file();
         break;
-    case FUJICMD_MOUNT_ALL:
+    case CMD::FUJI_MOUNT_ALL:
         fujicmd_mount_all_success();
         break;
-    case FUJICMD_SET_BOOT_MODE:
+    case CMD::FUJI_SET_BOOT_MODE:
         fujicmd_set_boot_mode(cmdFrame.aux1, MEDIATYPE_UNKNOWN, &bootdisk);
         break;
-    case FUJICMD_ENABLE_UDPSTREAM:
+    case CMD::FUJI_ENABLE_UDPSTREAM:
         fujicmd_enable_udpstream(le16toh(cmdFrame.aux12));
         break;
-    case FUJICMD_QRCODE_INPUT:
+    case CMD::FUJI_QRCODE_INPUT:
         sio_qrcode_input();
         break;
-    case FUJICMD_QRCODE_ENCODE:
+    case CMD::FUJI_QRCODE_ENCODE:
         sio_qrcode_encode();
         break;
-    case FUJICMD_QRCODE_LENGTH:
+    case CMD::FUJI_QRCODE_LENGTH:
         sio_qrcode_length();
         break;
-    case FUJICMD_QRCODE_OUTPUT:
+    case CMD::FUJI_QRCODE_OUTPUT:
         sio_qrcode_output();
         break;
-    case FUJICMD_BASE64_ENCODE_INPUT:
+    case CMD::FUJI_BASE64_ENCODE_INPUT:
         sio_base64_encode_input();
         break;
-    case FUJICMD_BASE64_ENCODE_COMPUTE:
+    case CMD::FUJI_BASE64_ENCODE_COMPUTE:
         sio_base64_encode_compute();
         break;
-    case FUJICMD_BASE64_ENCODE_LENGTH:
+    case CMD::FUJI_BASE64_ENCODE_LENGTH:
         sio_base64_encode_length();
         break;
-    case FUJICMD_BASE64_ENCODE_OUTPUT:
+    case CMD::FUJI_BASE64_ENCODE_OUTPUT:
         sio_base64_encode_output();
         break;
-    case FUJICMD_BASE64_DECODE_INPUT:
+    case CMD::FUJI_BASE64_DECODE_INPUT:
         sio_base64_decode_input();
         break;
-    case FUJICMD_BASE64_DECODE_COMPUTE:
+    case CMD::FUJI_BASE64_DECODE_COMPUTE:
         sio_base64_decode_compute();
         break;
-    case FUJICMD_BASE64_DECODE_LENGTH:
+    case CMD::FUJI_BASE64_DECODE_LENGTH:
         sio_base64_decode_length();
         break;
-    case FUJICMD_BASE64_DECODE_OUTPUT:
+    case CMD::FUJI_BASE64_DECODE_OUTPUT:
         sio_base64_decode_output();
         break;
-    case FUJICMD_HASH_INPUT:
+    case CMD::FUJI_HASH_INPUT:
         sio_hash_input();
         break;
-    case FUJICMD_HASH_COMPUTE:
+    case CMD::FUJI_HASH_COMPUTE:
         sio_hash_compute(true);
         break;
-    case FUJICMD_HASH_COMPUTE_NO_CLEAR:
+    case CMD::FUJI_HASH_COMPUTE_NO_CLEAR:
         sio_hash_compute(false);
         break;
-    case FUJICMD_HASH_LENGTH:
+    case CMD::FUJI_HASH_LENGTH:
         sio_hash_length();
         break;
-    case FUJICMD_HASH_OUTPUT:
+    case CMD::FUJI_HASH_OUTPUT:
         sio_hash_output();
         break;
-    case FUJICMD_HASH_CLEAR:
+    case CMD::FUJI_HASH_CLEAR:
         sio_hash_clear();
         break;
-    case FUJICMD_RANDOM_NUMBER:
+    case CMD::FUJI_RANDOM_NUMBER:
         sio_random_number();
         break;
-    case FUJICMD_GENERATE_GUID:
+    case CMD::FUJI_GENERATE_GUID:
         fujicmd_generate_guid();
         break;
     default:

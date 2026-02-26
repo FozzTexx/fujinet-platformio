@@ -366,13 +366,13 @@ void iwmNetwork::iwm_status(iwm_decoded_cmd_t cmd)
         send_status_dib_reply_packet();
         return;
         break;
-    case NETCMD_GETCWD:
+    case CMD::NET_GETCWD:
         get_prefix();
         break;
-    case NETCMD_READ:
+    case CMD::NET_READ:
         net_read();
         break;
-    case NETCMD_STATUS:
+    case CMD::NET_STATUS:
         status();
         break;
     }
@@ -585,64 +585,64 @@ void iwmNetwork::iwm_ctrl(iwm_decoded_cmd_t cmd)
 
     // Debug_printv("cmd (looking for network_unit in byte 6, i.e. hex[5]):\r\n%s\r\n", mstr::toHex(cmd.decoded, 9).c_str());
 
-    if (control_code != NETCMD_OPEN && current_network_data.json == nullptr) {
+    if (control_code != CMD::NET_OPEN && current_network_data.json == nullptr) {
         Debug_printv("control should not be called on a non-open channel - FN was probably reset");
     }
 
     switch (control_code)
     {
-    case NETCMD_CHDIR:
+    case CMD::NET_CHDIR:
         set_prefix();
         break;
-    case NETCMD_GETCWD:
+    case CMD::NET_GETCWD:
         get_prefix();
         break;
-    case NETCMD_OPEN:
+    case CMD::NET_OPEN:
         open();
         break;
-    case NETCMD_CLOSE:
+    case CMD::NET_CLOSE:
         close();
         break;
-    case NETCMD_WRITE:
+    case CMD::NET_WRITE:
         net_write();
         break;
-    case NETCMD_CHANNEL_MODE:
+    case CMD::NET_CHANNEL_MODE:
         channel_mode();
         break;
-    case NETCMD_USERNAME: // login
+    case CMD::NET_USERNAME: // login
         set_login();
         break;
-    case NETCMD_PASSWORD: // password
+    case CMD::NET_PASSWORD: // password
         set_password();
         break;
 
-    case NETCMD_PARSE:
+    case CMD::NET_PARSE:
         json_parse();
         break;
-    case NETCMD_QUERY:
+    case CMD::NET_QUERY:
         json_query(cmd);
         break;
 
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_LOCK:
-    case NETCMD_UNLOCK:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
+    case CMD::NET_RENAME:
+    case CMD::NET_DELETE:
+    case CMD::NET_LOCK:
+    case CMD::NET_UNLOCK:
+    case CMD::NET_MKDIR:
+    case CMD::NET_RMDIR:
         process_fs(control_code);
         break;
 
-    case NETCMD_CONTROL:
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CONTROL:
+    case CMD::NET_CLOSE_CLIENT:
         process_tcp(control_code);
         break;
 
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         process_http(control_code);
         break;
 
-    case NETCMD_GET_REMOTE:
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_GET_REMOTE:
+    case CMD::NET_SET_DESTINATION:
         process_udp(control_code);
         break;
 
@@ -793,22 +793,22 @@ void iwmNetwork::process_fs(fujiCommandID_t control_code)
     auto url = current_network_data.urlParser.get();
     switch (control_code)
     {
-    case NETCMD_RENAME:
+    case CMD::NET_RENAME:
         cmd_err = fs->rename(url);
         break;
-    case NETCMD_DELETE:
+    case CMD::NET_DELETE:
         cmd_err = fs->del(url);
         break;
-    case NETCMD_LOCK:
+    case CMD::NET_LOCK:
         cmd_err = fs->lock(url);
         break;
-    case NETCMD_UNLOCK:
+    case CMD::NET_UNLOCK:
         cmd_err = fs->unlock(url);
         break;
-    case NETCMD_MKDIR:
+    case CMD::NET_MKDIR:
         cmd_err = fs->mkdir(url);
         break;
-    case NETCMD_RMDIR:
+    case CMD::NET_RMDIR:
         cmd_err = fs->rmdir(url);
         break;
     default:
@@ -834,10 +834,10 @@ void iwmNetwork::process_tcp(fujiCommandID_t control_code)
     protocolError_t cmd_err;
     switch (control_code)
     {
-    case NETCMD_CONTROL:
+    case CMD::NET_CONTROL:
         cmd_err = tcp->accept_connection();
         break;
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CLOSE_CLIENT:
         cmd_err = tcp->close_client_connection();
         break;
     default:
@@ -863,7 +863,7 @@ void iwmNetwork::process_http(fujiCommandID_t control_code)
     protocolError_t cmd_err;
     switch (control_code)
     {
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
         break;
     default:
@@ -890,13 +890,13 @@ void iwmNetwork::process_udp(fujiCommandID_t control_code)
     switch (control_code)
     {
 #ifndef ESP_PLATFORM
-    case NETCMD_GET_REMOTE:
+    case CMD::NET_GET_REMOTE:
         cmd_err = udp->get_remote(data_buffer, SPECIAL_BUFFER_SIZE);
         SYSTEM_BUS.iwm_send_packet(id(), iwm_packet_type_t::data, 0,
                                    data_buffer, SPECIAL_BUFFER_SIZE);
         break;
 #endif /* ESP_PLATFORM */
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_SET_DESTINATION:
         {
             cmd_err = udp->set_destination(data_buffer, data_len);
             if (cmd_err != PROTOCOL_ERROR::NONE)

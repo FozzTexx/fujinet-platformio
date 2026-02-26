@@ -127,7 +127,7 @@ void rc2014Fuji::rc2014_net_scan_result()
 
     rc2014_send_ack();
 
-    // Response to FUJICMD_GET_SCAN_RESULT
+    // Response to CMD::FUJI_GET_SCAN_RESULT
     struct
     {
         char ssid[MAX_SSID_LEN+1];
@@ -159,7 +159,7 @@ void rc2014Fuji::rc2014_net_get_ssid()
 
     rc2014_send_ack();
 
-    // Response to FUJICMD_GET_SSID
+    // Response to CMD::FUJI_GET_SSID
     struct
     {
         char ssid[MAX_SSID_LEN+1];
@@ -201,7 +201,7 @@ void rc2014Fuji::rc2014_net_set_ssid()
 
         rc2014_send_ack();
 
-        // Data for FUJICMD_SET_SSID
+        // Data for CMD::FUJI_SET_SSID
         struct
         {
             char ssid[MAX_SSID_LEN+1];
@@ -591,7 +591,7 @@ void rc2014Fuji::rc2014_get_adapter_config()
 
     rc2014_send_ack();
 
-    // Response to FUJICMD_GET_ADAPTERCONFIG
+    // Response to CMD::FUJI_GET_ADAPTERCONFIG
     AdapterConfig cfg;
 
     memset(&cfg, 0, sizeof(cfg));
@@ -1301,172 +1301,172 @@ void rc2014Fuji::rc2014_process(uint32_t commanddata, uint8_t checksum)
 
     switch (cmdFrame.comnd)
     {
-    // case FUJICMD_STATUS:
+    // case CMD::FUJI_STATUS:
     //     rc2014_response_ack();
     //     break;
-    case FUJICMD_RESET:
+    case CMD::FUJI_RESET:
         rc2014_reset_fujinet();
         break;
-    case FUJICMD_SCAN_NETWORKS:
+    case CMD::FUJI_SCAN_NETWORKS:
         rc2014_net_scan_networks();
         break;
-    case FUJICMD_GET_SCAN_RESULT:
+    case CMD::FUJI_GET_SCAN_RESULT:
         rc2014_net_scan_result();
         break;
-    case FUJICMD_SET_SSID:
+    case CMD::FUJI_SET_SSID:
         rc2014_net_set_ssid();
         break;
-    case FUJICMD_GET_SSID:
+    case CMD::FUJI_GET_SSID:
         rc2014_net_get_ssid();
         break;
-    case FUJICMD_GET_WIFISTATUS:
+    case CMD::FUJI_GET_WIFISTATUS:
         rc2014_net_get_wifi_status();
         break;
-    case FUJICMD_MOUNT_HOST:
+    case CMD::FUJI_MOUNT_HOST:
         rc2014_mount_host();
         break;
-    case FUJICMD_MOUNT_IMAGE:
+    case CMD::FUJI_MOUNT_IMAGE:
         rc2014_disk_image_mount();
         break;
-    case FUJICMD_OPEN_DIRECTORY:
+    case CMD::FUJI_OPEN_DIRECTORY:
         rc2014_open_directory();
         break;
-    case FUJICMD_READ_DIR_ENTRY:
+    case CMD::FUJI_READ_DIR_ENTRY:
         rc2014_read_directory_entry();
         break;
-    case FUJICMD_CLOSE_DIRECTORY:
+    case CMD::FUJI_CLOSE_DIRECTORY:
         rc2014_close_directory();
         break;
-    case FUJICMD_GET_DIRECTORY_POSITION:
+    case CMD::FUJI_GET_DIRECTORY_POSITION:
         rc2014_get_directory_position();
         break;
-    case FUJICMD_SET_DIRECTORY_POSITION:
+    case CMD::FUJI_SET_DIRECTORY_POSITION:
         rc2014_set_directory_position();
         break;
-    case FUJICMD_READ_HOST_SLOTS:
+    case CMD::FUJI_READ_HOST_SLOTS:
         rc2014_read_host_slots();
         break;
-    case FUJICMD_WRITE_HOST_SLOTS:
+    case CMD::FUJI_WRITE_HOST_SLOTS:
         rc2014_write_host_slots();
         break;
-    case FUJICMD_READ_DEVICE_SLOTS:
+    case CMD::FUJI_READ_DEVICE_SLOTS:
         rc2014_read_device_slots();
         break;
-    case FUJICMD_WRITE_DEVICE_SLOTS:
+    case CMD::FUJI_WRITE_DEVICE_SLOTS:
         rc2014_write_device_slots();
         break;
-    //case FUJICMD_GET_WIFI_ENABLED:
+    //case CMD::FUJI_GET_WIFI_ENABLED:
     //    rc2014_net_get_wifi_enabled();
     //    break;
-    case FUJICMD_UNMOUNT_IMAGE:
+    case CMD::FUJI_UNMOUNT_IMAGE:
         rc2014_disk_image_umount();
         break;
-    case FUJICMD_GET_ADAPTERCONFIG:
+    case CMD::FUJI_GET_ADAPTERCONFIG:
         rc2014_get_adapter_config();
         break;
-    // case FUJICMD_NEW_DISK:
+    // case CMD::FUJI_NEW_DISK:
     //     rs232_ack();
     //     rs232_new_disk();
     //     break;
-    case FUJICMD_SET_DEVICE_FULLPATH:
+    case CMD::FUJI_SET_DEVICE_FULLPATH:
         rc2014_set_device_filename();
         break;
-    // case FUJICMD_SET_HOST_PREFIX:
+    // case CMD::FUJI_SET_HOST_PREFIX:
     //     rc2014_set_host_prefix();
     //     break;
-    // case FUJICMD_GET_HOST_PREFIX:
+    // case CMD::FUJI_GET_HOST_PREFIX:
     //     rc2014_get_host_prefix();
     //     break;
-    // case FUJICMD_WRITE_APPKEY:
+    // case CMD::FUJI_WRITE_APPKEY:
     //     rc2014_write_app_key();
     //     break;
-    // case FUJICMD_READ_APPKEY:
+    // case CMD::FUJI_READ_APPKEY:
     //     rc2014_read_app_key();
     //     break;
-    // case FUJICMD_OPEN_APPKEY:
+    // case CMD::FUJI_OPEN_APPKEY:
     //     rc2014_open_app_key();
     //     break;
-    // case FUJICMD_CLOSE_APPKEY:
+    // case CMD::FUJI_CLOSE_APPKEY:
     //     rc2014_close_app_key();
     //     break;
-    case FUJICMD_GET_DEVICE_FULLPATH:
+    case CMD::FUJI_GET_DEVICE_FULLPATH:
         rc2014_get_device_filename();
         break;
-    case FUJICMD_CONFIG_BOOT:
+    case CMD::FUJI_CONFIG_BOOT:
         rc2014_set_boot_config();
         break;
-    // case FUJICMD_COPY_FILE:
+    // case CMD::FUJI_COPY_FILE:
     //     rs232_ack();
     //     rs232_copy_file();
     //     break;
-    case FUJICMD_MOUNT_ALL:
+    case CMD::FUJI_MOUNT_ALL:
         rc2014_send_ack();
         mount_all();
         rc2014_send_complete();
         break;
-    // case FUJICMD_SET_BOOT_MODE:
+    // case CMD::FUJI_SET_BOOT_MODE:
     //     rs232_ack();
     //     rs232_set_boot_mode();
     //     break;
-    // case FUJICMD_ENABLE_UDPSTREAM:
+    // case CMD::FUJI_ENABLE_UDPSTREAM:
     //     rs232_ack();
     //     rs232_enable_udpstream();
     //     break;
-    case FUJICMD_ENABLE_DEVICE:
+    case CMD::FUJI_ENABLE_DEVICE:
         rc2014_enable_device();
         break;
-    case FUJICMD_DISABLE_DEVICE:
+    case CMD::FUJI_DISABLE_DEVICE:
         rc2014_disable_device();
         break;
-    // case FUJICMD_RANDOM_NUMBER:
+    // case CMD::FUJI_RANDOM_NUMBER:
         // rc2014_random_number();
         // break;
-    // case FUJICMD_GET_TIME:
+    // case CMD::FUJI_GET_TIME:
         // rc2014_get_time();
         // break;
-    case FUJICMD_DEVICE_ENABLE_STATUS:
+    case CMD::FUJI_DEVICE_ENABLE_STATUS:
         rc2014_device_enabled_status();
         break;
-    case FUJICMD_BASE64_ENCODE_INPUT:
+    case CMD::FUJI_BASE64_ENCODE_INPUT:
         rc2014_base64_encode_input();
         break;
-    case FUJICMD_BASE64_ENCODE_COMPUTE:
+    case CMD::FUJI_BASE64_ENCODE_COMPUTE:
         rc2014_base64_encode_compute();
         break;
-    case FUJICMD_BASE64_ENCODE_LENGTH:
+    case CMD::FUJI_BASE64_ENCODE_LENGTH:
         rc2014_base64_encode_length();
         break;
-    case FUJICMD_BASE64_ENCODE_OUTPUT:
+    case CMD::FUJI_BASE64_ENCODE_OUTPUT:
         rc2014_base64_encode_output();
         break;
-    case FUJICMD_BASE64_DECODE_INPUT:
+    case CMD::FUJI_BASE64_DECODE_INPUT:
         rc2014_base64_decode_input();
         break;
-    case FUJICMD_BASE64_DECODE_COMPUTE:
+    case CMD::FUJI_BASE64_DECODE_COMPUTE:
         rc2014_base64_decode_compute();
         break;
-    case FUJICMD_BASE64_DECODE_LENGTH:
+    case CMD::FUJI_BASE64_DECODE_LENGTH:
         rc2014_base64_decode_length();
         break;
-    case FUJICMD_BASE64_DECODE_OUTPUT:
+    case CMD::FUJI_BASE64_DECODE_OUTPUT:
         rc2014_base64_decode_output();
         break;
-    case FUJICMD_HASH_INPUT:
+    case CMD::FUJI_HASH_INPUT:
         rc2014_hash_input();
         break;
-    case FUJICMD_HASH_COMPUTE:
+    case CMD::FUJI_HASH_COMPUTE:
         rc2014_hash_compute(true);
         break;
-    case FUJICMD_HASH_COMPUTE_NO_CLEAR:
+    case CMD::FUJI_HASH_COMPUTE_NO_CLEAR:
         rc2014_hash_compute(false);
         break;
-    case FUJICMD_HASH_LENGTH:
+    case CMD::FUJI_HASH_LENGTH:
         rc2014_hash_length();
         break;
-    case FUJICMD_HASH_OUTPUT:
+    case CMD::FUJI_HASH_OUTPUT:
         rc2014_hash_output();
         break;
-    case FUJICMD_HASH_CLEAR:
+    case CMD::FUJI_HASH_CLEAR:
         rc2014_hash_clear();
         break;
     default:

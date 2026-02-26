@@ -213,117 +213,117 @@ void rs232Fuji::rs232_process(cmdFrame_t *cmd_ptr)
     cmdFrame = *cmd_ptr;
     switch (cmdFrame.comnd)
     {
-    case FUJICMD_STATUS:
+    case CMD::FUJI_STATUS:
         rs232_status();
         break;
-    case FUJICMD_RESET:
+    case CMD::FUJI_RESET:
         fujicmd_reset();
         break;
-    case FUJICMD_SCAN_NETWORKS:
+    case CMD::FUJI_SCAN_NETWORKS:
         fujicmd_net_scan_networks();
         break;
-    case FUJICMD_GET_SCAN_RESULT:
+    case CMD::FUJI_GET_SCAN_RESULT:
         fujicmd_net_scan_result(cmdFrame.aux1);
         break;
-    case FUJICMD_SET_SSID:
+    case CMD::FUJI_SET_SSID:
         rs232_net_set_ssid(cmdFrame.aux1);
         break;
-    case FUJICMD_GET_SSID:
+    case CMD::FUJI_GET_SSID:
         fujicmd_net_get_ssid();
         break;
-    case FUJICMD_GET_WIFISTATUS:
+    case CMD::FUJI_GET_WIFISTATUS:
         fujicmd_net_get_wifi_status();
         break;
-    case FUJICMD_MOUNT_HOST:
+    case CMD::FUJI_MOUNT_HOST:
         fujicmd_mount_host_success(cmdFrame.aux1);
         break;
-    case FUJICMD_MOUNT_IMAGE:
+    case CMD::FUJI_MOUNT_IMAGE:
         fujicmd_mount_disk_image_success(cmdFrame.aux1, (disk_access_flags_t) cmdFrame.aux2);
         break;
-    case FUJICMD_OPEN_DIRECTORY:
+    case CMD::FUJI_OPEN_DIRECTORY:
         fujicmd_open_directory_success(cmdFrame.aux1);
         break;
-    case FUJICMD_READ_DIR_ENTRY:
+    case CMD::FUJI_READ_DIR_ENTRY:
         fujicmd_read_directory_entry(cmdFrame.aux1, cmdFrame.aux2);
         break;
-    case FUJICMD_CLOSE_DIRECTORY:
+    case CMD::FUJI_CLOSE_DIRECTORY:
         fujicmd_close_directory();
         break;
-    case FUJICMD_GET_DIRECTORY_POSITION:
+    case CMD::FUJI_GET_DIRECTORY_POSITION:
         fujicmd_get_directory_position();
         break;
-    case FUJICMD_SET_DIRECTORY_POSITION:
+    case CMD::FUJI_SET_DIRECTORY_POSITION:
         fujicmd_set_directory_position(cmdFrame.aux1);
         break;
-    case FUJICMD_READ_HOST_SLOTS:
+    case CMD::FUJI_READ_HOST_SLOTS:
         fujicmd_read_host_slots();
         break;
-    case FUJICMD_WRITE_HOST_SLOTS:
+    case CMD::FUJI_WRITE_HOST_SLOTS:
         fujicmd_write_host_slots();
         break;
-    case FUJICMD_READ_DEVICE_SLOTS:
+    case CMD::FUJI_READ_DEVICE_SLOTS:
         fujicmd_read_device_slots();
         break;
-    case FUJICMD_WRITE_DEVICE_SLOTS:
+    case CMD::FUJI_WRITE_DEVICE_SLOTS:
         fujicmd_write_device_slots();
         break;
-    case FUJICMD_GET_WIFI_ENABLED:
+    case CMD::FUJI_GET_WIFI_ENABLED:
         fujicmd_net_get_wifi_enabled();
         break;
-    case FUJICMD_UNMOUNT_IMAGE:
+    case CMD::FUJI_UNMOUNT_IMAGE:
         fujicmd_unmount_disk_image_success(cmdFrame.aux1);
         break;
-    case FUJICMD_GET_ADAPTERCONFIG:
+    case CMD::FUJI_GET_ADAPTERCONFIG:
         fujicmd_get_adapter_config();
         break;
-    case FUJICMD_GET_ADAPTERCONFIG_EXTENDED:
+    case CMD::FUJI_GET_ADAPTERCONFIG_EXTENDED:
         fujicmd_get_adapter_config_extended();
         break;
-    case FUJICMD_NEW_DISK:
+    case CMD::FUJI_NEW_DISK:
         rs232_new_disk();
         break;
-    case FUJICMD_SET_DEVICE_FULLPATH:
+    case CMD::FUJI_SET_DEVICE_FULLPATH:
         fujicmd_set_device_filename_success(cmdFrame.aux1, cmdFrame.aux2,
                                             (disk_access_flags_t) cmdFrame.aux3);
         break;
-    case FUJICMD_SET_HOST_PREFIX:
+    case CMD::FUJI_SET_HOST_PREFIX:
         fujicmd_set_host_prefix(cmdFrame.aux1);
         break;
-    case FUJICMD_GET_HOST_PREFIX:
+    case CMD::FUJI_GET_HOST_PREFIX:
         fujicmd_get_host_prefix(cmdFrame.aux1);
         break;
-    case FUJICMD_WRITE_APPKEY:
+    case CMD::FUJI_WRITE_APPKEY:
         fujicmd_write_app_key(cmdFrame.aux1);
         break;
-    case FUJICMD_READ_APPKEY:
+    case CMD::FUJI_READ_APPKEY:
         fujicmd_read_app_key();
         break;
-    case FUJICMD_OPEN_APPKEY:
+    case CMD::FUJI_OPEN_APPKEY:
         fujicmd_open_app_key();
         break;
-    case FUJICMD_CLOSE_APPKEY:
+    case CMD::FUJI_CLOSE_APPKEY:
         fujicmd_close_app_key();
         break;
-    case FUJICMD_GET_DEVICE_FULLPATH:
+    case CMD::FUJI_GET_DEVICE_FULLPATH:
         fujicmd_get_device_filename(cmdFrame.aux1);
         break;
-    case FUJICMD_CONFIG_BOOT:
+    case CMD::FUJI_CONFIG_BOOT:
         fujicmd_set_boot_config(cmdFrame.aux1);
         break;
-    case FUJICMD_COPY_FILE:
+    case CMD::FUJI_COPY_FILE:
         rs232_copy_file();
         break;
-    case FUJICMD_MOUNT_ALL:
+    case CMD::FUJI_MOUNT_ALL:
         fujicmd_mount_all_success();
         break;
-    case FUJICMD_SET_BOOT_MODE:
+    case CMD::FUJI_SET_BOOT_MODE:
         fujicmd_set_boot_mode(cmdFrame.aux1, MEDIATYPE_UNKNOWN, &bootdisk);
         break;
-    case FUJICMD_DEVICE_READY:
+    case CMD::FUJI_DEVICE_READY:
         Debug_printf("FUJICMD DEVICE TEST\n");
         rs232_test();
         break;
-    case FUJICMD_GENERATE_GUID:
+    case CMD::FUJI_GENERATE_GUID:
         fujicmd_generate_guid();
         break;
     default:

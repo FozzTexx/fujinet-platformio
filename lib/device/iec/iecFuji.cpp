@@ -496,45 +496,45 @@ bool iecFuji::is_supported(uint8_t cmd)
 
     switch (cmd)
     {
-    case FUJICMD_CLOSE_APPKEY:
-    case FUJICMD_CLOSE_DIRECTORY:
-    case FUJICMD_CONFIG_BOOT:
-    case FUJICMD_GET_ADAPTERCONFIG_EXTENDED:
-    case FUJICMD_GET_ADAPTERCONFIG:
-    case FUJICMD_GET_DEVICE_FULLPATH:
-    case FUJICMD_GET_DIRECTORY_POSITION:
-    case FUJICMD_GET_SCAN_RESULT:
-    case FUJICMD_GET_SSID:
-    case FUJICMD_GET_WIFI_ENABLED:
-    case FUJICMD_GET_WIFISTATUS:
-    case FUJICMD_HASH_CLEAR:
-    case FUJICMD_HASH_COMPUTE_NO_CLEAR:
-    case FUJICMD_HASH_COMPUTE:
-    case FUJICMD_HASH_INPUT:
-    case FUJICMD_HASH_LENGTH:
-    case FUJICMD_HASH_OUTPUT:
-    case FUJICMD_GENERATE_GUID:
-    case FUJICMD_MOUNT_ALL:
-    case FUJICMD_MOUNT_HOST:
-    case FUJICMD_MOUNT_IMAGE:
-    case FUJICMD_OPEN_APPKEY:
-    case FUJICMD_OPEN_DIRECTORY:
-    case FUJICMD_READ_APPKEY:
-    case FUJICMD_READ_DEVICE_SLOTS:
-    case FUJICMD_READ_DIR_ENTRY:
-    case FUJICMD_READ_HOST_SLOTS:
-    case FUJICMD_RESET:
-    case FUJICMD_SCAN_NETWORKS:
-    case FUJICMD_SET_BOOT_MODE:
-    case FUJICMD_SET_DEVICE_FULLPATH:
-    case FUJICMD_SET_DIRECTORY_POSITION:
-    case FUJICMD_SET_SSID:
-    case FUJICMD_STATUS:
-    case FUJICMD_UNMOUNT_HOST:
-    case FUJICMD_UNMOUNT_IMAGE:
-    case FUJICMD_WRITE_APPKEY:
-    case FUJICMD_WRITE_DEVICE_SLOTS:
-    case FUJICMD_WRITE_HOST_SLOTS:
+    case CMD::FUJI_CLOSE_APPKEY:
+    case CMD::FUJI_CLOSE_DIRECTORY:
+    case CMD::FUJI_CONFIG_BOOT:
+    case CMD::FUJI_GET_ADAPTERCONFIG_EXTENDED:
+    case CMD::FUJI_GET_ADAPTERCONFIG:
+    case CMD::FUJI_GET_DEVICE_FULLPATH:
+    case CMD::FUJI_GET_DIRECTORY_POSITION:
+    case CMD::FUJI_GET_SCAN_RESULT:
+    case CMD::FUJI_GET_SSID:
+    case CMD::FUJI_GET_WIFI_ENABLED:
+    case CMD::FUJI_GET_WIFISTATUS:
+    case CMD::FUJI_HASH_CLEAR:
+    case CMD::FUJI_HASH_COMPUTE_NO_CLEAR:
+    case CMD::FUJI_HASH_COMPUTE:
+    case CMD::FUJI_HASH_INPUT:
+    case CMD::FUJI_HASH_LENGTH:
+    case CMD::FUJI_HASH_OUTPUT:
+    case CMD::FUJI_GENERATE_GUID:
+    case CMD::FUJI_MOUNT_ALL:
+    case CMD::FUJI_MOUNT_HOST:
+    case CMD::FUJI_MOUNT_IMAGE:
+    case CMD::FUJI_OPEN_APPKEY:
+    case CMD::FUJI_OPEN_DIRECTORY:
+    case CMD::FUJI_READ_APPKEY:
+    case CMD::FUJI_READ_DEVICE_SLOTS:
+    case CMD::FUJI_READ_DIR_ENTRY:
+    case CMD::FUJI_READ_HOST_SLOTS:
+    case CMD::FUJI_RESET:
+    case CMD::FUJI_SCAN_NETWORKS:
+    case CMD::FUJI_SET_BOOT_MODE:
+    case CMD::FUJI_SET_DEVICE_FULLPATH:
+    case CMD::FUJI_SET_DIRECTORY_POSITION:
+    case CMD::FUJI_SET_SSID:
+    case CMD::FUJI_STATUS:
+    case CMD::FUJI_UNMOUNT_HOST:
+    case CMD::FUJI_UNMOUNT_IMAGE:
+    case CMD::FUJI_WRITE_APPKEY:
+    case CMD::FUJI_WRITE_DEVICE_SLOTS:
+    case CMD::FUJI_WRITE_HOST_SLOTS:
         result = true;
         break;
     }
@@ -552,67 +552,67 @@ void iecFuji::process_raw_cmd_data()
 
     switch (current_fuji_cmd)
     {
-    case FUJICMD_GET_SCAN_RESULT:
+    case CMD::FUJI_GET_SCAN_RESULT:
         net_scan_result_raw();
         break;
-    case FUJICMD_SET_SSID:
+    case CMD::FUJI_SET_SSID:
         net_set_ssid_raw();
         break;
-    case FUJICMD_MOUNT_HOST:
+    case CMD::FUJI_MOUNT_HOST:
         mount_host_raw();
         break;
-    case FUJICMD_MOUNT_IMAGE:
+    case CMD::FUJI_MOUNT_IMAGE:
         mount_disk_image_raw();
         break;
-    case FUJICMD_OPEN_DIRECTORY:
+    case CMD::FUJI_OPEN_DIRECTORY:
         open_directory_raw();
         break;
-    case FUJICMD_READ_DIR_ENTRY:
+    case CMD::FUJI_READ_DIR_ENTRY:
         read_directory_entry_raw();
         break;
-    case FUJICMD_WRITE_DEVICE_SLOTS:
+    case CMD::FUJI_WRITE_DEVICE_SLOTS:
         write_device_slots_raw();
         break;
-    case FUJICMD_UNMOUNT_IMAGE:
+    case CMD::FUJI_UNMOUNT_IMAGE:
         unmount_disk_image_raw();
         break;
-    case FUJICMD_UNMOUNT_HOST:
+    case CMD::FUJI_UNMOUNT_HOST:
         unmount_host_raw();
         break;
-    case FUJICMD_SET_DIRECTORY_POSITION:
+    case CMD::FUJI_SET_DIRECTORY_POSITION:
         set_directory_position_raw();
         break;
-    case FUJICMD_SET_DEVICE_FULLPATH:
+    case CMD::FUJI_SET_DEVICE_FULLPATH:
         set_device_filename_raw();
         break;
-    case FUJICMD_WRITE_APPKEY:
+    case CMD::FUJI_WRITE_APPKEY:
         write_app_key_raw();
         break;
-    case FUJICMD_OPEN_APPKEY:
+    case CMD::FUJI_OPEN_APPKEY:
         open_app_key_raw();
         break;
-    case FUJICMD_GET_DEVICE_FULLPATH:
+    case CMD::FUJI_GET_DEVICE_FULLPATH:
         get_device_filename_raw();
         break;
-    case FUJICMD_CONFIG_BOOT:
+    case CMD::FUJI_CONFIG_BOOT:
         set_boot_config_raw();
         break;
-    case FUJICMD_SET_BOOT_MODE:
+    case CMD::FUJI_SET_BOOT_MODE:
         set_boot_mode_raw();
         break;
-    case FUJICMD_HASH_COMPUTE_NO_CLEAR:
+    case CMD::FUJI_HASH_COMPUTE_NO_CLEAR:
         hash_compute_raw(false);
         break;
-    case FUJICMD_HASH_COMPUTE:
+    case CMD::FUJI_HASH_COMPUTE:
         hash_compute_raw(true);
         break;
-    case FUJICMD_HASH_INPUT:
+    case CMD::FUJI_HASH_INPUT:
         hash_input_raw();
         break;
-    case FUJICMD_HASH_LENGTH:
+    case CMD::FUJI_HASH_LENGTH:
         hash_length_raw();
         break;
-    case FUJICMD_HASH_OUTPUT:
+    case CMD::FUJI_HASH_OUTPUT:
         hash_output_raw();
         break;
     default:
@@ -639,58 +639,58 @@ void iecFuji::process_immediate_raw_cmds()
 
     switch (current_fuji_cmd)
     {
-    case FUJICMD_RESET:
+    case CMD::FUJI_RESET:
         fujicmd_reset();
         break;
-    case FUJICMD_GET_SSID:
+    case CMD::FUJI_GET_SSID:
         net_get_ssid_raw();
         break;
-    case FUJICMD_SCAN_NETWORKS:
+    case CMD::FUJI_SCAN_NETWORKS:
         net_scan_networks_raw();
         break;
-    case FUJICMD_GET_WIFISTATUS:
+    case CMD::FUJI_GET_WIFISTATUS:
         net_get_wifi_status_raw();
         break;
-    case FUJICMD_GET_WIFI_ENABLED:
+    case CMD::FUJI_GET_WIFI_ENABLED:
         net_get_wifi_enabled_raw();
         break;
-    case FUJICMD_CLOSE_DIRECTORY:
+    case CMD::FUJI_CLOSE_DIRECTORY:
         close_directory_raw();
         break;
-    case FUJICMD_READ_HOST_SLOTS:
+    case CMD::FUJI_READ_HOST_SLOTS:
         read_host_slots_raw();
         break;
-    case FUJICMD_WRITE_HOST_SLOTS:
+    case CMD::FUJI_WRITE_HOST_SLOTS:
         write_host_slots_raw();
         break;
-    case FUJICMD_READ_DEVICE_SLOTS:
+    case CMD::FUJI_READ_DEVICE_SLOTS:
         read_device_slots_raw();
         break;
-    case FUJICMD_GET_ADAPTERCONFIG:
+    case CMD::FUJI_GET_ADAPTERCONFIG:
         get_adapter_config_raw();
         break;
-    case FUJICMD_GET_ADAPTERCONFIG_EXTENDED:
+    case CMD::FUJI_GET_ADAPTERCONFIG_EXTENDED:
         get_adapter_config_extended_raw();
         break;
-    case FUJICMD_GET_DIRECTORY_POSITION:
+    case CMD::FUJI_GET_DIRECTORY_POSITION:
         get_directory_position_raw();
         break;
-    case FUJICMD_READ_APPKEY:
+    case CMD::FUJI_READ_APPKEY:
         read_app_key_raw();
         break;
-    case FUJICMD_CLOSE_APPKEY:
+    case CMD::FUJI_CLOSE_APPKEY:
         close_app_key_raw();
         break;
-    case FUJICMD_STATUS:
+    case CMD::FUJI_STATUS:
         get_status_raw();
         break;
-    case FUJICMD_MOUNT_ALL:
+    case CMD::FUJI_MOUNT_ALL:
         fujicmd_mount_all_success();
         break;
-    case FUJICMD_HASH_CLEAR:
+    case CMD::FUJI_HASH_CLEAR:
         hash_clear();
         break;
-    case FUJICMD_GENERATE_GUID:
+    case CMD::FUJI_GENERATE_GUID:
         fujicmd_generate_guid();
         response = mstr::toPETSCII2(response);
         break;

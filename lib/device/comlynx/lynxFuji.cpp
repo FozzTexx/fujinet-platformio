@@ -86,13 +86,13 @@ void lynxFuji::transaction_error()
 {
     Debug_println("transaction_error - send NAK");
     comlynx_response_nack();
-    
+
     // throw away any waiting bytes
     while (SYSTEM_BUS.available() > 0)
         SYSTEM_BUS.read();
 }
-    
-bool lynxFuji::transaction_get(void *data, size_t len) 
+
+bool lynxFuji::transaction_get(void *data, size_t len)
 {
     size_t remaining = recvbuffer_len - (recvbuf_pos - recvbuffer);
     size_t to_copy = (len > remaining) ? remaining : len;
@@ -123,7 +123,7 @@ void lynxFuji::transaction_put(const void *data, size_t len, bool err)
     uint8_t r = comlynx_recv();
     #ifdef DEBUG
         //if (!t)
-            if (r == FUJICMD_ACK)
+            if (r == CMD::FUJI_ACK)
                 Debug_println("transaction_put - Lynx ACKed");
             else
                 Debug_println("transaction put - Lynx NAKed");
@@ -260,7 +260,7 @@ void lynxFuji::setup()
 
     //SYSTEM_BUS.addDevice(&_fnDisks[0].disk_dev, FUJI_DEVICEID_DISK);
     SYSTEM_BUS.addDevice(theFuji, FUJI_DEVICEID_FUJINET);   // Fuji becomes the gateway device.
-    
+
     theNetwork = new lynxNetwork();
     SYSTEM_BUS.addDevice(theNetwork, FUJI_DEVICEID_NETWORK);
 }
@@ -308,7 +308,7 @@ void lynxFuji::comlynx_process()
 
     // Reset the recvbuffer
     //recvbuffer_len = 0;         // happens in recv_length, but may remove from there -SJ
-    
+
     // Get the entire payload from Lynx
     uint16_t len = comlynx_recv_length();
     Debug_printf("lynxFuji::comlynx_process - len: %ld, ", len);
@@ -330,39 +330,39 @@ void lynxFuji::comlynx_process()
 
     switch (c)
     {
-    case FUJICMD_RESET:
+    case CMD::FUJI_RESET:
         fujicmd_reset();
         break;
-    case FUJICMD_GET_SSID:
+    case CMD::FUJI_GET_SSID:
         fujicmd_net_get_ssid();
         break;
-    case FUJICMD_SCAN_NETWORKS:
+    case CMD::FUJI_SCAN_NETWORKS:
         fujicmd_net_scan_networks();
         break;
-    case FUJICMD_GET_SCAN_RESULT:
+    case CMD::FUJI_GET_SCAN_RESULT:
         int8_t index;
         transaction_get(&index, sizeof(index));
         fujicmd_net_scan_result(index);
         break;
-    case FUJICMD_SET_SSID:
+    case CMD::FUJI_SET_SSID:
         {
             SSIDConfig cfg;
             transaction_get(&cfg, sizeof(cfg));
             fujicmd_net_set_ssid_success(cfg.ssid, cfg.password, false);
         }
         break;
-    case FUJICMD_GET_WIFISTATUS:
+    case CMD::FUJI_GET_WIFISTATUS:
         fujicmd_net_get_wifi_status();
         break;
-    case FUJICMD_MOUNT_HOST:   
+    case CMD::FUJI_MOUNT_HOST:
         transaction_get(&slot, sizeof(slot));
         fujicmd_mount_host_success(slot);
         break;
-    case FUJICMD_UNMOUNT_HOST:
+    case CMD::FUJI_UNMOUNT_HOST:
         transaction_get(&slot, sizeof(slot));
         fujicmd_unmount_host_success(slot);
         break;
-    case FUJICMD_MOUNT_IMAGE:
+    case CMD::FUJI_MOUNT_IMAGE:
         {
             uint8_t mode;
             transaction_get(&slot, sizeof(slot));
@@ -370,11 +370,11 @@ void lynxFuji::comlynx_process()
             fujicmd_mount_disk_image_success(slot, (disk_access_flags_t) mode);
         }
         break;
-    case FUJICMD_OPEN_DIRECTORY:
+    case CMD::FUJI_OPEN_DIRECTORY:
         transaction_get(&slot, sizeof(slot));
         fujicmd_open_directory_success(slot);
         break;
-    case FUJICMD_READ_DIR_ENTRY:
+    case CMD::FUJI_READ_DIR_ENTRY:
         {
             uint8_t maxlen;
             uint8_t addtl;
@@ -383,42 +383,42 @@ void lynxFuji::comlynx_process()
             fujicmd_read_directory_entry(maxlen, addtl);
         }
         break;
-    case FUJICMD_CLOSE_DIRECTORY:
+    case CMD::FUJI_CLOSE_DIRECTORY:
         fujicmd_close_directory();
         break;
-    case FUJICMD_READ_HOST_SLOTS:
+    case CMD::FUJI_READ_HOST_SLOTS:
         fujicmd_read_host_slots();
         break;
-    case FUJICMD_WRITE_HOST_SLOTS:
+    case CMD::FUJI_WRITE_HOST_SLOTS:
         fujicmd_write_host_slots();
         break;
-    case FUJICMD_READ_DEVICE_SLOTS:
+    case CMD::FUJI_READ_DEVICE_SLOTS:
         fujicmd_read_device_slots();
         break;
-    case FUJICMD_WRITE_DEVICE_SLOTS:
+    case CMD::FUJI_WRITE_DEVICE_SLOTS:
         fujicmd_write_device_slots();
         break;
-    case FUJICMD_UNMOUNT_IMAGE:
+    case CMD::FUJI_UNMOUNT_IMAGE:
         transaction_get(&slot, sizeof(slot));
         fujicmd_unmount_disk_image_success(slot);
         break;
-    case FUJICMD_GET_ADAPTERCONFIG:
+    case CMD::FUJI_GET_ADAPTERCONFIG:
         fujicmd_get_adapter_config();
         break;
-    case FUJICMD_NEW_DISK:
+    case CMD::FUJI_NEW_DISK:
         comlynx_new_disk();
         break;
-    case FUJICMD_GET_DIRECTORY_POSITION:
+    case CMD::FUJI_GET_DIRECTORY_POSITION:
         fujicmd_get_directory_position();
         break;
-    case FUJICMD_SET_DIRECTORY_POSITION:
+    case CMD::FUJI_SET_DIRECTORY_POSITION:
         {
             int16_t pos;
             transaction_get(&pos, sizeof(pos));
             fujicmd_set_directory_position(pos);
         }
         break;
-    case FUJICMD_SET_DEVICE_FULLPATH:
+    case CMD::FUJI_SET_DEVICE_FULLPATH:
         {
             uint8_t deviceSlot;
             transaction_get(&deviceSlot, sizeof(deviceSlot));
@@ -430,41 +430,41 @@ void lynxFuji::comlynx_process()
             fujicmd_set_device_filename_success(deviceSlot, _fnDisks[deviceSlot].host_slot, _fnDisks[deviceSlot].access_mode);
         }
         break;
-    case FUJICMD_GET_DEVICE_FULLPATH:
+    case CMD::FUJI_GET_DEVICE_FULLPATH:
         transaction_get(&slot, sizeof(slot));
         fujicmd_get_device_filename(slot);
         break;
-    /*case FUJICMD_CONFIG_BOOT:
+    /*case CMD::FUJI_CONFIG_BOOT:
         comlynx_set_boot_config();
         break;
-    case FUJICMD_ENABLE_DEVICE:
+    case CMD::FUJI_ENABLE_DEVICE:
         comlynx_enable_device();
         break;
-    case FUJICMD_DISABLE_DEVICE:
+    case CMD::FUJI_DISABLE_DEVICE:
         comlynx_disable_device();
         break;*/
-    case FUJICMD_MOUNT_ALL:
+    case CMD::FUJI_MOUNT_ALL:
         fujicmd_mount_all_success();
         break;
-    /*case FUJICMD_SET_BOOT_MODE:
+    /*case CMD::FUJI_SET_BOOT_MODE:
         fujicmd_set_boot_mode(*recvbuf_pos, MEDIATYPE_UNKNOWN, &bootdisk);
         break;*/
-    case FUJICMD_WRITE_APPKEY:
+    case CMD::FUJI_WRITE_APPKEY:
         fujicmd_write_app_key(0, 0);
         break;
-    case FUJICMD_READ_APPKEY:
+    case CMD::FUJI_READ_APPKEY:
         fujicmd_read_app_key();
         break;
-    case FUJICMD_RANDOM_NUMBER:
+    case CMD::FUJI_RANDOM_NUMBER:
         fujicmd_random_number();
         break;
-    case FUJICMD_GET_TIME:
+    case CMD::FUJI_GET_TIME:
         fujicmd_get_time();
         break;
-    /*case FUJICMD_DEVICE_ENABLE_STATUS:
+    /*case CMD::FUJI_DEVICE_ENABLE_STATUS:
         comlynx_device_enable_status();
         break;*/
-    case FUJICMD_COPY_FILE:
+    case CMD::FUJI_COPY_FILE:
         {
             uint8_t source;
             uint8_t dest;
@@ -475,7 +475,7 @@ void lynxFuji::comlynx_process()
             fujicmd_copy_file_success(source, dest, dirpath);
         }
         break;
-    case FUJICMD_ENABLE_UDPSTREAM:
+    case CMD::FUJI_ENABLE_UDPSTREAM:
         uint16_t port;
         transaction_get(&port, sizeof(port));
         fujicmd_enable_udpstream(port);

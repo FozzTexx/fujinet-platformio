@@ -530,7 +530,7 @@ void fujiDevice::insert_boot_device(uint8_t image_id, mediatype_t disk_type,
                 fBoot = fnTNFS.fnfile_open(boot_img.c_str());
             }
         }
-        break;     
+        break;
     default:
         Debug_printf("Invalid boot mode: %d\n", image_id);
         return;
@@ -1581,7 +1581,7 @@ void fujiDevice::fujicmd_write_app_key(uint16_t keylen, uint16_t readlen)
     transaction_continue(true);
     Debug_printf("Fuji cmd: WRITE APPKEY (keylen = %hu)\n", keylen);
 
-    // Data for  FUJICMD_WRITE_APPKEY
+    // Data for  CMD::FUJI_WRITE_APPKEY
     uint8_t value[MAX_APPKEY_LEN];
 
     if (!readlen)
@@ -1671,7 +1671,7 @@ void fujiDevice::fujicmd_generate_guid()
 {
     char uuid_str[37];
     char hex[] = "0123456789abcdef";
-    int i;  
+    int i;
 
     transaction_continue(false);
 

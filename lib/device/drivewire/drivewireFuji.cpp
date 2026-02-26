@@ -447,25 +447,25 @@ void drivewireFuji::process()
     _errorCode = 1;
     switch (c)
     {
-    case FUJICMD_SEND_ERROR:
+    case CMD::FUJI_SEND_ERROR:
         send_error();
         break;
-    case FUJICMD_RESET:
+    case CMD::FUJI_RESET:
         fnSystem.reboot();
         break;
-    case FUJICMD_GET_ADAPTERCONFIG:
+    case CMD::FUJI_GET_ADAPTERCONFIG:
         fujicmd_get_adapter_config();
         break;
-    case FUJICMD_GET_ADAPTERCONFIG_EXTENDED:
+    case CMD::FUJI_GET_ADAPTERCONFIG_EXTENDED:
         fujicmd_get_adapter_config_extended();
         break;
-    case FUJICMD_GET_SCAN_RESULT:
+    case CMD::FUJI_GET_SCAN_RESULT:
         fujicmd_net_scan_result(SYSTEM_BUS.read());
         break;
-    case FUJICMD_SCAN_NETWORKS:
+    case CMD::FUJI_SCAN_NETWORKS:
         fujicmd_net_scan_networks();
         break;
-    case FUJICMD_SET_SSID:
+    case CMD::FUJI_SET_SSID:
         {
             SSIDConfig cfg;
             if (!transaction_get(&cfg, sizeof(cfg)))
@@ -474,44 +474,44 @@ void drivewireFuji::process()
                 fujicmd_net_set_ssid_success(cfg.ssid, cfg.password, false);
         }
         break;
-    case FUJICMD_GET_SSID:
+    case CMD::FUJI_GET_SSID:
         fujicmd_net_get_ssid();
         break;
-    case FUJICMD_READ_HOST_SLOTS:
+    case CMD::FUJI_READ_HOST_SLOTS:
         fujicmd_read_host_slots();
         break;
-    case FUJICMD_READ_DEVICE_SLOTS:
+    case CMD::FUJI_READ_DEVICE_SLOTS:
         fujicmd_read_device_slots();
         break;
-    case FUJICMD_WRITE_DEVICE_SLOTS:
+    case CMD::FUJI_WRITE_DEVICE_SLOTS:
         fujicmd_write_device_slots();
         break;
-    case FUJICMD_WRITE_HOST_SLOTS:
+    case CMD::FUJI_WRITE_HOST_SLOTS:
         fujicmd_write_host_slots();
         break;
-    case FUJICMD_GET_WIFI_ENABLED:
+    case CMD::FUJI_GET_WIFI_ENABLED:
         fujicmd_net_get_wifi_enabled();
         break;
-    case FUJICMD_GET_WIFISTATUS:
+    case CMD::FUJI_GET_WIFISTATUS:
         fujicmd_net_get_wifi_status();
         break;
-    case FUJICMD_MOUNT_HOST:
+    case CMD::FUJI_MOUNT_HOST:
         fujicmd_mount_host_success(SYSTEM_BUS.read());
         break;
-    case FUJICMD_OPEN_DIRECTORY:
+    case CMD::FUJI_OPEN_DIRECTORY:
         fujicmd_open_directory_success(SYSTEM_BUS.read());
         break;
-    case FUJICMD_CLOSE_DIRECTORY:
+    case CMD::FUJI_CLOSE_DIRECTORY:
         fujicmd_close_directory();
         break;
-    case FUJICMD_READ_DIR_ENTRY:
+    case CMD::FUJI_READ_DIR_ENTRY:
         {
             uint8_t maxlen = SYSTEM_BUS.read();
             uint8_t addtl = SYSTEM_BUS.read();
             fujicmd_read_directory_entry(maxlen, addtl);
         }
         break;
-    case FUJICMD_SET_DIRECTORY_POSITION:
+    case CMD::FUJI_SET_DIRECTORY_POSITION:
         {
             uint8_t h, l;
             h = SYSTEM_BUS.read();
@@ -521,7 +521,7 @@ void drivewireFuji::process()
             fujicmd_set_directory_position(pos);
         }
         break;
-    case FUJICMD_SET_DEVICE_FULLPATH:
+    case CMD::FUJI_SET_DEVICE_FULLPATH:
         {
             uint8_t slot = SYSTEM_BUS.read();
             uint8_t host = SYSTEM_BUS.read();
@@ -529,41 +529,41 @@ void drivewireFuji::process()
             fujicmd_set_device_filename_success(slot, host, (disk_access_flags_t) mode);
         }
         break;
-    case FUJICMD_GET_DEVICE_FULLPATH:
+    case CMD::FUJI_GET_DEVICE_FULLPATH:
         fujicmd_get_device_filename(SYSTEM_BUS.read());
         break;
-    case FUJICMD_MOUNT_IMAGE:
+    case CMD::FUJI_MOUNT_IMAGE:
         {
             uint8_t slot = SYSTEM_BUS.read();
             uint8_t mode = SYSTEM_BUS.read();
             fujicmd_mount_disk_image_success(slot, (disk_access_flags_t) mode);
         }
         break;
-    case FUJICMD_UNMOUNT_HOST:
+    case CMD::FUJI_UNMOUNT_HOST:
         fujicmd_unmount_host_success(SYSTEM_BUS.read());
         break;
-    case FUJICMD_UNMOUNT_IMAGE:
+    case CMD::FUJI_UNMOUNT_IMAGE:
         fujicmd_unmount_disk_image_success(SYSTEM_BUS.read());
         break;
-    case FUJICMD_NEW_DISK:
+    case CMD::FUJI_NEW_DISK:
         new_disk();
         break;
-    case FUJICMD_SEND_RESPONSE:
+    case CMD::FUJI_SEND_RESPONSE:
         send_response();
         break;
-    case FUJICMD_DEVICE_READY:
+    case CMD::FUJI_DEVICE_READY:
         ready();
         break;
-    case FUJICMD_OPEN_APPKEY:
+    case CMD::FUJI_OPEN_APPKEY:
         fujicmd_open_app_key();
         break;
-    case FUJICMD_CLOSE_APPKEY:
+    case CMD::FUJI_CLOSE_APPKEY:
         fujicmd_close_app_key();
         break;
-    case FUJICMD_READ_APPKEY:
+    case CMD::FUJI_READ_APPKEY:
         fujicmd_read_app_key();
         break;
-    case FUJICMD_WRITE_APPKEY:
+    case CMD::FUJI_WRITE_APPKEY:
         {
             uint8_t lenh = SYSTEM_BUS.read();
             uint8_t lenl = SYSTEM_BUS.read();
@@ -571,64 +571,64 @@ void drivewireFuji::process()
             fujicmd_write_app_key(len);
         }
         break;
-    case FUJICMD_RANDOM_NUMBER:
+    case CMD::FUJI_RANDOM_NUMBER:
         random();
         break;
-    case FUJICMD_BASE64_ENCODE_INPUT:
+    case CMD::FUJI_BASE64_ENCODE_INPUT:
         base64_encode_input();
         break;
-    case FUJICMD_BASE64_ENCODE_COMPUTE:
+    case CMD::FUJI_BASE64_ENCODE_COMPUTE:
         base64_encode_compute();
         break;
-    case FUJICMD_BASE64_ENCODE_LENGTH:
+    case CMD::FUJI_BASE64_ENCODE_LENGTH:
         base64_encode_length();
         break;
-    case FUJICMD_BASE64_ENCODE_OUTPUT:
+    case CMD::FUJI_BASE64_ENCODE_OUTPUT:
         base64_encode_output();
         break;
-    case FUJICMD_BASE64_DECODE_INPUT:
+    case CMD::FUJI_BASE64_DECODE_INPUT:
         base64_decode_input();
         break;
-    case FUJICMD_BASE64_DECODE_COMPUTE:
+    case CMD::FUJI_BASE64_DECODE_COMPUTE:
         base64_decode_compute();
         break;
-    case FUJICMD_BASE64_DECODE_LENGTH:
+    case CMD::FUJI_BASE64_DECODE_LENGTH:
         base64_decode_length();
         break;
-    case FUJICMD_BASE64_DECODE_OUTPUT:
+    case CMD::FUJI_BASE64_DECODE_OUTPUT:
         base64_decode_output();
         break;
-    case FUJICMD_HASH_INPUT:
+    case CMD::FUJI_HASH_INPUT:
         hash_input();
         break;
-    case FUJICMD_HASH_COMPUTE:
+    case CMD::FUJI_HASH_COMPUTE:
         hash_compute(true);
         break;
-    case FUJICMD_HASH_COMPUTE_NO_CLEAR:
+    case CMD::FUJI_HASH_COMPUTE_NO_CLEAR:
         hash_compute(false);
         break;
-    case FUJICMD_HASH_LENGTH:
+    case CMD::FUJI_HASH_LENGTH:
         hash_length();
         break;
-    case FUJICMD_HASH_OUTPUT:
+    case CMD::FUJI_HASH_OUTPUT:
         hash_output();
         break;
-    case FUJICMD_HASH_CLEAR:
+    case CMD::FUJI_HASH_CLEAR:
         hash_clear();
         break;
-    case FUJICMD_SET_BOOT_MODE:
+    case CMD::FUJI_SET_BOOT_MODE:
         fujicmd_set_boot_mode(SYSTEM_BUS.read(), MEDIATYPE_UNKNOWN, &bootdisk);
         break;
-    case FUJICMD_MOUNT_ALL:
+    case CMD::FUJI_MOUNT_ALL:
         fujicmd_mount_all_success();
         break;
-    case FUJICMD_GET_HOST_PREFIX:
+    case CMD::FUJI_GET_HOST_PREFIX:
         fujicmd_get_host_prefix(SYSTEM_BUS.read());
         break;
-    case FUJICMD_SET_HOST_PREFIX:
+    case CMD::FUJI_SET_HOST_PREFIX:
         fujicmd_set_host_prefix(SYSTEM_BUS.read());
         break;
-    case FUJICMD_COPY_FILE:
+    case CMD::FUJI_COPY_FILE:
         {
             uint8_t source = SYSTEM_BUS.read();
             uint8_t dest = SYSTEM_BUS.read();
@@ -637,7 +637,7 @@ void drivewireFuji::process()
             fujicmd_copy_file_success(source, dest, dirpath);
         }
         break;
-    case FUJICMD_GENERATE_GUID:
+    case CMD::FUJI_GENERATE_GUID:
         fujicmd_generate_guid();
         break;
     default:

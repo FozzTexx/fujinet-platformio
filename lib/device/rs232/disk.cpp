@@ -243,7 +243,7 @@ void rs232Disk::rs232_process(cmdFrame_t *cmd_ptr)
     //     return;
 
     // if (device_active == false &&
-    //    (cmdFrame.comnd != DISKCMD_STATUS && cmdFrame.comnd != DISKCMD_HRS232_INDEX))
+    //    (cmdFrame.comnd != CMD::DISK_STATUS && cmdFrame.comnd != CMD::DISK_HRS232_INDEX))
     //    return;
 
     Debug_print("disk rs232_process()\n");
@@ -251,29 +251,29 @@ void rs232Disk::rs232_process(cmdFrame_t *cmd_ptr)
     cmdFrame = *cmd_ptr;
     switch (cmdFrame.comnd)
     {
-    case DISKCMD_READ:
+    case CMD::DISK_READ:
         rs232_ack();
         rs232_read();
         return;
-    case DISKCMD_PUT:
+    case CMD::DISK_PUT:
         rs232_ack();
         rs232_write(false);
         return;
-    case DISKCMD_STATUS:
-    case DISKCMD_WRITE:
+    case CMD::DISK_STATUS:
+    case CMD::DISK_WRITE:
         rs232_ack();
         rs232_write(true);
         return;
-    case DISKCMD_FORMAT:
-    case DISKCMD_FORMAT_MEDIUM:
+    case CMD::DISK_FORMAT:
+    case CMD::DISK_FORMAT_MEDIUM:
         rs232_ack();
         rs232_format();
         return;
-    case DISKCMD_PERCOM_READ:
+    case CMD::DISK_PERCOM_READ:
         rs232_ack();
         rs232_read_percom_block();
         return;
-    case DISKCMD_PERCOM_WRITE:
+    case CMD::DISK_PERCOM_WRITE:
         rs232_ack();
         rs232_write_percom_block();
         return;

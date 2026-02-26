@@ -613,65 +613,65 @@ void lynxNetwork::comlynx_process()
 
     switch (cmd)
     {
-    case NETCMD_CHDIR:
+    case CMD::NET_CHDIR:
         set_prefix(len);
         break;
-    case NETCMD_GETCWD:
+    case CMD::NET_GETCWD:
         get_prefix();
         break;
-    case NETCMD_OPEN:
+    case CMD::NET_OPEN:
         open(len);
         break;
-    case NETCMD_CLOSE:
+    case CMD::NET_CLOSE:
         close();
         break;
-    case NETCMD_STATUS:
+    case CMD::NET_STATUS:
         status();
         break;
-    case NETCMD_READ:
+    case CMD::NET_READ:
         read();
         break;
-    case NETCMD_WRITE:
+    case CMD::NET_WRITE:
         write(len);
         break;
-    case NETCMD_CHANNEL_MODE:
+    case CMD::NET_CHANNEL_MODE:
         set_channel_mode();
         break;
-    case NETCMD_PARSE:
-    case NETCMD_PARSE_ALT:
+    case CMD::NET_PARSE:
+    case CMD::NET_PARSE_ALT:
         json_parse();
         break;
-    case NETCMD_QUERY:
-    case NETCMD_QUERY_ALT:
+    case CMD::NET_QUERY:
+    case CMD::NET_QUERY_ALT:
         json_query(len);
         break;
-    case NETCMD_USERNAME: // login
+    case CMD::NET_USERNAME: // login
         set_login(len);
         break;
-    case NETCMD_PASSWORD: // password
+    case CMD::NET_PASSWORD: // password
         set_password(len);
         break;
 
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_LOCK:
-    case NETCMD_UNLOCK:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
+    case CMD::NET_RENAME:
+    case CMD::NET_DELETE:
+    case CMD::NET_LOCK:
+    case CMD::NET_UNLOCK:
+    case CMD::NET_MKDIR:
+    case CMD::NET_RMDIR:
         process_fs(cmd, len);
         break;
 
-    case NETCMD_CONTROL:
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CONTROL:
+    case CMD::NET_CLOSE_CLIENT:
         process_tcp(cmd);
         break;
 
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         process_http(cmd);
         break;
 
-    case NETCMD_GET_REMOTE:
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_GET_REMOTE:
+    case CMD::NET_SET_DESTINATION:
         process_udp(cmd);
         break;
 
@@ -785,22 +785,22 @@ void lynxNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
     auto url = urlParser.get();
     switch (cmd)
     {
-    case NETCMD_RENAME:
+    case CMD::NET_RENAME:
         cmd_err = fs->rename(url);
         break;
-    case NETCMD_DELETE:
+    case CMD::NET_DELETE:
         cmd_err = fs->del(url);
         break;
-    case NETCMD_LOCK:
+    case CMD::NET_LOCK:
         cmd_err = fs->lock(url);
         break;
-    case NETCMD_UNLOCK:
+    case CMD::NET_UNLOCK:
         cmd_err = fs->unlock(url);
         break;
-    case NETCMD_MKDIR:
+    case CMD::NET_MKDIR:
         cmd_err = fs->mkdir(url);
         break;
-    case NETCMD_RMDIR:
+    case CMD::NET_RMDIR:
         cmd_err = fs->rmdir(url);
         break;
     default:
@@ -827,7 +827,7 @@ void lynxNetwork::process_tcp(fujiCommandID_t cmd)
     protocolError_t cmd_err;
     switch (cmd)
     {
-    case NETCMD_CONTROL:
+    case CMD::NET_CONTROL:
         cmd_err = PROTOCOL_ERROR::NONE;
 
         // Because we're not handling Adam bus very well, sometimes it
@@ -843,7 +843,7 @@ void lynxNetwork::process_tcp(fujiCommandID_t cmd)
             }
         }
         break;
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CLOSE_CLIENT:
         cmd_err = tcp->close_client_connection();
         break;
     default:
@@ -870,7 +870,7 @@ void lynxNetwork::process_http(fujiCommandID_t cmd)
     protocolError_t cmd_err;
     switch (cmd)
     {
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
         break;
     default:
@@ -898,13 +898,13 @@ void lynxNetwork::process_udp(fujiCommandID_t cmd)
     switch (cmd)
     {
 #ifndef ESP_PLATFORM
-    case NETCMD_GET_REMOTE:
+    case CMD::NET_GET_REMOTE:
         receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
         cmd_err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
         response += *receiveBuffer;
         break;
 #endif /* ESP_PLATFORM */
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
             size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));
@@ -965,7 +965,7 @@ void lynxNetwork::transaction_put(const void *data, size_t len, bool err)
     uint8_t r = comlynx_recv();
     #ifdef DEBUG
         //if (!t)
-            if (r == FUJICMD_ACK)
+            if (r == CMD::FUJI_ACK)
                 Debug_println("transaction_put - Lynx ACKed");
             else
                 Debug_println("transaction put - Lynx NAKed");

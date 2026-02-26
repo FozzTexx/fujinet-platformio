@@ -294,7 +294,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
 
     switch (cmdFrame.comnd)
     {
-    case DISKCMD_READ:
+    case CMD::DISK_READ:
         if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
         {
             sio_nak();
@@ -311,7 +311,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
             sio_read();
         }
         return;
-    case DISKCMD_HSIO_READ:
+    case CMD::DISK_HSIO_READ:
         if (_disk->_allow_hsio)
         {
             sio_ack();
@@ -319,7 +319,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
             return;
         }
         break;
-    case DISKCMD_PUT:
+    case CMD::DISK_PUT:
         if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
         {
             sio_nak();
@@ -336,7 +336,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
             sio_write(false);
         }
         return;
-    case DISKCMD_HSIO_PUT:
+    case CMD::DISK_HSIO_PUT:
         if (_disk->_allow_hsio)
         {
             if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
@@ -356,8 +356,8 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
             }
         }
         break;
-    case DISKCMD_STATUS:
-    case DISKCMD_HSIO_STATUS:
+    case CMD::DISK_STATUS:
+    case CMD::DISK_HSIO_STATUS:
         if (is_config_device == true)
         {
             if (theFuji->boot_config == true)
@@ -377,13 +377,13 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
         }
         else
         {
-            if (cmdFrame.comnd == DISKCMD_HSIO_STATUS && _disk->_allow_hsio == false)
+            if (cmdFrame.comnd == CMD::DISK_HSIO_STATUS && _disk->_allow_hsio == false)
                 break;
             sio_ack();
             sio_status();
         }
         return;
-    case DISKCMD_WRITE:
+    case CMD::DISK_WRITE:
         if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
         {
             sio_nak();
@@ -400,7 +400,7 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
             sio_write(true);
         }
         return;
-    case DISKCMD_HSIO_WRITE:
+    case CMD::DISK_HSIO_WRITE:
         if (_disk->_allow_hsio)
         {
             if (UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1) > _disk->_disk_num_sectors)
@@ -421,13 +421,13 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
             return;
         }
         break;
-    case DISKCMD_FORMAT:
-    case DISKCMD_FORMAT_MEDIUM:
+    case CMD::DISK_FORMAT:
+    case CMD::DISK_FORMAT_MEDIUM:
         sio_ack();
         sio_format();
         return;
-    case DISKCMD_HSIO_FORMAT:
-    case DISKCMD_HSIO_FORMAT_MEDIUM:
+    case CMD::DISK_HSIO_FORMAT:
+    case CMD::DISK_HSIO_FORMAT_MEDIUM:
         if (_disk->_allow_hsio)
         {
             sio_ack();
@@ -435,15 +435,15 @@ void sioDisk::sio_process(uint32_t commanddata, uint8_t checksum)
             return;
         }
         break;
-    case DISKCMD_PERCOM_READ:
+    case CMD::DISK_PERCOM_READ:
         sio_ack();
         sio_read_percom_block();
         return;
-    case DISKCMD_PERCOM_WRITE:
+    case CMD::DISK_PERCOM_WRITE:
         sio_late_ack();
         sio_write_percom_block();
         return;
-    case DISKCMD_HSIO_INDEX:
+    case CMD::DISK_HSIO_INDEX:
         if (_disk->_allow_hsio)
         {
             sio_ack();

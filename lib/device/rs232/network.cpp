@@ -621,11 +621,11 @@ void rs232Network::process_tcp()
     protocolError_t err;
     switch (cmdFrame.comnd)
     {
-    case NETCMD_CONTROL:
+    case CMD::NET_CONTROL:
         rs232_ack();
         err = tcp->accept_connection();
         break;
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CLOSE_CLIENT:
         rs232_ack();
         err = tcp->close_client_connection();
         break;
@@ -653,7 +653,7 @@ void rs232Network::process_http()
     protocolError_t err;
     switch (cmdFrame.comnd)
     {
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         rs232_ack();
         err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
         break;
@@ -682,13 +682,13 @@ void rs232Network::process_udp()
     switch (cmdFrame.comnd)
     {
 #ifndef ESP_PLATFORM
-    case NETCMD_GET_REMOTE:
+    case CMD::NET_GET_REMOTE:
         rs232_ack();
         err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
         bus_to_computer((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err != PROTOCOL_ERROR::NONE);
         break;
 #endif /* ESP_PLATFORM */
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
             bus_to_peripheral(spData, sizeof(spData));
@@ -747,78 +747,78 @@ void rs232Network::rs232_process(cmdFrame_t *cmd_ptr)
     cmdFrame = *cmd_ptr;
     switch (cmdFrame.comnd)
     {
-    case NETCMD_OPEN:
+    case CMD::NET_OPEN:
         rs232_open();
         break;
-    case NETCMD_CLOSE:
+    case CMD::NET_CLOSE:
         rs232_close();
         break;
-    case NETCMD_READ:
+    case CMD::NET_READ:
         rs232_read();
         break;
-    case NETCMD_WRITE:
+    case CMD::NET_WRITE:
         rs232_write();
         break;
-    case NETCMD_STATUS:
+    case CMD::NET_STATUS:
         rs232_status();
         break;
-    case NETCMD_PARSE:
+    case CMD::NET_PARSE:
         rs232_ack();
         rs232_parse_json();
         break;
-    case NETCMD_QUERY:
+    case CMD::NET_QUERY:
         rs232_ack();
         rs232_set_json_query();
         break;
-    case NETCMD_CHANNEL_MODE:
+    case CMD::NET_CHANNEL_MODE:
         rs232_ack();
         rs232_set_channel_mode();
         break;
-    case NETCMD_SEEK:
+    case CMD::NET_SEEK:
         rs232_seek();
         break;
-    case NETCMD_TELL:
+    case CMD::NET_TELL:
         rs232_tell();
         break;
-    case NETCMD_TRANSLATION:
+    case CMD::NET_TRANSLATION:
         rs232_set_translation();
         break;
-    case NETCMD_SET_INT_RATE:
+    case CMD::NET_SET_INT_RATE:
         rs232_set_timer_rate();
         break;
-    case NETCMD_GETCWD:
+    case CMD::NET_GETCWD:
         rs232_get_prefix();
         break;
-    case NETCMD_CHDIR:
+    case CMD::NET_CHDIR:
         rs232_set_prefix();
         break;
-    case NETCMD_USERNAME:
+    case CMD::NET_USERNAME:
         rs232_set_login();
         break;
-    case NETCMD_PASSWORD:
+    case CMD::NET_PASSWORD:
         rs232_set_password();
         break;
 
-    case NETCMD_CONTROL:
-    case NETCMD_CLOSE_CLIENT:
+    case CMD::NET_CONTROL:
+    case CMD::NET_CLOSE_CLIENT:
         process_tcp();
         break;
 
-    case NETCMD_UNLISTEN:
+    case CMD::NET_UNLISTEN:
         process_http();
         break;
 
-    case NETCMD_GET_REMOTE:
-    case NETCMD_SET_DESTINATION:
+    case CMD::NET_GET_REMOTE:
+    case CMD::NET_SET_DESTINATION:
         process_udp();
         break;
 
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_LOCK:
-    case NETCMD_UNLOCK:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
+    case CMD::NET_RENAME:
+    case CMD::NET_DELETE:
+    case CMD::NET_LOCK:
+    case CMD::NET_UNLOCK:
+    case CMD::NET_MKDIR:
+    case CMD::NET_RMDIR:
         process_fs();
         break;
 
@@ -1093,22 +1093,22 @@ void rs232Network::process_fs()
     auto url = urlParser.get();
     switch (cmdFrame.comnd)
     {
-    case NETCMD_RENAME:
+    case CMD::NET_RENAME:
         err = fs->rename(url);
         break;
-    case NETCMD_DELETE:
+    case CMD::NET_DELETE:
         err = fs->del(url);
         break;
-    case NETCMD_LOCK:
+    case CMD::NET_LOCK:
         err = fs->lock(url);
         break;
-    case NETCMD_UNLOCK:
+    case CMD::NET_UNLOCK:
         err = fs->unlock(url);
         break;
-    case NETCMD_MKDIR:
+    case CMD::NET_MKDIR:
         err = fs->mkdir(url);
         break;
-    case NETCMD_RMDIR:
+    case CMD::NET_RMDIR:
         err = fs->rmdir(url);
         break;
     default:

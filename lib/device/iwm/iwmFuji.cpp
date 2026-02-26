@@ -40,41 +40,41 @@ iwmFuji::iwmFuji() : fujiDevice(MAX_A2DISK_DEVICES, IMAGE_EXTENSION, LOBBY_URL)
         { IWM_CTRL_SET_DCB, [this]()                   { this->iwm_dummy_command(); }},                 // 0x01
         { IWM_CTRL_SET_NEWLINE, [this]()               { this->iwm_dummy_command(); }},                 // 0x02
 
-        { FUJICMD_CLOSE_DIRECTORY, [this]()            { this->fujicmd_close_directory(); }},          // 0xF5
-        { FUJICMD_GET_HOST_PREFIX, [this]()            { this->fujicmd_get_host_prefix(data_buffer[0]); }},                  // 0xE0
-        { FUJICMD_CONFIG_BOOT, [this]()                { this->fujicmd_set_boot_config(data_buffer[0]); }},          // 0xD9
-        { FUJICMD_COPY_FILE, [this]()                  { this->fujicmd_copy_file_success(data_buffer[0], data_buffer[1], (char *)&data_buffer[2]); }},                // 0xD8
-        { FUJICMD_DISABLE_DEVICE, [this]()             { this->iwm_ctrl_disable_device(); }},           // 0xD4
-        { FUJICMD_ENABLE_DEVICE, [this]()              { this->iwm_ctrl_enable_device(); }},            // 0xD5
-        { FUJICMD_GET_SCAN_RESULT, [this]()            { this->fujicmd_net_scan_result(data_buffer[0]); }},          // 0xFC
+        { CMD::FUJI_CLOSE_DIRECTORY, [this]()            { this->fujicmd_close_directory(); }},          // 0xF5
+        { CMD::FUJI_GET_HOST_PREFIX, [this]()            { this->fujicmd_get_host_prefix(data_buffer[0]); }},                  // 0xE0
+        { CMD::FUJI_CONFIG_BOOT, [this]()                { this->fujicmd_set_boot_config(data_buffer[0]); }},          // 0xD9
+        { CMD::FUJI_COPY_FILE, [this]()                  { this->fujicmd_copy_file_success(data_buffer[0], data_buffer[1], (char *)&data_buffer[2]); }},                // 0xD8
+        { CMD::FUJI_DISABLE_DEVICE, [this]()             { this->iwm_ctrl_disable_device(); }},           // 0xD4
+        { CMD::FUJI_ENABLE_DEVICE, [this]()              { this->iwm_ctrl_enable_device(); }},            // 0xD5
+        { CMD::FUJI_GET_SCAN_RESULT, [this]()            { this->fujicmd_net_scan_result(data_buffer[0]); }},          // 0xFC
 
-        { FUJICMD_HASH_INPUT, [this]()                 { this->iwm_ctrl_hash_input(); }},               // 0xC8
-        { FUJICMD_HASH_COMPUTE, [this]()               { this->iwm_ctrl_hash_compute(true); }},         // 0xC7
-        { FUJICMD_HASH_COMPUTE_NO_CLEAR, [this]()      { this->iwm_ctrl_hash_compute(false); }},        // 0xC7
-        { FUJICMD_HASH_LENGTH, [this]()                { this->iwm_stat_hash_length(); }},              // 0xC6
-        { FUJICMD_HASH_OUTPUT, [this]()                { this->iwm_stat_hash_output(); }},              // 0xC5
-        { FUJICMD_HASH_CLEAR, [this]()                 { this->iwm_ctrl_hash_clear(); }},               // 0xC2
+        { CMD::FUJI_HASH_INPUT, [this]()                 { this->iwm_ctrl_hash_input(); }},               // 0xC8
+        { CMD::FUJI_HASH_COMPUTE, [this]()               { this->iwm_ctrl_hash_compute(true); }},         // 0xC7
+        { CMD::FUJI_HASH_COMPUTE_NO_CLEAR, [this]()      { this->iwm_ctrl_hash_compute(false); }},        // 0xC7
+        { CMD::FUJI_HASH_LENGTH, [this]()                { this->iwm_stat_hash_length(); }},              // 0xC6
+        { CMD::FUJI_HASH_OUTPUT, [this]()                { this->iwm_stat_hash_output(); }},              // 0xC5
+        { CMD::FUJI_HASH_CLEAR, [this]()                 { this->iwm_ctrl_hash_clear(); }},               // 0xC2
 
-        { FUJICMD_QRCODE_INPUT, [this]()               { this->iwm_ctrl_qrcode_input(); }},             // 0xBC
-        { FUJICMD_QRCODE_ENCODE, [this]()              { this->iwm_ctrl_qrcode_encode(); }},            // 0xBD
-        { FUJICMD_QRCODE_OUTPUT, [this]()              { this->iwm_ctrl_qrcode_output(); }},            // 0xBF
+        { CMD::FUJI_QRCODE_INPUT, [this]()               { this->iwm_ctrl_qrcode_input(); }},             // 0xBC
+        { CMD::FUJI_QRCODE_ENCODE, [this]()              { this->iwm_ctrl_qrcode_encode(); }},            // 0xBD
+        { CMD::FUJI_QRCODE_OUTPUT, [this]()              { this->iwm_ctrl_qrcode_output(); }},            // 0xBF
 
-        { FUJICMD_MOUNT_HOST, [this]()                 { this->fujicmd_mount_host_success(data_buffer[0]); }},               // 0xF9
-        { FUJICMD_NEW_DISK, [this]()                   { this->iwm_ctrl_new_disk(); }},                 // 0xE7
-        { FUJICMD_OPEN_APPKEY, [this]()                { this->fujicmd_open_app_key(); }},             // 0xDC
-        { FUJICMD_READ_DIR_ENTRY, [this]()             { this->fujicmd_read_directory_entry(data_buffer[0], data_buffer[1]); }},     // 0xF6
-        { FUJICMD_SET_BOOT_MODE, [this]()              { this->fujicmd_set_boot_mode(data_buffer[0], MEDIATYPE_PO, get_disk_dev(0)); }},            // 0xD6
-        { FUJICMD_SET_DEVICE_FULLPATH, [this]()        { this->fujicmd_set_device_filename_success(data_buffer[0], data_buffer[1], (disk_access_flags_t) data_buffer[2]); }},      // 0xE2
-        { FUJICMD_SET_DIRECTORY_POSITION, [this]()     { this->fujicmd_set_directory_position(le16toh(*((uint16_t *) &data_buffer))); }},   // 0xE4
-        { FUJICMD_SET_HOST_PREFIX, [this]()            { this->fujicmd_set_host_prefix(data_buffer[0], (const char *) &data_buffer[1]); }},          // 0xE1
-        { FUJICMD_SET_SSID, [this]()                   { this->fujicmd_net_set_ssid_success((const char *) data_buffer, (const char *) &data_buffer[MAX_SSID_LEN + 1], false); }},             // 0xFB
-        { FUJICMD_UNMOUNT_HOST, [this]()               { this->fujicmd_unmount_host_success(data_buffer[0]); }},             // 0xE6
-        { FUJICMD_UNMOUNT_IMAGE, [this]()              { this->fujicmd_unmount_disk_image_success(data_buffer[0]); }},        // 0xE9
-        { FUJICMD_WRITE_APPKEY, [this]()               { this->fujicmd_write_app_key(data_len); }},            // 0xDE
-        { FUJICMD_WRITE_DEVICE_SLOTS, [this]()         { this->fujicmd_write_device_slots(); }},       // 0xF1
-        { FUJICMD_WRITE_HOST_SLOTS, [this]()           { this->fujicmd_write_host_slots(); }},         // 0xF3
+        { CMD::FUJI_MOUNT_HOST, [this]()                 { this->fujicmd_mount_host_success(data_buffer[0]); }},               // 0xF9
+        { CMD::FUJI_NEW_DISK, [this]()                   { this->iwm_ctrl_new_disk(); }},                 // 0xE7
+        { CMD::FUJI_OPEN_APPKEY, [this]()                { this->fujicmd_open_app_key(); }},             // 0xDC
+        { CMD::FUJI_READ_DIR_ENTRY, [this]()             { this->fujicmd_read_directory_entry(data_buffer[0], data_buffer[1]); }},     // 0xF6
+        { CMD::FUJI_SET_BOOT_MODE, [this]()              { this->fujicmd_set_boot_mode(data_buffer[0], MEDIATYPE_PO, get_disk_dev(0)); }},            // 0xD6
+        { CMD::FUJI_SET_DEVICE_FULLPATH, [this]()        { this->fujicmd_set_device_filename_success(data_buffer[0], data_buffer[1], (disk_access_flags_t) data_buffer[2]); }},      // 0xE2
+        { CMD::FUJI_SET_DIRECTORY_POSITION, [this]()     { this->fujicmd_set_directory_position(le16toh(*((uint16_t *) &data_buffer))); }},   // 0xE4
+        { CMD::FUJI_SET_HOST_PREFIX, [this]()            { this->fujicmd_set_host_prefix(data_buffer[0], (const char *) &data_buffer[1]); }},          // 0xE1
+        { CMD::FUJI_SET_SSID, [this]()                   { this->fujicmd_net_set_ssid_success((const char *) data_buffer, (const char *) &data_buffer[MAX_SSID_LEN + 1], false); }},             // 0xFB
+        { CMD::FUJI_UNMOUNT_HOST, [this]()               { this->fujicmd_unmount_host_success(data_buffer[0]); }},             // 0xE6
+        { CMD::FUJI_UNMOUNT_IMAGE, [this]()              { this->fujicmd_unmount_disk_image_success(data_buffer[0]); }},        // 0xE9
+        { CMD::FUJI_WRITE_APPKEY, [this]()               { this->fujicmd_write_app_key(data_len); }},            // 0xDE
+        { CMD::FUJI_WRITE_DEVICE_SLOTS, [this]()         { this->fujicmd_write_device_slots(); }},       // 0xF1
+        { CMD::FUJI_WRITE_HOST_SLOTS, [this]()           { this->fujicmd_write_host_slots(); }},         // 0xF3
 
-        { FUJICMD_RESET,  [this]()                     {
+        { CMD::FUJI_RESET,  [this]()                     {
              this->send_reply_packet(err_result);
              this->fujicmd_reset();
          }},   // 0xFF
@@ -86,11 +86,11 @@ iwmFuji::iwmFuji() : fujiDevice(MAX_A2DISK_DEVICES, IMAGE_EXTENSION, LOBBY_URL)
         { IWM_CTRL_CLEAR_ENSEEN, [this]()              { diskii_xface.d2_enable_seen = 0; err_result = SP_ERR_NOERROR; }},
 #endif
 
-        { FUJICMD_MOUNT_ALL, [&]()                     {
+        { CMD::FUJI_MOUNT_ALL, [&]()                     {
              err_result = fujicmd_mount_all_success() ? SP_ERR_NOERROR : SP_ERR_IOERROR;
          }},          // 0xD7
-        { FUJICMD_MOUNT_IMAGE, [&]()                   { err_result = fujicmd_mount_disk_image_success(data_buffer[0], (disk_access_flags_t) data_buffer[1]) ? SP_ERR_NOERROR : SP_ERR_NODRIVE; }},  // 0xF8
-        { FUJICMD_OPEN_DIRECTORY, [&]()                { err_result = fujicore_open_directory_success(data_buffer[0], std::string((char *) &data_buffer[1], sizeof(data_buffer) - 1)) ? SP_ERR_NOERROR : SP_ERR_IOERROR; }}     // 0xF7
+        { CMD::FUJI_MOUNT_IMAGE, [&]()                   { err_result = fujicmd_mount_disk_image_success(data_buffer[0], (disk_access_flags_t) data_buffer[1]) ? SP_ERR_NOERROR : SP_ERR_NODRIVE; }},  // 0xF8
+        { CMD::FUJI_OPEN_DIRECTORY, [&]()                { err_result = fujicore_open_directory_success(data_buffer[0], std::string((char *) &data_buffer[1], sizeof(data_buffer) - 1)) ? SP_ERR_NOERROR : SP_ERR_IOERROR; }}     // 0xF7
     };
 
     status_handlers = {
@@ -102,76 +102,76 @@ iwmFuji::iwmFuji() : fujiDevice(MAX_A2DISK_DEVICES, IMAGE_EXTENSION, LOBBY_URL)
         { IWM_STATUS_ENSEEN, [this]()                  { data_len = 1; data_buffer[0] = diskii_xface.d2_enable_seen; }},
 #endif
 
-        { FUJICMD_DEVICE_ENABLE_STATUS, [this]()       { this->send_stat_get_enable(); }},                      // 0xD1
-        { FUJICMD_GET_ADAPTERCONFIG_EXTENDED, [this]() { this->fujicmd_get_adapter_config_extended(); }},      // 0xC4
-        { FUJICMD_GET_ADAPTERCONFIG, [this]()          { this->fujicmd_get_adapter_config(); }},               // 0xE8
-        { FUJICMD_GET_DEVICE_FULLPATH, [this]()        { this->fujicmd_get_device_filename(data_buffer[0]); }},   // 0xDA
-        { FUJICMD_GET_DEVICE1_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA0
-        { FUJICMD_GET_DEVICE2_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA1
-        { FUJICMD_GET_DEVICE3_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA2
-        { FUJICMD_GET_DEVICE4_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA3
-        { FUJICMD_GET_DEVICE5_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA4
-        { FUJICMD_GET_DEVICE6_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA5
-        { FUJICMD_GET_DEVICE7_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA6
-        { FUJICMD_GET_DEVICE8_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA7
-        { FUJICMD_GET_DIRECTORY_POSITION, [this]()     { this->fujicmd_get_directory_position(); }},           // 0xE5
-        { FUJICMD_GET_HOST_PREFIX, [this]()            { }},                  // 0xE0
-        { FUJICMD_GET_SCAN_RESULT, [this]()            { }},                  // 0xFC
-        { FUJICMD_GET_SSID, [this]()                   { this->fujicmd_net_get_ssid(); }},                     // 0xFE
-        { FUJICMD_GET_WIFI_ENABLED, [this]()           { this->iwm_stat_get_wifi_enabled(); }},                 // 0xEA
-        { FUJICMD_GET_WIFISTATUS, [this]()             { this->fujicmd_net_get_wifi_status(); }},              // 0xFA
-        { FUJICMD_READ_APPKEY, [this]()                { this->fujicmd_read_app_key(); }},                     // 0xDD
-        { FUJICMD_READ_DEVICE_SLOTS, [this]()          { this->fujicmd_read_device_slots(); }},                // 0xF2
-        { FUJICMD_READ_DIR_ENTRY, [this]()             { }},             // 0xF6
-        { FUJICMD_READ_HOST_SLOTS, [this]()            { this->fujicmd_read_host_slots(); }},                  // 0xF4
-        { FUJICMD_SCAN_NETWORKS, [this]()              { this->fujicmd_net_scan_networks(); }},                // 0xFD
-        { FUJICMD_QRCODE_LENGTH, [this]()              { this->iwm_stat_qrcode_length(); }},                    // 0xBE
-        { FUJICMD_QRCODE_OUTPUT, [this]()              { this->iwm_stat_qrcode_output(); }},                    // 0xBE
-        { FUJICMD_STATUS, [this]()                     { this->fujicmd_status(); }},                      // 0x53
-        { FUJICMD_GET_HEAP, [this]()                   { this->iwm_stat_get_heap(); }},                         // 0xC1
-        { FUJICMD_GENERATE_GUID, [this]()              { this->fujicmd_generate_guid(); }},                     // 0xBB
+        { CMD::FUJI_DEVICE_ENABLE_STATUS, [this]()       { this->send_stat_get_enable(); }},                      // 0xD1
+        { CMD::FUJI_GET_ADAPTERCONFIG_EXTENDED, [this]() { this->fujicmd_get_adapter_config_extended(); }},      // 0xC4
+        { CMD::FUJI_GET_ADAPTERCONFIG, [this]()          { this->fujicmd_get_adapter_config(); }},               // 0xE8
+        { CMD::FUJI_GET_DEVICE_FULLPATH, [this]()        { this->fujicmd_get_device_filename(data_buffer[0]); }},   // 0xDA
+        { CMD::FUJI_GET_DEVICE1_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA0
+        { CMD::FUJI_GET_DEVICE2_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA1
+        { CMD::FUJI_GET_DEVICE3_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA2
+        { CMD::FUJI_GET_DEVICE4_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA3
+        { CMD::FUJI_GET_DEVICE5_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA4
+        { CMD::FUJI_GET_DEVICE6_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA5
+        { CMD::FUJI_GET_DEVICE7_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA6
+        { CMD::FUJI_GET_DEVICE8_FULLPATH, [this]()       { this->fujicmd_get_device_filename(status_code - 160); }},   // 0xA7
+        { CMD::FUJI_GET_DIRECTORY_POSITION, [this]()     { this->fujicmd_get_directory_position(); }},           // 0xE5
+        { CMD::FUJI_GET_HOST_PREFIX, [this]()            { }},                  // 0xE0
+        { CMD::FUJI_GET_SCAN_RESULT, [this]()            { }},                  // 0xFC
+        { CMD::FUJI_GET_SSID, [this]()                   { this->fujicmd_net_get_ssid(); }},                     // 0xFE
+        { CMD::FUJI_GET_WIFI_ENABLED, [this]()           { this->iwm_stat_get_wifi_enabled(); }},                 // 0xEA
+        { CMD::FUJI_GET_WIFISTATUS, [this]()             { this->fujicmd_net_get_wifi_status(); }},              // 0xFA
+        { CMD::FUJI_READ_APPKEY, [this]()                { this->fujicmd_read_app_key(); }},                     // 0xDD
+        { CMD::FUJI_READ_DEVICE_SLOTS, [this]()          { this->fujicmd_read_device_slots(); }},                // 0xF2
+        { CMD::FUJI_READ_DIR_ENTRY, [this]()             { }},             // 0xF6
+        { CMD::FUJI_READ_HOST_SLOTS, [this]()            { this->fujicmd_read_host_slots(); }},                  // 0xF4
+        { CMD::FUJI_SCAN_NETWORKS, [this]()              { this->fujicmd_net_scan_networks(); }},                // 0xFD
+        { CMD::FUJI_QRCODE_LENGTH, [this]()              { this->iwm_stat_qrcode_length(); }},                    // 0xBE
+        { CMD::FUJI_QRCODE_OUTPUT, [this]()              { this->iwm_stat_qrcode_output(); }},                    // 0xBE
+        { CMD::FUJI_STATUS, [this]()                     { this->fujicmd_status(); }},                      // 0x53
+        { CMD::FUJI_GET_HEAP, [this]()                   { this->iwm_stat_get_heap(); }},                         // 0xC1
+        { CMD::FUJI_GENERATE_GUID, [this]()              { this->fujicmd_generate_guid(); }},                     // 0xBB
     };
 
 }
 
 //// UNHANDLED CONTROL FUNCTIONS
-// case FUJICMD_CLOSE_APPKEY:           // 0xDB
-// case FUJICMD_GET_ADAPTERCONFIG:      // 0xE8
-// case FUJICMD_GET_DEVICE_FULLPATH:    // 0xDA
-// case FUJICMD_GET_DIRECTORY_POSITION: // 0xE5
-// case FUJICMD_GET_HOST_PREFIX:        // 0xE0
-// case FUJICMD_GET_SSID:               // 0xFE
-// case FUJICMD_GET_WIFISTATUS:         // 0xFA
-// case FUJICMD_READ_APPKEY:                    // 0xDD
-// case FUJICMD_READ_DEVICE_SLOTS:      // 0xF2
-// case FUJICMD_READ_HOST_SLOTS:        // 0xF4
-// case FUJICMD_SCAN_NETWORKS:          // 0xFD
-// case FUJICMD_STATUS:                 // 0x53
+// case CMD::FUJI_CLOSE_APPKEY:           // 0xDB
+// case CMD::FUJI_GET_ADAPTERCONFIG:      // 0xE8
+// case CMD::FUJI_GET_DEVICE_FULLPATH:    // 0xDA
+// case CMD::FUJI_GET_DIRECTORY_POSITION: // 0xE5
+// case CMD::FUJI_GET_HOST_PREFIX:        // 0xE0
+// case CMD::FUJI_GET_SSID:               // 0xFE
+// case CMD::FUJI_GET_WIFISTATUS:         // 0xFA
+// case CMD::FUJI_READ_APPKEY:                    // 0xDD
+// case CMD::FUJI_READ_DEVICE_SLOTS:      // 0xF2
+// case CMD::FUJI_READ_HOST_SLOTS:        // 0xF4
+// case CMD::FUJI_SCAN_NETWORKS:          // 0xFD
+// case CMD::FUJI_STATUS:                 // 0x53
 
 //// Unhandled Status Commands
-// case FUJICMD_CLOSE_APPKEY:           // 0xDB
-// case FUJICMD_CLOSE_DIRECTORY:        // 0xF5
-// case FUJICMD_CONFIG_BOOT:            // 0xD9
-// case FUJICMD_COPY_FILE:              // 0xD8
-// case FUJICMD_DISABLE_DEVICE:         // 0xD4
-// case FUJICMD_ENABLE_DEVICE:          // 0xD5
-// case FUJICMD_MOUNT_ALL:              // 0xD7
-// case FUJICMD_MOUNT_HOST:             // 0xF9
-// case FUJICMD_MOUNT_IMAGE:            // 0xF8
-// case FUJICMD_NEW_DISK:               // 0xE7
-// case FUJICMD_OPEN_APPKEY:            // 0xDC
-// case FUJICMD_OPEN_DIRECTORY:         // 0xF7
-// case FUJICMD_RESET:                  // 0xFF
-// case FUJICMD_SET_BOOT_MODE:          // 0xD6
-// case FUJICMD_SET_DEVICE_FULLPATH:    // 0xE2
-// case FUJICMD_SET_DIRECTORY_POSITION: // 0xE4
-// case FUJICMD_SET_HOST_PREFIX:        // 0xE1
-// case FUJICMD_SET_SSID:               // 0xFB
-// case FUJICMD_UNMOUNT_HOST:           // 0xE6
-// case FUJICMD_UNMOUNT_IMAGE:          // 0xE9
-// case FUJICMD_WRITE_APPKEY:           // 0xDE
-// case FUJICMD_WRITE_DEVICE_SLOTS:     // 0xF1
-// case FUJICMD_WRITE_HOST_SLOTS:       // 0xF3
+// case CMD::FUJI_CLOSE_APPKEY:           // 0xDB
+// case CMD::FUJI_CLOSE_DIRECTORY:        // 0xF5
+// case CMD::FUJI_CONFIG_BOOT:            // 0xD9
+// case CMD::FUJI_COPY_FILE:              // 0xD8
+// case CMD::FUJI_DISABLE_DEVICE:         // 0xD4
+// case CMD::FUJI_ENABLE_DEVICE:          // 0xD5
+// case CMD::FUJI_MOUNT_ALL:              // 0xD7
+// case CMD::FUJI_MOUNT_HOST:             // 0xF9
+// case CMD::FUJI_MOUNT_IMAGE:            // 0xF8
+// case CMD::FUJI_NEW_DISK:               // 0xE7
+// case CMD::FUJI_OPEN_APPKEY:            // 0xDC
+// case CMD::FUJI_OPEN_DIRECTORY:         // 0xF7
+// case CMD::FUJI_RESET:                  // 0xFF
+// case CMD::FUJI_SET_BOOT_MODE:          // 0xD6
+// case CMD::FUJI_SET_DEVICE_FULLPATH:    // 0xE2
+// case CMD::FUJI_SET_DIRECTORY_POSITION: // 0xE4
+// case CMD::FUJI_SET_HOST_PREFIX:        // 0xE1
+// case CMD::FUJI_SET_SSID:               // 0xFB
+// case CMD::FUJI_UNMOUNT_HOST:           // 0xE6
+// case CMD::FUJI_UNMOUNT_IMAGE:          // 0xE9
+// case CMD::FUJI_WRITE_APPKEY:           // 0xDE
+// case CMD::FUJI_WRITE_DEVICE_SLOTS:     // 0xF1
+// case CMD::FUJI_WRITE_HOST_SLOTS:       // 0xF3
 // case IWM_STATUS_DCB:                 // 0x01
 // case IWM_STATUS_NEWLINE:             // 0x02
 
