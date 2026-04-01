@@ -193,13 +193,8 @@ void fujiDevice::fujicmd_image_rotate()
 
     int count = 0;
     // Find the first empty slot
-#ifdef DISK_ROLES_MIXED
-    while (_fnDisks[count].fileh != nullptr && count < _totalDiskDevices)
-        count++;
-#else /* !DISK_ROLES_MIXED */
     while (get_disk_dev(count)->device_active && count < _totalDiskDevices)
         count++;
-#endif /* DISK_ROLES_MIXED */
 
     if (count > 1)
     {

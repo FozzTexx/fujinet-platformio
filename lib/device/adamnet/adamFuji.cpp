@@ -173,13 +173,13 @@ void adamFuji::adamnet_new_disk()
     disk.access_mode = DISK_ACCESS_MODE_WRITE;
     strlcpy(disk.filename, (const char *)p, 256);
 
-    disk.fileh = host.file_open(disk.filename, disk.filename, sizeof(disk.filename), "w");
+    fnFile *handle = host.file_open(disk.filename, disk.filename, sizeof(disk.filename), "w");
 
     Debug_printf("Creating file %s on host slot %u mounting in disk slot %u numblocks: %lu\n", disk.filename, hs, ds, numBlocks);
 
-    disk.disk_dev.write_blank(disk.fileh, numBlocks);
+    disk.disk_dev.write_blank(handle, numBlocks);
 
-    fclose(disk.fileh);
+    fclose(handle);
 
     new_disk_completed = true;
 }

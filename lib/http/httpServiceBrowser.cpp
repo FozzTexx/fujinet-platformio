@@ -342,11 +342,7 @@ int fnHttpServiceBrowser::browse_listdrives(mg_connection *c, int slot, const ch
         else
             *slot_disk = '\0';
         host_slot = Config.get_mount_host_slot(drive_slot);
-#ifdef DISK_ROLES_MIXED
-        is_mounted = (theFuji->get_disk(drive_slot)->fileh != nullptr);
-#else /* DISK_ROLES_MIXED */
         is_mounted = theFuji->get_disk_dev(drive_slot)->device_active;
-#endif /* DISK_ROLES_MIXED */
         mg_http_printf_chunk(c, "<tr>"
                 "<td>Drive Slot %d%s</td>"
                 "<td><a title=\"Mount Read-Only\" href=\"?action=newmount&slot=%d&mode=r\">[ R ]</a>"
