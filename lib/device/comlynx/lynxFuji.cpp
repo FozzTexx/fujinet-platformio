@@ -116,13 +116,13 @@ void lynxFuji::transaction_error()
 {
     Debug_println("transaction_error - send NAK");
     comlynx_response_nack();
-    
+
     // throw away any waiting bytes
     while (SYSTEM_BUS.available() > 0)
         SYSTEM_BUS.read();
 }
-    
-bool lynxFuji::transaction_get(void *data, size_t len) 
+
+bool lynxFuji::transaction_get(void *data, size_t len)
 {
     size_t remaining = recvbuffer_len - (recvbuf_pos - recvbuffer);
     size_t to_copy = (len > remaining) ? remaining : len;
@@ -265,12 +265,12 @@ void lynxFuji::comlynx_new_disk()
     disk.access_mode = DISK_ACCESS_MODE_WRITE;
     strlcpy(disk.filename, (const char *)p, 256);
 
-    disk.fileh = host.file_open(disk.filename, disk.filename, sizeof(disk.filename), "w");
+    fnFile *handle = host.file_open(disk.filename, disk.filename, sizeof(disk.filename), "w");
 
     Debug_printf("Creating file %s on host slot %u mounting in disk slot %u numblocks: %lu\n", disk.filename, hs, ds, numBlocks);
 
-    disk.disk_dev.write_blank(disk.fileh, numBlocks);
-    fclose(disk.fileh);
+    disk.disk_dev.write_blank(handle, numBlocks);
+    fclose(handle);
 
     //comlynx_response_ack();
     transaction_complete();
@@ -289,7 +289,7 @@ void lynxFuji::setup()
 
     for (int i = 0; i < MAX_DISK_DEVICES; i++)
         SYSTEM_BUS.addDevice(&_fnDisks[i].disk_dev, (fujiDeviceID_t) (FUJI_DEVICEID_DISK + i));
-    
+
     for (int i = 0; i < MAX_NETWORK_DEVICES; i++)
         SYSTEM_BUS.addDevice(lynxNetDevs[i].get(), (fujiDeviceID_t) (FUJI_DEVICEID_NETWORK + i));
 
@@ -340,7 +340,7 @@ void lynxFuji::comlynx_process()
 
     // Reset the recvbuffer
     //recvbuffer_len = 0;         // happens in recv_length, but may remove from there -SJ
-    
+
     // Get the entire payload from Lynx
     uint16_t len = comlynx_recv_length();
     Debug_printf("lynxFuji::comlynx_process - len: %ld, ", len);
@@ -386,7 +386,7 @@ void lynxFuji::comlynx_process()
     case FUJICMD_GET_WIFISTATUS:
         fujicmd_net_get_wifi_status();
         break;
-    case FUJICMD_MOUNT_HOST:   
+    case FUJICMD_MOUNT_HOST:
         transaction_get(&slot, sizeof(slot));
         fujicmd_mount_host_success(slot);
         break;
