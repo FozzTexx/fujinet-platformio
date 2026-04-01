@@ -12,13 +12,15 @@
 class fujiDisk
 {
 public:
-    fnFile* fileh = nullptr;
     disk_access_flags_t access_mode = DISK_ACCESS_MODE_READ;
+    uint8_t host_slot = INVALID_HOST_SLOT;
+    char filename[MAX_FILENAME_LEN] = { '\0' };
+#ifdef DISK_ROLES_MIXED
+    fnFile* fileh = nullptr;
     mediatype_t disk_type = MEDIATYPE_UNKNOWN;
     uint32_t disk_size = 0;
     fujiHost *host = nullptr;
-    uint8_t host_slot = INVALID_HOST_SLOT;
-    char filename[MAX_FILENAME_LEN] = { '\0' };
+#endif /* DISK_ROLES_MIXED */
     DISK_DEVICE disk_dev;
 
     void reset();

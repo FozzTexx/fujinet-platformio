@@ -193,8 +193,13 @@ void fujiDevice::fujicmd_image_rotate()
 
     int count = 0;
     // Find the first empty slot
+#ifdef DISK_ROLES_MIXED
     while (_fnDisks[count].fileh != nullptr && count < _totalDiskDevices)
         count++;
+#else /* !DISK_ROLES_MIXED */
+    while (get_disk_dev(count)->device_active && count < _totalDiskDevices)
+        count++;
+#endif /* DISK_ROLES_MIXED */
 
     if (count > 1)
     {
@@ -467,18 +472,21 @@ bool fujiDevice::fujicore_mount_disk_image_success(uint8_t deviceSlot,
     Debug_printf("Selecting '%s' from host #%u as %s on D%u:\r\n",
                  disk.filename, disk.host_slot, mode, deviceSlot + 1);
 
-    disk.fileh = host.fnfile_open(disk.filename, disk.filename, sizeof(disk.filename), mode);
+    fnFile *handle = host.fnfile_open(disk.filename, disk.filename, sizeof(disk.filename), mode);
 
-    if (disk.fileh == nullptr)
+    if (handle == nullptr)
         return false;
 
     // We've gotten this far, so make sure our bootable CONFIG disk is disabled
     boot_config = false;
 
     // We need the file size for loading XEX files and for CASSETTE, so get that too
-    disk.disk_size = host.file_size(disk.fileh);
+#ifdef DISK_ROLES_MIXED
+    disk.fileh = handle;
+    disk.disk_size = host.file_size(handle);
+    disk.disk_type = disk_dev->mount(handle, disk.filename, disk.disk_size, access_mode);
+#endif /* DISK_ROLES_MIXED */
     DISK_DEVICE *disk_dev = get_disk_dev(deviceSlot);
-    disk.disk_type = disk_dev->mount(disk.fileh, disk.filename, disk.disk_size, access_mode);
     disk_dev->is_config_device = false;
 
     return true;
