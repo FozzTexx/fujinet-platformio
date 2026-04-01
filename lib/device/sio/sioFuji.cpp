@@ -458,16 +458,16 @@ void sioFuji::sio_new_disk()
         return;
     }
 
-    disk.fileh = host.fnfile_open(disk.filename, disk.filename, sizeof(disk.filename), FILE_WRITE);
-    if (disk.fileh == nullptr)
+    fnFile *handle = host.fnfile_open(disk.filename, disk.filename, sizeof(disk.filename), FILE_WRITE);
+    if (handle == nullptr)
     {
         Debug_printf("sio_new_disk Couldn't open file for writing: \"%s\"\n", disk.filename);
         transaction_error();
         return;
     }
 
-    bool ok = disk.disk_dev.write_blank(disk.fileh, newDisk.sectorSize, newDisk.numSectors);
-    fnio::fclose(disk.fileh);
+    bool ok = disk.disk_dev.write_blank(handle, newDisk.sectorSize, newDisk.numSectors);
+    fnio::fclose(handle);
 
     if (ok == false)
     {

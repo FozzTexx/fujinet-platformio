@@ -148,21 +148,21 @@ void drivewireFuji::new_disk()
         return;
     }
 
-    disk.fileh = host.fnfile_open(disk.filename, disk.filename, sizeof(disk.filename), "w");
-    if (disk.fileh == nullptr)
+    fnFile *handle = host.fnfile_open(disk.filename, disk.filename, sizeof(disk.filename), "w");
+    if (handle == nullptr)
     {
         Debug_printf("drivewire_new_disk Couldn't open file for writing: \"%s\"\n", disk.filename);
         return;
     }
 
-    bool ok = disk.disk_dev.write_blank(disk.fileh, newDisk.numDisks);
+    bool ok = disk.disk_dev.write_blank(handle, newDisk.numDisks);
 
     if (ok)
         transaction_complete();
     else
         transaction_error();
 
-    fnio::fclose(disk.fileh);
+    fnio::fclose(handle);
 }
 
 void drivewireFuji::base64_encode_input()
