@@ -252,14 +252,14 @@ void iwmFuji::iwm_ctrl_new_disk()
         disk.access_mode = DISK_ACCESS_MODE_WRITE;
         strlcpy(disk.filename, (const char *)p, 256);
 
-        disk.fileh = host.fnfile_open(disk.filename, disk.filename, sizeof(disk.filename), "wb");
+        fnFile *handle = host.fnfile_open(disk.filename, disk.filename, sizeof(disk.filename), "wb");
 
         Debug_printf("Creating file %s on host slot %u mounting in disk slot %u numblocks: %lu\n", disk.filename, hs, ds, numBlocks);
 
         DISK_DEVICE *disk_dev = get_disk_dev(ds);
-        disk_dev->write_blank(disk.fileh, numBlocks, t);
+        disk_dev->write_blank(handle, numBlocks, t);
 
-        fnio::fclose(disk.fileh);
+        fnio::fclose(handle);
 
         // Persist slots
         populate_config_from_slots();

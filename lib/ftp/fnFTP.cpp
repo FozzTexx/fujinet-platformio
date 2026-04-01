@@ -787,7 +787,7 @@ int32_t fnFTP::get_file_size(string path)
     if (!control->connected())
     {
         Debug_printf("fnFTP::get_file_size(%s) attempted while not logged in. Aborting.\r\n", path.c_str());
-        return (size_t)-1;
+        return -1;
     }
 
     // Send SIZE command
@@ -979,14 +979,14 @@ protocolError_t fnFTP::read_directory(string &name, long &filesize, bool &is_dir
     line = line.substr(0, line.size() - 1);
     ftpparse(&parse, (char *)line.c_str(), line.length());
     name = string(parse.name ? parse.name : "???");
-    
+
     // Strip symlink target from name (e.g., "transfer -> crossplatform/transfer/" becomes "transfer")
     size_t arrow_pos = name.find(" -> ");
     if (arrow_pos != string::npos)
     {
         name = name.substr(0, arrow_pos);
     }
-    
+
     filesize = parse.size;
     is_dir = (parse.flagtrycwd == 1);
     //Debug_printf("Name: \"%s\" size: %lu is_dir: %d\r\n", name.c_str(), filesize, is_dir);
@@ -996,7 +996,7 @@ protocolError_t fnFTP::read_directory(string &name, long &filesize, bool &is_dir
 protocolError_t fnFTP::read_file(uint8_t *buf, unsigned short len, unsigned long range_begin, unsigned long range_end)
 {
     // Debug_printv("fnFTP::read_file(%p, %u, %lu, %lu)", buf, len, range_begin, range_end);
-    
+
     // If range parameters are provided and different from current, send RANG command
     if ((range_begin > 0 || range_end > 0) && (range_begin != _range_begin || range_end != _range_end))
     {
@@ -1004,7 +1004,7 @@ protocolError_t fnFTP::read_file(uint8_t *buf, unsigned short len, unsigned long
         _range_begin = range_begin;
         _range_end = range_end;
     }
-    
+
     if (!data->connected() && data->available() == 0)
     {
         Debug_printf("fnFTP::read_file(%p,%u) - data socket not connected, aborting.\r\n", buf, len);
