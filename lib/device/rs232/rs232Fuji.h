@@ -21,10 +21,10 @@ protected:
     void transaction_error() override {
         virtualDevice::transaction_error();
     }
-    bool transaction_get(void *data, size_t len) override {
+    fujiError_t transaction_get(void *data, size_t len) override {
         return virtualDevice::transaction_get(data, len);
     }
-    void transaction_put(const void *data, size_t len, bool err) override {
+    void transaction_put(const void *data, size_t len, fujiError_t err=FUJI_ERROR::NONE) override {
         virtualDevice::transaction_put(data, len, err);
     }
 

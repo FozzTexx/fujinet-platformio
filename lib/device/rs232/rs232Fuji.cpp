@@ -64,14 +64,14 @@ void rs232Fuji::rs232_status(FujiStatusReq reqType)
         for (idx = 0; idx < MAX_DISK_DEVICES; idx++)
             mount_status[idx] = _fnDisks[idx].disk_dev.mount_time();
 
-        transaction_put((uint8_t *) mount_status, sizeof(mount_status), false);
+        transaction_put((uint8_t *) mount_status, sizeof(mount_status));
     }
     else
     {
         char ret[4] = {0};
 
         Debug_printf("Status for what? %08x\n", reqType);
-        transaction_put((uint8_t *)ret, sizeof(ret), false);
+        transaction_put((uint8_t *)ret, sizeof(ret));
     }
     return;
 }
@@ -81,8 +81,8 @@ void rs232Fuji::rs232_net_set_ssid(bool save) // was aux1
 {
     SSIDConfig cfg;
     transaction_continue(TRANS_STATE::WILL_GET);
-    if (!transaction_get((uint8_t *)&cfg, sizeof(cfg)) ||
-        !fujicore_net_set_ssid_success(cfg.ssid, cfg.password, save))
+    if (transaction_get((uint8_t *)&cfg, sizeof(cfg)) != FUJI_ERROR::NONE ||
+        fujicore_net_set_ssid_success(cfg.ssid, cfg.password, save) != FUJI_ERROR::NONE)
     {
         transaction_error();
         return;
@@ -107,7 +107,7 @@ void rs232Fuji::rs232_new_disk()
     } newDisk;
 
     // Ask for details on the new disk to create
-    if (!transaction_get((uint8_t *)&newDisk, sizeof(newDisk)))
+    if (transaction_get((uint8_t *)&newDisk, sizeof(newDisk)) != FUJI_ERROR::NONE)
     {
         Debug_print("rs232_new_disk Bad checksum\n");
         transaction_error();
@@ -163,7 +163,7 @@ void rs232Fuji::rs232_test()
     transaction_continue(TRANS_STATE::NO_GET);
     Debug_printf("rs232_test()\n");
     memset(buf, 'A', 512);
-    transaction_put(buf, 512, false);
+    transaction_put(buf, 512);
 }
 
 size_t rs232Fuji::set_additional_direntry_details(fsdir_entry_t *f, uint8_t *dest, uint8_t maxlen)

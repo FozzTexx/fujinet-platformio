@@ -239,7 +239,7 @@ void rs232Network::rs232_read(uint16_t length)
     err = rs232_read_channel(length);
 
     // And send off to the computer
-    transaction_put((uint8_t *)receiveBuffer->data(), length, err != FUJI_ERROR::NONE);
+    transaction_put((uint8_t *)receiveBuffer->data(), length, err);
     receiveBuffer->erase(0, length);
 }
 
@@ -385,24 +385,24 @@ void rs232Network::rs232_status_local(FujiStatusReq reqType)
     {
     case 1: // IP Address
         Debug_printf("IP Address: %u.%u.%u.%u\n", ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
-        transaction_put(ipAddress, 4, false);
+        transaction_put(ipAddress, 4);
         break;
     case 2: // Netmask
         Debug_printf("Netmask: %u.%u.%u.%u\n", ipNetmask[0], ipNetmask[1], ipNetmask[2], ipNetmask[3]);
-        transaction_put(ipNetmask, 4, false);
+        transaction_put(ipNetmask, 4);
         break;
     case 3: // Gateway
         Debug_printf("Gateway: %u.%u.%u.%u\n", ipGateway[0], ipGateway[1], ipGateway[2], ipGateway[3]);
-        transaction_put(ipGateway, 4, false);
+        transaction_put(ipGateway, 4);
         break;
     case 4: // DNS
         Debug_printf("DNS: %u.%u.%u.%u\n", ipDNS[0], ipDNS[1], ipDNS[2], ipDNS[3]);
-        transaction_put(ipDNS, 4, false);
+        transaction_put(ipDNS, 4);
         break;
     default:
         default_status[2] = status.connected;
         default_status[3] = (uint8_t) status.error;
-        transaction_put(default_status, 4, false);
+        transaction_put(default_status, 4);
     }
 }
 
@@ -452,7 +452,7 @@ void rs232Network::rs232_status_channel()
                  nstatus.avail, nstatus.conn, (uint8_t) nstatus.err);
 
     // and send to computer
-    transaction_put((uint8_t *) &nstatus, sizeof(nstatus), err != FUJI_ERROR::NONE);
+    transaction_put((uint8_t *) &nstatus, sizeof(nstatus), err);
 }
 
 /**
@@ -468,7 +468,7 @@ void rs232Network::rs232_get_prefix()
 
     prefixSpec[prefix.size()] = 0x9B; // add EOL.
 
-    transaction_put(prefixSpec, sizeof(prefixSpec), false);
+    transaction_put(prefixSpec, sizeof(prefixSpec));
 }
 
 /**
@@ -676,7 +676,7 @@ void rs232Network::process_udp(FujiBusPacket &packet)
     case NETCMD_GET_REMOTE:
         transaction_continue(TRANS_STATE::NO_GET);
         err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
-        transaction_put((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err != FUJI_ERROR::NONE);
+        transaction_put((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err);
         break;
 #endif /* ESP_PLATFORM */
     case NETCMD_SET_DESTINATION:
@@ -722,7 +722,7 @@ void rs232Network::rs232_tell()
     }
 
     retval = htole32(offset);
-    transaction_put((unsigned char *) &retval, 4, false);
+    transaction_put((unsigned char *) &retval, 4);
     return;
 }
 

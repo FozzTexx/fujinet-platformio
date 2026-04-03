@@ -160,7 +160,7 @@ void rs232Modem::rs232_status(FujiStatusReq reqType)
 
     Debug_printf("rs232Modem::rs232_status(%02x,%02x)\n", mdmStatus[0], mdmStatus[1]);
 
-    transaction_put(mdmStatus, sizeof(mdmStatus), false);
+    transaction_put(mdmStatus, sizeof(mdmStatus));
 }
 
 // 0x41 / 'A' - CONTROL
@@ -350,7 +350,7 @@ void rs232Modem::rs232_stream()
         break;
     }
 
-    transaction_put((uint8_t *)response, sizeof(response), false);
+    transaction_put((uint8_t *)response, sizeof(response));
 
     SYSTEM_BUS.setBaudrate(modemBaud);
     modemActive = true;

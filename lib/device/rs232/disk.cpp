@@ -34,7 +34,7 @@ void rs232Disk::rs232_read(uint32_t sector)
     fujiError_t err = _disk->read(sector, &readcount);
 
     // Send result to Atari
-    transaction_put(_disk->_disk_sectorbuff, readcount, err != FUJI_ERROR::NONE);
+    transaction_put(_disk->_disk_sectorbuff, readcount, err);
 }
 
 // Write disk data from computer
@@ -48,7 +48,7 @@ void rs232Disk::rs232_write(uint32_t sector, bool verify)
 
         memset(_disk->_disk_sectorbuff, 0, DISK_SECTORBUF_SIZE);
 
-        if (transaction_get(_disk->_disk_sectorbuff, sectorSize))
+        if (transaction_get(_disk->_disk_sectorbuff, sectorSize) == FUJI_ERROR::NONE)
         {
             if (_disk->write(sector, verify) == FUJI_ERROR::NONE)
             {
@@ -111,7 +111,7 @@ void rs232Disk::rs232_status(FujiStatusReq reqType)
 
     Debug_printf("response: 0x%02x, 0x%02x, 0x%02x\n", _status[0], _status[1], _status[2]);
 
-    transaction_put(_status, sizeof(_status), false);
+    transaction_put(_status, sizeof(_status));
 }
 
 // Disk format
@@ -130,7 +130,7 @@ void rs232Disk::rs232_format()
     fujiError_t err = _disk->format(&responsesize);
 
     // Send to computer
-    transaction_put(_disk->_disk_sectorbuff, responsesize, err != FUJI_ERROR::NONE);
+    transaction_put(_disk->_disk_sectorbuff, responsesize, err);
 }
 
 // Read percom block
@@ -148,7 +148,7 @@ void rs232Disk::rs232_read_percom_block()
 #ifdef VERBOSE_DISK
     _disk->dump_percom_block();
 #endif
-    transaction_put((uint8_t *)&_disk->_percomBlock, sizeof(_disk->_percomBlock), false);
+    transaction_put((uint8_t *)&_disk->_percomBlock, sizeof(_disk->_percomBlock));
 }
 
 // Write percom block

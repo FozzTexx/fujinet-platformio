@@ -55,7 +55,7 @@ void rs232ApeTime::_rs232_get_time(bool use_timezone)
 
     Debug_printf("Returning %02d/%02d/%02d %02d:%02d:%02d\n", now->tm_year, now->tm_mon, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
 
-    transaction_put(rs232_reply, sizeof(rs232_reply), false);
+    transaction_put(rs232_reply, sizeof(rs232_reply));
 }
 
 void rs232ApeTime::_rs232_set_tz(std::string newTZ)

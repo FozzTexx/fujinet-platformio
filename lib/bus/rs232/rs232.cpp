@@ -56,34 +56,34 @@ void virtualDevice::transaction_error()
     _transaction_state = TRANS_STATE::INVALID;
 }
 
-bool virtualDevice::transaction_get(void *data, size_t len)
+fujiError_t virtualDevice::transaction_get(void *data, size_t len)
 {
     assert(_transaction_state == TRANS_STATE::WILL_GET);
     _transaction_state = TRANS_STATE::DID_GET;
 
     if (!len)
-        return true;
+        return FUJI_ERROR::NONE;
 
     // FIXME - This is a terrible hack to allow devices to continue to
     // use the pattern of fetching data on their own instead of
     // upgrading them fully to work with packets.
     auto optional_data = _legacyPacketData->data();
     if (!optional_data.has_value())
-        return 0;
+        return FUJI_ERROR::UNSPECIFIED;
     size_t avail = optional_data.value().size() - _legacyDataPosition;
     avail = std::min(avail, (size_t) len);
     memcpy(data, optional_data.value().data() + _legacyDataPosition, avail);
     _legacyDataPosition += avail;
 
     if (avail != len)
-        return false;
-    return true;
+        return FUJI_ERROR::UNSPECIFIED;
+    return FUJI_ERROR::NONE;
 }
 
-void virtualDevice::transaction_put(const void *data, size_t len, bool err)
+void virtualDevice::transaction_put(const void *data, size_t len, fujiError_t err)
 {
     assert(_transaction_state == TRANS_STATE::NO_GET);
-    SYSTEM_BUS.sendReplyPacket(_devnum, !err, data, len);
+    SYSTEM_BUS.sendReplyPacket(_devnum, err == FUJI_ERROR::NONE, data, len);
     _transaction_state = TRANS_STATE::INVALID;
 }
 

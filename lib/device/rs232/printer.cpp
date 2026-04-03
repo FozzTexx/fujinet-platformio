@@ -103,7 +103,7 @@ void rs232Printer::rs232_status(FujiStatusReq reqType)
     status[2] = 5;
     status[3] = 0;
 
-    transaction_put(status, sizeof(status), false);
+    transaction_put(status, sizeof(status));
 }
 
 void rs232Printer::set_printer_type(rs232Printer::printer_type printer_type)
