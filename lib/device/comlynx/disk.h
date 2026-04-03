@@ -4,6 +4,7 @@
 #include "../disk.h"
 #include "bus.h"
 #include "media.h"
+#include "global_types.h"
 
 /*
 #define STATUS_OK        0

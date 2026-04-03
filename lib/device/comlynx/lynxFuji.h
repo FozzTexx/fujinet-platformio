@@ -22,8 +22,8 @@ protected:
     void transaction_continue(transState_t expectMoreData) override {};
     void transaction_complete() override;
     void transaction_error() override;
-    bool transaction_get(void *data, size_t len) override;
-    void transaction_put(const void *data, size_t len, bool err=false);
+    fujiError_t transaction_get(void *data, size_t len) override;
+    void transaction_put(const void *data, size_t len, fujiError_t err=FUJI_ERROR::NONE) override;
 
     size_t set_additional_direntry_details(fsdir_entry_t *f, uint8_t *dest,
                                            uint8_t maxlen) override;
