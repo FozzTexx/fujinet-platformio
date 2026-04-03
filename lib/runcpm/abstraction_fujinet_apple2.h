@@ -179,12 +179,12 @@ int _sys_makefile(uint8_t *fn)
                 return false;
 }
 
-int _sys_deletefile(uint8_t *fn)
+fujiError_t _sys_deletefile(uint8_t *fn)
 {
         return fnSDFAT.remove(full_path((char *)fn));
 }
 
-int _sys_renamefile(uint8_t *fn, uint8_t *newname)
+fujiError_t _sys_renamefile(uint8_t *fn, uint8_t *newname)
 {
         std::string from, to;
 
@@ -500,7 +500,7 @@ uint8_t _sys_makedisk(uint8_t drive)
                 if (fnSDFAT.exists(full_path((char *)disk)))
                         return 0;
 
-                if (!fnSDFAT.create_path(full_path((char *)disk)))
+                if (fnSDFAT.create_path(full_path((char *)disk)) != FUJI_ERROR::NONE)
                 {
                         result = 0xfe;
                 }

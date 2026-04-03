@@ -87,10 +87,10 @@ iwmFuji::iwmFuji() : fujiDevice(MAX_A2DISK_DEVICES, IMAGE_EXTENSION, LOBBY_URL)
 #endif
 
         { FUJICMD_MOUNT_ALL, [&]()                     {
-             err_result = fujicmd_mount_all_success() ? SP_ERR_NOERROR : SP_ERR_IOERROR;
+            err_result = fujicmd_mount_all_success() == FUJI_ERROR::NONE ? SP_ERR_NOERROR : SP_ERR_IOERROR;
          }},          // 0xD7
-        { FUJICMD_MOUNT_IMAGE, [&]()                   { err_result = fujicmd_mount_disk_image_success(data_buffer[0], (disk_access_flags_t) data_buffer[1]) ? SP_ERR_NOERROR : SP_ERR_NODRIVE; }},  // 0xF8
-        { FUJICMD_OPEN_DIRECTORY, [&]()                { err_result = fujicore_open_directory_success(data_buffer[0], std::string((char *) &data_buffer[1], sizeof(data_buffer) - 1)) ? SP_ERR_NOERROR : SP_ERR_IOERROR; }}     // 0xF7
+        { FUJICMD_MOUNT_IMAGE, [&]()                   { err_result = fujicmd_mount_disk_image_success(data_buffer[0], (disk_access_flags_t) data_buffer[1]) == FUJI_ERROR::NONE ? SP_ERR_NOERROR : SP_ERR_NODRIVE; }},  // 0xF8
+        { FUJICMD_OPEN_DIRECTORY, [&]()                { err_result = fujicore_open_directory_success(data_buffer[0], std::string((char *) &data_buffer[1], sizeof(data_buffer) - 1)) == FUJI_ERROR::NONE ? SP_ERR_NOERROR : SP_ERR_IOERROR; }}     // 0xF7
     };
 
     status_handlers = {
@@ -617,16 +617,16 @@ size_t iwmFuji::set_additional_direntry_details(fsdir_entry_t *f, uint8_t *dest,
     return sizeof(custom_details);
 }
 
-bool iwmFuji::fujicmd_set_device_filename_success(uint8_t deviceSlot, uint8_t host,
-                                                  disk_access_flags_t mode)
+fujiError_t iwmFuji::fujicmd_set_device_filename_success(uint8_t deviceSlot, uint8_t host,
+                                                         disk_access_flags_t mode)
 {
     char tmp[MAX_FILENAME_LEN];
 
     transaction_continue(TRANS_STATE::WILL_GET);
-    if (!transaction_get(tmp, sizeof(tmp)))
+    if (transaction_get(tmp, sizeof(tmp)) != FUJI_ERROR::NONE)
     {
         transaction_error();
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     // For some reason Apple2 CONFIG sends 3 bytes of garbage before the filename
@@ -634,15 +634,15 @@ bool iwmFuji::fujicmd_set_device_filename_success(uint8_t deviceSlot, uint8_t ho
     Debug_printf("Fuji cmd: SET DEVICE SLOT 0x%02X/%02X/%02X FILENAME: %s\n",
                  deviceSlot, host, mode, tmp);
 
-    if (!fujicore_set_device_filename_success(deviceSlot, host, mode,
-                                              std::string(tmp, strnlen(tmp, sizeof(tmp)))))
+    if (fujicore_set_device_filename_success(deviceSlot, host, mode,
+                                             std::string(tmp, strnlen(tmp, sizeof(tmp)))) != FUJI_ERROR::NONE)
     {
         transaction_error();
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     transaction_complete();
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 #endif /* BUILD_APPLE */
