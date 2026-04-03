@@ -23,7 +23,7 @@ public:
     FileSystemNFS();
     ~FileSystemNFS();
 
-    bool start(const char *url, const char *user=nullptr, const char *password=nullptr);
+    fujiError_t start(const char *url, const char *user=nullptr, const char *password=nullptr);
 
     fsType type() override { return FSTYPE_NFS; };
     const char *typestring() override { return type_to_string(FSTYPE_NFS); };
@@ -35,20 +35,20 @@ public:
 
     bool exists(const char *path) override;
 
-    bool remove(const char *path) override;
+    fujiError_t remove(const char *path) override;
 
-    bool rename(const char *pathFrom, const char *pathTo) override;
+    fujiError_t rename(const char *pathFrom, const char *pathTo) override;
 
     bool is_dir(const char *path) override;
-    bool mkdir(const char* path) override { return true; };
-    bool rmdir(const char* path) override { return true; };
+    fujiError_t mkdir(const char* path) override { return FUJI_ERROR::UNSPECIFIED; };
+    fujiError_t rmdir(const char* path) override { return FUJI_ERROR::UNSPECIFIED; };
     bool dir_exists(const char* path) override { return true; };
 
-    bool dir_open(const char *path, const char *pattern, uint16_t diropts) override;
+    fujiError_t dir_open(const char *path, const char *pattern, uint16_t diropts) override;
     fsdir_entry *dir_read() override;
     void dir_close() override;
     uint16_t dir_tell() override;
-    bool dir_seek(uint16_t pos) override;
+    fujiError_t dir_seek(uint16_t pos) override;
 };
 
 #endif // FN_FSNFS_H

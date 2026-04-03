@@ -115,7 +115,7 @@ void MediaTypeXEX::_fake_directory_entry()
     _disk_sectorbuff[15] = 0x20;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
 {
     Debug_printf("XEX READ (%d)\r\n", sectornum);

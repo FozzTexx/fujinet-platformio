@@ -14,7 +14,7 @@ uint32_t MediaTypeROM::_block_to_offset(uint32_t blockNum)
     return blockNum * MEDIA_BLOCK_SIZE;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeROM::read(uint32_t blockNum, uint16_t *readcount)
 {
     if (blockNum == _media_last_block)
@@ -60,7 +60,7 @@ bool MediaTypeROM::read(uint32_t blockNum, uint16_t *readcount)
     return err;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeROM::write(uint32_t blockNum, bool verify)
 {
     return false;
@@ -71,7 +71,7 @@ uint8_t MediaTypeROM::status()
     return _media_controller_status;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeROM::format(uint16_t *responsesize)
 {
     return false;
@@ -90,7 +90,7 @@ mediatype_t MediaTypeROM::mount(FILE *f, uint32_t disksize)
     return _mediatype;
 }
 
-// Returns FALSE on error
+// Returns FUJI_ERROR::UNSPECIFIED on error
 bool MediaTypeROM::create(FILE *f, uint32_t numBlocks)
 {
     Debug_print("FILE CREATE\r\n");

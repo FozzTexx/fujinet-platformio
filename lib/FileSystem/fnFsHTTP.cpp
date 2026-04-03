@@ -47,13 +47,13 @@ FileSystemHTTP::~FileSystemHTTP()
         delete _http;
 }
 
-bool FileSystemHTTP::start(const char *url, const char *user, const char *password)
+fujiError_t FileSystemHTTP::start(const char *url, const char *user, const char *password)
 {
     if (_started)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     if(url == nullptr || url[0] == '\0')
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     if (_http != nullptr)
     {
@@ -65,19 +65,20 @@ bool FileSystemHTTP::start(const char *url, const char *user, const char *passwo
     // if (_http == nullptr)
     // {
     //     Debug_println("FileSystemHTTP::start() - failed to create HTTP client\n");
-    //     return false;
+    //     return FUJI_ERROR::UNSPECIFIED;
     // }
 
     _url = PeoplesUrlParser::parseURL(url);
     if (!_url->isValidUrl())
     {
         Debug_printf("FileSystemHTTP::start() - failed to parse URL \"%s\"\n", _url->url.c_str());
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     Debug_println("FileSystemHTTP started");
 
-    return _started = true;
+    _started = true;
+    return FUJI_ERROR::NONE;
 }
 
 bool FileSystemHTTP::exists(const char *path)
@@ -86,14 +87,14 @@ bool FileSystemHTTP::exists(const char *path)
     return false;
 }
 
-bool FileSystemHTTP::remove(const char *path)
+fujiError_t FileSystemHTTP::remove(const char *path)
 {
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
-bool FileSystemHTTP::rename(const char *pathFrom, const char *pathTo)
+fujiError_t FileSystemHTTP::rename(const char *pathFrom, const char *pathTo)
 {
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 FILE  *FileSystemHTTP::file_open(const char *path, const char *mode)
@@ -253,10 +254,10 @@ bool FileSystemHTTP::is_dir(const char *path)
     return false;
 }
 
-bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t diropts)
+fujiError_t FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t diropts)
 {
     if(!_started)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     Debug_printf("FileSystemHTTP::dir_open(\"%s\", \"%s\", %u)\n", path ? path : "", pattern ? pattern : "", diropts);
     HEAP_DEBUG();
@@ -268,7 +269,7 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
     }
 
     if (path == nullptr)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     if (strcmp(_last_dir, path) == 0 && !_dircache.empty())
     {
@@ -287,7 +288,7 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
         if (_http == nullptr)
         {
             Debug_println("FileSystemHTTP::dir_open() - failed to create HTTP client\n");
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
         // url + '/' + path + '/'
         std::string url_str = _url->url;
@@ -299,14 +300,14 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
         if (!_http->begin(url_str))
         {
             Debug_println("FileSystemHTTP::dir_open - failed to start HTTP client");
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
-    
+
         // Setup HTML Index parser
         if (_parser.begin_parser())
         {
             Debug_printf("Failed to setup parser.\r\n");
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
 
         // GET request
@@ -314,9 +315,9 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
         if (_http->GET() > 399)
         {
             Debug_println("FileSystemHTTP::dir_open - GET failed");
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
-    
+
         // Remember last visited directory
         strlcpy(_last_dir, path, MAX_PATHLEN);
 
@@ -334,7 +335,7 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
         if (buf == nullptr)
         {
             Debug_println("FileSystemHTTP::dir_open - failed to allocate buffer");
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
 
         // Process all response chunks
@@ -371,7 +372,7 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
                         cancel = true;
                         break;
                     }
-    
+
                     // Parse the buffer
                     if (_parser.parse((char *)buf, from_read, false))
                     {
@@ -402,7 +403,7 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
         {
             Debug_println("Cancelled");
             _parser.clear();
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
         else
         {
@@ -465,16 +466,16 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
                     break;
                 }
             }
-        
+
             //file modification time
             fs_de->modified_time = 0;
             memset(&tm, 0, sizeof(struct tm));
-            // strptime is not available on Windows ... 
+            // strptime is not available on Windows ...
             // if (strptime(dirEntryCursor->mTime.c_str(), "%d-%b-%Y %H:%M", &tm) != nullptr)
             // use std::get_time instead
             std::istringstream ss(dirEntryCursor->mTime);
             ss >> std::get_time(&tm, "%d-%b-%Y %H:%M");
-            if (!ss.fail()) 
+            if (!ss.fail())
             {
                 tm.tm_isdst = -1;
                 fs_de->modified_time = mktime(&tm);
@@ -485,7 +486,7 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
                 ss.clear(); // Clear any error flags
                 ss.seekg(0, std::ios::beg); // Rewind to the beginning
                 ss >> std::get_time(&tm, "%Y-%m-%d %H:%M");
-                if (!ss.fail()) 
+                if (!ss.fail())
                 {
                     tm.tm_isdst = -1;
                     fs_de->modified_time = mktime(&tm);
@@ -511,7 +512,7 @@ bool FileSystemHTTP::dir_open(const char  *path, const char *pattern, uint16_t d
     _dircache.apply_filter(pattern, diropts);
 
     HEAP_DEBUG();
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 fsdir_entry *FileSystemHTTP::dir_read()
@@ -529,7 +530,7 @@ uint16_t FileSystemHTTP::dir_tell()
     return _dircache.tell();
 }
 
-bool FileSystemHTTP::dir_seek(uint16_t pos)
+fujiError_t FileSystemHTTP::dir_seek(uint16_t pos)
 {
     return _dircache.seek(pos);
 }

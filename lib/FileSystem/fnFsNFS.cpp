@@ -33,28 +33,28 @@ FileSystemNFS::~FileSystemNFS()
     }
 }
 
-bool FileSystemNFS::start(const char *url, const char *user, const char *password)
+fujiError_t FileSystemNFS::start(const char *url, const char *user, const char *password)
 {
     int nfs_error;
 
     if (_started)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     if(url == nullptr || url[0] == '\0')
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     _nfs = nfs_init_context();
-    if (_nfs == nullptr) 
+    if (_nfs == nullptr)
     {
         Debug_printf("FileSystemNFS::start() - failed to init NFS context\n");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     _url = nfs_parse_url_full(_nfs, url);
-    if (_url == nullptr) 
+    if (_url == nullptr)
     {
         Debug_printf("FileSystemNFS::start() - failed to parse URL \"%s\", NFS error: %s\n", url, nfs_get_error(_nfs));
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     // Set UID/GID if provided
@@ -69,17 +69,17 @@ bool FileSystemNFS::start(const char *url, const char *user, const char *passwor
 
     nfs_error = nfs_mount(_nfs, _url->server, _url->path);
 
-	if (nfs_error != 0) 
+	if (nfs_error != 0)
     {
         Debug_printf("FileSystemNFS::start() - failed to mount \"%s:%s\", NFS error: %s\n", _url->server, _url->path, nfs_get_error(_nfs));
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 	}
 
     Debug_printf("NFS share mounted: %s:%s\n", _url->server, _url->path);
 
     _started = true;
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 bool FileSystemNFS::exists(const char *path)
@@ -90,15 +90,15 @@ bool FileSystemNFS::exists(const char *path)
     return nfs_error == 0;
 }
 
-bool FileSystemNFS::remove(const char *path)
+fujiError_t FileSystemNFS::remove(const char *path)
 {
     if(path == nullptr)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     // Figure out if this is a file or directory
     struct nfs_stat_64 st;
     if (0 != nfs_stat64(_nfs, path, &st))
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     int nfs_error;
     if (S_ISDIR(st.nfs_mode))
@@ -109,13 +109,13 @@ bool FileSystemNFS::remove(const char *path)
     if (nfs_error != 0)
         Debug_printf("FileSystemNFS::remove(\"%s\") - failed, NFS error: %s\n", path, nfs_get_error(_nfs));
 
-    return nfs_error == 0;
+    return nfs_error == 0 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
-bool FileSystemNFS::rename(const char *pathFrom, const char *pathTo)
+fujiError_t FileSystemNFS::rename(const char *pathFrom, const char *pathTo)
 {
     int nfs_error = nfs_rename(_nfs, pathFrom, pathTo);
-    return nfs_error == 0;    
+    return nfs_error == 0 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 FILE  *FileSystemNFS::file_open(const char *path, const char *mode)
@@ -181,10 +181,10 @@ bool FileSystemNFS::is_dir(const char *path)
     return S_ISDIR(st.nfs_mode);
 }
 
-bool FileSystemNFS::dir_open(const char  *path, const char *pattern, uint16_t diropts)
+fujiError_t FileSystemNFS::dir_open(const char  *path, const char *pattern, uint16_t diropts)
 {
     if(!_started)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     Debug_printf("FileSystemNFS::dir_open(\"%s\", \"%s\", %u)\n", path ? path : "", pattern ? pattern : "", diropts);
 
@@ -212,7 +212,7 @@ bool FileSystemNFS::dir_open(const char  *path, const char *pattern, uint16_t di
         if (nfs_opendir(_nfs, nfs_path, &nfs_dir) != 0)
         {
             Debug_printf("Failed to open directory: %s\n", nfs_get_error(_nfs));
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
 
         // Remember last visited directory
@@ -252,7 +252,7 @@ bool FileSystemNFS::dir_open(const char  *path, const char *pattern, uint16_t di
     // Apply pattern matching filter and sort entries
     _dircache.apply_filter(pattern, diropts);
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 fsdir_entry *FileSystemNFS::dir_read()
@@ -270,7 +270,7 @@ uint16_t FileSystemNFS::dir_tell()
     return _dircache.tell();
 }
 
-bool FileSystemNFS::dir_seek(uint16_t pos)
+fujiError_t FileSystemNFS::dir_seek(uint16_t pos)
 {
     return _dircache.seek(pos);
 }

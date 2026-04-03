@@ -4,6 +4,7 @@
 #include "../disk.h"
 #include "bus.h"
 #include "media.h"
+#include "global_types.h"
 
 class drivewireDisk : public virtualDevice
 {
@@ -20,10 +21,10 @@ public:
                       mediatype_t disk_type = MEDIATYPE_UNKNOWN);
     void unmount();
 
-    bool write_blank(fnFile *f, uint8_t numDisks);
+    fujiError_t write_blank(fnFile *f, uint8_t numDisks);
 
-    bool read(uint32_t sector, uint8_t *buf);
-    bool write(uint32_t sector, uint8_t *buf);
+    fujiError_t read(uint32_t sector, uint8_t *buf);
+    fujiError_t write(uint32_t sector, uint8_t *buf);
 
     void get_media_buffer(uint8_t **p_buffer, uint16_t *p_blk_size);
     uint8_t get_media_status();

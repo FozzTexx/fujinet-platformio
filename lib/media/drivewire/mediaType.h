@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <fujiHost.h>
+#include "global_types.h"
 
 #define INVALID_SECTOR_VALUE 0xFFFFFFFF
 
@@ -57,13 +58,13 @@ public:
     virtual mediatype_t mount(fnFile *f, uint32_t disksize) = 0;
     virtual void unmount();
 
-    // Returns TRUE if an error condition occurred
-    virtual bool format(uint16_t *responsesize);
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+    virtual fujiError_t format(uint16_t *responsesize);
 
-    // Returns TRUE if an error condition occurred
-    virtual bool read(uint32_t blockNum, uint16_t *readcount) = 0;
-    // Returns TRUE if an error condition occurred
-    virtual bool write(uint32_t blockNum, bool verify);
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+    virtual fujiError_t read(uint32_t blockNum, uint16_t *readcount) = 0;
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+    virtual fujiError_t write(uint32_t blockNum, bool verify);
 
     virtual void get_block_buffer(uint8_t **p_buffer, uint16_t *p_blk_size);
     

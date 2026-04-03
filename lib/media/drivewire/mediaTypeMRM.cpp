@@ -15,11 +15,11 @@ uint32_t MediaTypeMRM::_block_to_offset(uint32_t blockNum)
     return blockNum * MRM_BLOCK_SIZE;
 }
 
-// Returns TRUE if an error condition occurred
-bool MediaTypeMRM::read(uint32_t blockNum, uint16_t *readcount)
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+fujiError_t MediaTypeMRM::read(uint32_t blockNum, uint16_t *readcount)
 {
     if (blockNum == _media_last_block)
-        return false; // We already have block.
+        return FUJI_ERROR::NONE; // We already have block.
 
     // Debug_print("MRM READ\n");
 
@@ -28,17 +28,18 @@ bool MediaTypeMRM::read(uint32_t blockNum, uint16_t *readcount)
     {
         Debug_printf("::read block %lu >= %lu\n", blockNum, _media_num_blocks);
         _media_controller_status = 2;
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     memset(_media_blockbuff, 0xFF, sizeof(_media_blockbuff));
 
-    bool err = false;
+    fujiError_t err = FUJI_ERROR::NONE;
     // Perform a seek if we're not reading the sector after the last one we read
     if (blockNum != _media_last_block + 1)
     {
         uint32_t offset = _block_to_offset(blockNum);
-        err = fnio::fseek(_media_fileh, offset, SEEK_SET) != 0;
+        err = fnio::fseek(_media_fileh, offset, SEEK_SET) != 0
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
     }
     
     uint16_t to_read;
@@ -47,10 +48,11 @@ bool MediaTypeMRM::read(uint32_t blockNum, uint16_t *readcount)
     else
         to_read = MRM_BLOCK_SIZE;
 
-    if (err == false)
-        err = fnio::fread(_media_blockbuff, 1, to_read, _media_fileh) != to_read;
+    if (err == FUJI_ERROR::NONE)
+        err = fnio::fread(_media_blockbuff, 1, to_read, _media_fileh) != to_read
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
 
-    if (err == false)
+    if (err == FUJI_ERROR::NONE)
         _media_last_block = blockNum;
     else 
         _media_last_block = INVALID_SECTOR_VALUE;
@@ -60,12 +62,12 @@ bool MediaTypeMRM::read(uint32_t blockNum, uint16_t *readcount)
     return err;
 }
 
-// Returns TRUE if an error condition occurred
-bool MediaTypeMRM::write(uint32_t blockNum, bool verify)
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+fujiError_t MediaTypeMRM::write(uint32_t blockNum, bool verify)
 {
     Debug_printf("MRM WRITE - not implemented\n");
 
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 void MediaTypeMRM::get_block_buffer(uint8_t **p_buffer, uint16_t *p_blk_size)
@@ -79,12 +81,12 @@ uint8_t MediaTypeMRM::status()
     return _media_controller_status;
 }
 
-// Returns TRUE if an error condition occurred
-bool MediaTypeMRM::format(uint16_t *responsesize)
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+fujiError_t MediaTypeMRM::format(uint16_t *responsesize)
 {
     Debug_printf("MRM FORMAT - not implemented\n");
 
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 mediatype_t MediaTypeMRM::mount(fnFile *f, uint32_t disksize)
@@ -99,11 +101,11 @@ mediatype_t MediaTypeMRM::mount(fnFile *f, uint32_t disksize)
     return _mediatype;
 }
 
-// Returns FALSE on error
-bool MediaTypeMRM::create(FILE *f, uint32_t numBlocks)
+// Returns FUJI_ERROR::UNSPECIFIED on error
+fujiError_t MediaTypeMRM::create(FILE *f, uint32_t numBlocks)
 {
     Debug_print("MRM CREATE - not implemented\n");
 
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 #endif // BUILD_COCO

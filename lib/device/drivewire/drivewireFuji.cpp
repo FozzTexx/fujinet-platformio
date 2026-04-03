@@ -155,9 +155,9 @@ void drivewireFuji::new_disk()
         return;
     }
 
-    bool ok = disk.disk_dev.write_blank(disk.fileh, newDisk.numDisks);
+    fujiError_t ok = disk.disk_dev.write_blank(disk.fileh, newDisk.numDisks);
 
-    if (ok)
+    if (ok == FUJI_ERROR::NONE)
         transaction_complete();
     else
         transaction_error();
@@ -468,7 +468,7 @@ void drivewireFuji::process()
     case FUJICMD_SET_SSID:
         {
             SSIDConfig cfg;
-            if (!transaction_get(&cfg, sizeof(cfg)))
+            if (transaction_get(&cfg, sizeof(cfg)) != FUJI_ERROR::NONE)
                 transaction_error();
             else
                 fujicmd_net_set_ssid_success(cfg.ssid, cfg.password, false);
@@ -671,13 +671,14 @@ void drivewireFuji::fujicmd_open_app_key()
     appkey key;
 
     // The data expected for this command
-    if (!transaction_get(&key, sizeof(key)))
+    if (transaction_get(&key, sizeof(key)) != FUJI_ERROR::NONE)
     {
         transaction_error();
         return;
     }
 
-    if (!fujicore_open_app_key(be16toh(key.creator), key.app, key.key, key.mode, key.reserved))
+    if (fujicore_open_app_key(be16toh(key.creator), key.app, key.key, key.mode, key.reserved)
+        != FUJI_ERROR::NONE)
     {
         transaction_error();
         return;

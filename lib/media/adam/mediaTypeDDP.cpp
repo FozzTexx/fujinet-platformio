@@ -18,7 +18,7 @@ uint32_t MediaTypeDDP::_block_to_offset(uint32_t blockNum)
     return blockNum * 1024;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDDP::read(uint32_t blockNum, uint16_t *readcount)
 {
     if (blockNum == _media_last_block)
@@ -64,7 +64,7 @@ bool MediaTypeDDP::read(uint32_t blockNum, uint16_t *readcount)
     return err;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDDP::write(uint32_t blockNum, bool verify)
 {
     Debug_printf("DDP WRITE [%lu/%lu]\r\n", blockNum, _media_num_blocks);
@@ -135,7 +135,7 @@ uint8_t MediaTypeDDP::status()
     return _media_controller_status;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDDP::format(uint16_t *responsesize)
 {
     return false;
@@ -153,7 +153,7 @@ mediatype_t MediaTypeDDP::mount(FILE *f, uint32_t disksize)
     return _mediatype;
 }
 
-// Returns FALSE on error
+// Returns FUJI_ERROR::UNSPECIFIED on error
 bool MediaTypeDDP::create(FILE *f, uint32_t numBlocks)
 {
     Debug_print("DDP CREATE\r\n");

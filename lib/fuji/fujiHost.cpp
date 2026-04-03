@@ -122,13 +122,13 @@ uint16_t fujiHost::dir_tell()
     return result;
 }
 
-bool fujiHost::dir_seek(uint16_t pos)
+fujiError_t fujiHost::dir_seek(uint16_t pos)
 {
     Debug_printf("::dir_seek {%d:%d} %hu\n", slotid, _type, pos);
     if (_fs == nullptr)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
-    bool result = false;
+    fujiError_t result = FUJI_ERROR::UNSPECIFIED;
     switch (_type)
     {
     case HOSTTYPE_LOCAL:
@@ -145,23 +145,23 @@ bool fujiHost::dir_seek(uint16_t pos)
     return result;
 }
 
-bool fujiHost::dir_open(const char *path, const char *pattern, uint16_t options)
+fujiError_t fujiHost::dir_open(const char *path, const char *pattern, uint16_t options)
 {
     Debug_printf("::dir_open {%d:%d} \"%s\", pattern \"%s\"\n", slotid, _type, path, pattern ? pattern : "");
     if (_fs == nullptr)
     {
         Debug_println("::dir_open no FileSystem set");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     // Add our prefix before opening
     char realpath[MAX_PATHLEN];
     if( false == util_concat_paths(realpath, _prefix, path, sizeof(realpath)) )
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     Debug_printf("::dir_open actual path = \"%s\"\n", realpath);
 
-    int result = false;
+    fujiError_t result = FUJI_ERROR::UNSPECIFIED;
     switch (_type)
     {
     case HOSTTYPE_LOCAL:
@@ -255,12 +255,12 @@ fnFile * fujiHost::fnfile_open(const char *path, char *fullpath, int fullpathlen
 }
 
 /* Remove a file from the host
- * Returns true on error, false on success
+ * Returns FUJI_ERROR::UNSPECIFIED on error, FUJI_ERROR::NONE on success
 */
-bool fujiHost::file_remove(char *fullpath)
+fujiError_t fujiHost::file_remove(char *fullpath)
 {
     if (_type == HOSTTYPE_UNINITIALIZED || _fs == nullptr)
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
 
     return _fs->remove(fullpath);
 }
@@ -307,15 +307,15 @@ const char *fujiHost::get_prefix()
 }
 
 /* Returns:
-    0 on success
-   -1 devicename isn't a local one
+    FUJI_ERROR::NONE on success
+    FUJI_ERROR::UNSPECIFIED devicename isn't a local one
 */
-int fujiHost::mount_local()
+fujiError_t fujiHost::mount_local()
 {
     Debug_printf("::mount_local Attempting mount of \"%s\"\n", _hostname);
 
     if (0 != strcmp(_sdhostname, _hostname))
-        return -1;
+        return FUJI_ERROR::UNSPECIFIED;
 
     // Don't do anything if that's already what's set
     if (_type == HOSTTYPE_LOCAL)
@@ -331,20 +331,20 @@ int fujiHost::mount_local()
         _fs = &fnSDFAT;
     }
 
-    return 0;
+    return FUJI_ERROR::NONE;
 }
 
-int fujiHost::unmount_local()
+fujiError_t fujiHost::unmount_local()
 {
     // Silently ignore. We can't unregister the SD card.
-    return 0;
+    return FUJI_ERROR::NONE;
 }
 
 /* Returns:
-    0 on success
-   -1 on failure
+   FUJI_ERROR::NONE on success
+   FUJI_ERROR::UNSPECIFIED on failure
 */
-int fujiHost::mount_tnfs()
+fujiError_t fujiHost::mount_tnfs()
 {
     Debug_printf("::mount_tnfs {%d:%d} \"%s\"\n", slotid, _type, _hostname);
 
@@ -354,7 +354,7 @@ int fujiHost::mount_tnfs()
         if (_fs != nullptr && _fs->running())
         {
             Debug_printf("::mount_tnfs Currently connected to host \"%s\"\n", _hostname);
-            return 0;
+            return FUJI_ERROR::NONE;
         }
     }
     else
@@ -369,16 +369,13 @@ int fujiHost::mount_tnfs()
     else
     {
         Debug_printf("Starting FileSystemTNFS(\"%s\")\n", _hostname);
-        if (((FileSystemTNFS *)_fs)->start(_hostname))
-        {
-            return 0;
-        }
+        return ((FileSystemTNFS *)_fs)->start(_hostname);
     }
 
-    return -1;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
-int fujiHost::mount_smb()
+fujiError_t fujiHost::mount_smb()
 {
     Debug_printf("::mount_smb {%d:%d} \"%s\"\n", slotid, _type, _hostname);
 
@@ -388,7 +385,7 @@ int fujiHost::mount_smb()
         if (_fs != nullptr && _fs->running())
         {
             Debug_printf("::mount_smb Currently connected to share \"%s\"\n", _hostname);
-            return 0;
+            return FUJI_ERROR::NONE;
         }
     }
     else
@@ -410,16 +407,13 @@ int fujiHost::mount_smb()
         url[1] = 'm';
         url[2] = 'b';
 
-        if (((FileSystemSMB *)_fs)->start(url))
-        {
-            return 0;
-        }
+        return ((FileSystemSMB *)_fs)->start(url);
     }
 
-    return -1;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
-int fujiHost::mount_nfs()
+fujiError_t fujiHost::mount_nfs()
 {
     Debug_printf("::mount_nfs {%d:%d} \"%s\"\n", slotid, _type, _hostname);
 
@@ -429,7 +423,7 @@ int fujiHost::mount_nfs()
         if (_fs != nullptr && _fs->running())
         {
             Debug_printf("::mount_nfs Currently connected to share \"%s\"\n", _hostname);
-            return 0;
+            return FUJI_ERROR::NONE;
         }
     }
     else
@@ -451,16 +445,13 @@ int fujiHost::mount_nfs()
         url[1] = 'f';
         url[2] = 's';
 
-        if (((FileSystemNFS *)_fs)->start(url))
-        {
-            return 0;
-        }
+        return ((FileSystemNFS *)_fs)->start(url);
     }
 
-    return -1;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
-int fujiHost::mount_ftp()
+fujiError_t fujiHost::mount_ftp()
 {
     Debug_printf("::mount_ftp {%d:%d} \"%s\"\n", slotid, _type, _hostname);
 
@@ -470,7 +461,7 @@ int fujiHost::mount_ftp()
         if (_fs != nullptr && _fs->running())
         {
             Debug_printf("::mount_ftp Currently connected to host \"%s\"\n", _hostname);
-            return 0;
+            return FUJI_ERROR::NONE;
         }
     }
     else
@@ -486,16 +477,13 @@ int fujiHost::mount_ftp()
     {
         Debug_printf("Starting FileSystemFTP(\"%s\")\n", _hostname);
 
-        if (((FileSystemFTP *)_fs)->start(_hostname))
-        {
-            return 0;
-        }
+        return ((FileSystemFTP *)_fs)->start(_hostname);
     }
 
-    return -1;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
-int fujiHost::mount_http()
+fujiError_t fujiHost::mount_http()
 {
     Debug_printf("::mount_http {%d:%d} \"%s\"\n", slotid, _type, _hostname);
 
@@ -505,7 +493,7 @@ int fujiHost::mount_http()
         if (_fs != nullptr && _fs->running())
         {
             Debug_printf("::mount_http Currently connected to \"%s\"\n", _hostname);
-            return 0;
+            return FUJI_ERROR::NONE;
         }
     }
     else
@@ -521,16 +509,13 @@ int fujiHost::mount_http()
     {
         Debug_printf("Starting FileSystemHTTP(\"%s\")\n", _hostname);
 
-        if (((FileSystemHTTP *)_fs)->start(_hostname))
-        {
-            return 0;
-        }
+        return ((FileSystemHTTP *)_fs)->start(_hostname);
     }
 
-    return -1;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
-int fujiHost::unmount_fs()
+fujiError_t fujiHost::unmount_fs()
 {
     Debug_printf("Filesystem (%s) unmounted.\n", _fs != nullptr ? _fs->typestring() : "null");
 
@@ -540,10 +525,10 @@ int fujiHost::unmount_fs()
         _fs = nullptr;
     }
 
-    return 0;
+    return FUJI_ERROR::NONE;
 }
 
-/* Returns true if successful
+/* Returns FUJI_ERROR::NONE if successful
 *  We expect a valid devicename, currently:
 *  "SD" = local
 *  "smb://" = SMB share
@@ -551,47 +536,47 @@ int fujiHost::unmount_fs()
 *  "http://" or "https://" = Web server with file/dir-like access
 *  anything else = TNFS
 */
-bool fujiHost::mount()
+fujiError_t fujiHost::mount()
 {
     Debug_printf("::mount {%d} \"%s\"\n", slotid, _hostname);
 
     if (strlen(_hostname) == 0) {
         Debug_printf("::mount hostname is empty, exiting\r\n");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     // Try mounting locally first
-    if (0 == mount_local())
-        return true;
+    if (FUJI_ERROR::NONE == mount_local())
+        return FUJI_ERROR::NONE;
 
     if (0 == strncasecmp("smb://", _hostname, 6))
-        return 0 == mount_smb();
+        return mount_smb();
 
     if (0 == strncasecmp("nfs://", _hostname, 6))
-        return 0 == mount_nfs();
+        return mount_nfs();
 
     if (0 == strncasecmp("ftp://", _hostname, 6))
-        return 0 == mount_ftp();
+        return mount_ftp();
 
     if (0 == strncasecmp("http://", _hostname, 7) || 0 == strncasecmp("https://", _hostname, 8))
-        return 0 == mount_http();
+        return mount_http();
 
     // Try mounting TNFS last
-    return 0 == mount_tnfs();
+    return mount_tnfs();
 }
 
-/* Returns true if successful
+/* Returns FUJI_ERROR::NONE if successful
 */
-bool fujiHost::unmount_success()
+fujiError_t fujiHost::unmount_success()
 {
     Debug_printf("::unmount {%d} \"%s\"\n", slotid+1, _hostname);
 
     if (_type == HOSTTYPE_LOCAL)
     {
         Debug_println("::skip unmounting SD");
-        return 0;
+        return FUJI_ERROR::NONE;
     }
 
     // Try unmounting TNFS/SMB/FTP/HTTP/...
-    return 0 == unmount_fs();
+    return unmount_fs();
 }

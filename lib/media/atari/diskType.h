@@ -85,12 +85,12 @@ public:
     virtual mediatype_t mount(fnFile *f, uint32_t disksize) = 0;
     virtual void unmount();
 
-    // Returns TRUE if an error condition occurred
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
     virtual bool format(uint16_t *responsesize);
 
-    // Returns TRUE if an error condition occurred
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
     virtual bool read(uint16_t sectornum, uint16_t *readcount) = 0;
-    // Returns TRUE if an error condition occurred
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
     virtual bool write(uint16_t sectornum, bool verify);
 
     // Always returns 128 for the first 3 sectors, otherwise _sectorSize

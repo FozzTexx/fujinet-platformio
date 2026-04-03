@@ -29,15 +29,15 @@ private:
     void cleanup();
     void unmount();
 
-    int mount_local();
-    int mount_tnfs();
-    int mount_smb();
-    int mount_nfs();
-    int mount_ftp();
-    int mount_http();
+    fujiError_t mount_local();
+    fujiError_t mount_tnfs();
+    fujiError_t mount_smb();
+    fujiError_t mount_nfs();
+    fujiError_t mount_ftp();
+    fujiError_t mount_http();
 
-    int unmount_local();
-    int unmount_fs();
+    fujiError_t unmount_local();
+    fujiError_t unmount_fs();
 
 public:
     int slotid = -1;
@@ -53,8 +53,8 @@ public:
     const char* get_hostname();
     const char* get_basepath();
 
-    bool mount();
-    bool unmount_success();
+    fujiError_t mount();
+    fujiError_t unmount_success();
 
     // Host prefixes are used for host file operations that take a path (file_exists, file_open, dir_open)
     void set_prefix(const char *prefix);
@@ -72,14 +72,14 @@ public:
 #endif
     long file_size(fnFile *filehandle);
 
-    bool file_remove(char *fullpath);
+    fujiError_t file_remove(char *fullpath);
 
     // Directory functions
-    bool dir_open(const char *path, const char *pattern, uint16_t options = 0);
+    fujiError_t dir_open(const char *path, const char *pattern, uint16_t options = 0);
     void dir_close();
     fsdir_entry_t * dir_nextfile();
     uint16_t dir_tell();
-    bool dir_seek(uint16_t position);
+    fujiError_t dir_seek(uint16_t position);
 
 };
 

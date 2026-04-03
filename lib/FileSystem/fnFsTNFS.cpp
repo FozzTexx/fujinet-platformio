@@ -41,13 +41,13 @@ FileSystemTNFS::~FileSystemTNFS()
 #endif
 }
 
-bool FileSystemTNFS::start(const char *host, uint16_t port, const char * mountpath, const char * userid, const char * password)
+fujiError_t FileSystemTNFS::start(const char *host, uint16_t port, const char * mountpath, const char * userid, const char * password)
 {
     if (_started)
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
 
     if(host == nullptr)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     const char *host_no_prefix;
     if (strncmp("_tcp.", host, 5) == 0)
@@ -66,7 +66,7 @@ bool FileSystemTNFS::start(const char *host, uint16_t port, const char * mountpa
     }
     if (host_no_prefix[0] == '\0')
     {
-            return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
     strlcpy(_mountinfo.hostname, host_no_prefix, sizeof(_mountinfo.hostname));
 
@@ -75,7 +75,7 @@ bool FileSystemTNFS::start(const char *host, uint16_t port, const char * mountpa
     if(_mountinfo.host_ip == IPADDR_NONE)
     {
         Debug_printf("Failed to resolve hostname \"%s\"\r\n", _mountinfo.hostname);
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
     // TODO: Refresh the DNS name we resolved after X amount of time
     _last_dns_refresh = fnSystem.millis();
@@ -106,7 +106,7 @@ bool FileSystemTNFS::start(const char *host, uint16_t port, const char * mountpa
         Debug_printf("TNFS mount failed with code %d\r\n", r);
         _mountinfo.mountpath[0] = '\0';
         _started = false;
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
     Debug_printf("TNFS mount successful. session: 0x%hx, version: 0x%04hx, min_retry: %hums\r\n", _mountinfo.session, _mountinfo.server_version, _mountinfo.min_retry_ms);
 
@@ -132,7 +132,7 @@ bool FileSystemTNFS::start(const char *host, uint16_t port, const char * mountpa
 
     _started = true;
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 bool FileSystemTNFS::is_started()
@@ -149,15 +149,15 @@ bool FileSystemTNFS::exists(const char* path)
     return result == TNFS_RESULT_SUCCESS;
 }
 
-bool FileSystemTNFS::remove(const char* path)
+fujiError_t FileSystemTNFS::remove(const char* path)
 {
     if(path == nullptr)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     // Figure out if this is a file or directory
     tnfsStat tstat;
     if(TNFS_RESULT_SUCCESS != tnfs_stat(&_mountinfo, &tstat, path))
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     int result;
     if(tstat.isDir)
@@ -165,13 +165,13 @@ bool FileSystemTNFS::remove(const char* path)
     else
         result = tnfs_unlink(&_mountinfo, path);
 
-    return result == TNFS_RESULT_SUCCESS;
+    return result == TNFS_RESULT_SUCCESS ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
-bool FileSystemTNFS::rename(const char* pathFrom, const char* pathTo)
+fujiError_t FileSystemTNFS::rename(const char* pathFrom, const char* pathTo)
 {
     int result = tnfs_rename(&_mountinfo, pathFrom, pathTo);
-    return result == TNFS_RESULT_SUCCESS;
+    return result == TNFS_RESULT_SUCCESS ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 FILE * FileSystemTNFS::file_open(const char* path, const char* mode)
@@ -263,10 +263,10 @@ FileHandler * FileSystemTNFS::filehandler_open(const char* path, const char* mod
 }
 #endif
 
-bool FileSystemTNFS::dir_open(const char * path, const char *pattern, uint16_t diropts)
+fujiError_t FileSystemTNFS::dir_open(const char * path, const char *pattern, uint16_t diropts)
 {
     if(!_started)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
     uint8_t d_opt = 0;
     uint8_t s_opt = 0;
@@ -317,10 +317,10 @@ bool FileSystemTNFS::dir_open(const char * path, const char *pattern, uint16_t d
             _current_dirpath[l+1] = '\0';
         }
 
-        return true;
+        return FUJI_ERROR::NONE;
     }
 
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 fsdir_entry * FileSystemTNFS::dir_read()
@@ -361,12 +361,12 @@ uint16_t FileSystemTNFS::dir_tell()
     return position;
 }
 
-bool FileSystemTNFS::dir_seek(uint16_t position)
+fujiError_t FileSystemTNFS::dir_seek(uint16_t position)
 {
     if(!_started)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 
-    return 0 == tnfs_seekdir(&_mountinfo, position);
+    return 0 == tnfs_seekdir(&_mountinfo, position) ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 #ifdef ESP_PLATFORM

@@ -142,10 +142,10 @@ void rs232Fuji::rs232_new_disk()
         return;
     }
 
-    bool ok = disk.disk_dev.write_blank(disk.fileh, newDisk.sectorSize, newDisk.numSectors);
+    fujiError_t ok = disk.disk_dev.write_blank(disk.fileh, newDisk.sectorSize, newDisk.numSectors);
     fnio::fclose(disk.fileh);
 
-    if (ok == false)
+    if (ok == FUJI_ERROR::NONE)
     {
         Debug_print("rs232_new_disk Data write failed\n");
         transaction_error();

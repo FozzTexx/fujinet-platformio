@@ -389,7 +389,7 @@ bool MediaTypeATX::_copy_track_sector_data(uint8_t tracknum, uint8_t sectornum, 
     return _disk_controller_status != DISK_CTRL_STATUS_CLEAR;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeATX::read(uint16_t sectornum, uint16_t *readcount)
 {
 #ifdef ESP_PLATFORM
@@ -775,7 +775,7 @@ bool MediaTypeATX::_load_atx_track_record(uint32_t length)
 /*
   Each record consists of an 8 byte header followed by the actual data
   Since there's only one type of record we care about (RECORD), all we need is the length
-  Returns FALSE on error, otherwise TRUE
+  Returns FUJI_ERROR::UNSPECIFIED on error, otherwise TRUE
 */
 bool MediaTypeATX::_load_atx_record()
 {
@@ -931,7 +931,7 @@ mediatype_t MediaTypeATX::mount(fnFile *f, uint32_t disksize)
     All sectors are filleded with the data byte $00. On completion, the drive returns
     a sector-sized buffer containing a list of 16-bit bad sector numbers terminated by $FFFF.
 */
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeATX::format(uint16_t *responsesize)
 {
     Debug_print("ATX FORMAT, SEND ERROR.\r\n");

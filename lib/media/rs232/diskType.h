@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "fnio.h"
+#include "global_types.h"
 
 #define INVALID_SECTOR_VALUE 65536
 
@@ -72,13 +73,13 @@ public:
     virtual mediatype_t mount(fnFile *f, uint32_t disksize) = 0;
     virtual void unmount();
 
-    // Returns TRUE if an error condition occurred
-    virtual bool format(uint32_t *responsesize);
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+    virtual fujiError_t format(uint32_t *responsesize);
 
-    // Returns TRUE if an error condition occurred
-    virtual bool read(uint32_t sectornum, uint32_t *readcount) = 0;
-    // Returns TRUE if an error condition occurred
-    virtual bool write(uint32_t sectornum, bool verify);
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+    virtual fujiError_t read(uint32_t sectornum, uint32_t *readcount) = 0;
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+    virtual fujiError_t write(uint32_t sectornum, bool verify);
 
     // Always returns 128 for the first 3 sectors, otherwise _sectorSize
     virtual uint16_t sector_size(uint32_t sectornum);

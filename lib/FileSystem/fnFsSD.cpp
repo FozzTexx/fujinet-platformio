@@ -134,7 +134,7 @@ bool FileSystemSDFAT::is_dir(const char *path)
     return (info.st_mode == S_IFDIR) ? true: false;
 }
 
-bool FileSystemSDFAT::mkdir(const char* path)
+fujiError_t FileSystemSDFAT::mkdir(const char* path)
 {
     char * fpath = _make_fullpath(path);
     Debug_printf("FileSystemSDFAT::mkdir \"%s\" (\"%s\")\r\n", path, fpath);
@@ -145,10 +145,10 @@ bool FileSystemSDFAT::mkdir(const char* path)
     {
         Debug_printf("  mkdir failed: errno %d\r\n", errno);
     }
-    return (0 == result);
+    return 0 == result ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
-bool FileSystemSDFAT::rmdir(const char* path)
+fujiError_t FileSystemSDFAT::rmdir(const char* path)
 {
     char * fpath = _make_fullpath(path);
     Debug_printf("FileSystemSDFAT::rmdir \"%s\" (\"%s\")\r\n", path, fpath);
@@ -159,10 +159,10 @@ bool FileSystemSDFAT::rmdir(const char* path)
     {
         Debug_printf("  rmdir failed: errno %d\r\n", errno);
     }
-    return (0 == result);
+    return 0 == result ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
-bool FileSystemSDFAT::dir_open(const char * path, const char * pattern, uint16_t diropts)
+fujiError_t FileSystemSDFAT::dir_open(const char * path, const char * pattern, uint16_t diropts)
 {
     // TODO: Add pattern and sorting options
 
@@ -184,7 +184,7 @@ bool FileSystemSDFAT::dir_open(const char * path, const char * pattern, uint16_t
     _dir = opendir(fpath);
     free(fpath);
     if(_dir == nullptr)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 #endif
 
 	char realpat[MAX_PATHLEN];
@@ -338,7 +338,7 @@ bool FileSystemSDFAT::dir_open(const char * path, const char * pattern, uint16_t
     closedir(_dir);
 #endif
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 void FileSystemSDFAT::dir_close()
@@ -368,15 +368,15 @@ uint16_t FileSystemSDFAT::dir_tell()
         return _dir_entry_current;
 }
 
-bool FileSystemSDFAT::dir_seek(uint16_t pos)
+fujiError_t FileSystemSDFAT::dir_seek(uint16_t pos)
 {
     if(pos < _dir_entries.size())
     {
         _dir_entry_current = pos;
-        return true;
+        return FUJI_ERROR::NONE;
     }
     else
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 }
 
 
@@ -429,7 +429,7 @@ long FileSystemSDFAT::filesize(const char *path)
     return res;
 }
 
-bool FileSystemSDFAT::remove(const char* path)
+fujiError_t FileSystemSDFAT::remove(const char* path)
 {
 #ifdef ESP_PLATFORM
     FRESULT result = f_unlink(path);
@@ -440,7 +440,7 @@ bool FileSystemSDFAT::remove(const char* path)
     int result = ::remove(fpath);
     //Debug_printf("sdFileSystem::remove returned %d on \"%s\"\r\n", result, path);
     free(fpath);
-    return (0 == result);
+    return 0 == result ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 #endif
 }
 
@@ -466,7 +466,7 @@ long FileSystemSDFAT::mtime(const char *path)
    "/abc/def"
    "abc/def/ghi"
 */
-bool FileSystemSDFAT::create_path(const char *path)
+fujiError_t FileSystemSDFAT::create_path(const char *path)
 {
     /* Holds the path prefix built up to the current segment (for mkdir). */
     char cumulativePath[MAX_PATHLEN];
@@ -503,7 +503,7 @@ bool FileSystemSDFAT::create_path(const char *path)
 #ifndef ESP_PLATFORM
                 free(fullpath);
 #endif
-                return false;
+                return FUJI_ERROR::UNSPECIFIED;
             }
             strlcpy(cumulativePath, fullpath, len);
 #ifdef ESP_PLATFORM
@@ -522,7 +522,7 @@ bool FileSystemSDFAT::create_path(const char *path)
                 {
                     Debug_printf("FAILED errno=%d\r\n", errno);
                     free(fullpath);
-                    return false;
+                    return FUJI_ERROR::UNSPECIFIED;
                 }
             }
 #endif
@@ -534,10 +534,10 @@ bool FileSystemSDFAT::create_path(const char *path)
     free(fullpath);
 #endif
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
-bool FileSystemSDFAT::rename(const char* pathFrom, const char* pathTo)
+fujiError_t FileSystemSDFAT::rename(const char* pathFrom, const char* pathTo)
 {
 #ifdef ESP_PLATFORM
     FRESULT result = f_rename(pathFrom, pathTo);
@@ -550,7 +550,7 @@ bool FileSystemSDFAT::rename(const char* pathFrom, const char* pathTo)
     Debug_printf("FileSystemSDFAT::rename returned %d on \"%s\" -> \"%s\" (%s -> %s)\r\n", i, pathFrom, pathTo, spath, dpath);
     free(spath);
     free(dpath);
-    return (i == 0);
+    return i == 0 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 #endif
 }
 
@@ -617,7 +617,7 @@ const char * FileSystemSDFAT::partition_type()
 }
 
 #ifdef ESP_PLATFORM
-bool FileSystemSDFAT::start()
+fujiError_t FileSystemSDFAT::start()
 {
     if(_started)
         return true;
@@ -713,10 +713,10 @@ bool FileSystemSDFAT::start()
 }
 #else
 // !ESP_PLATFORM
-bool FileSystemSDFAT::start(const char *sd_path)
+fujiError_t FileSystemSDFAT::start(const char *sd_path)
 {
     if(_started)
-        return true;
+        return FUJI_ERROR::NONE;
 
     // Set our basepath
     if (sd_path)
@@ -739,7 +739,7 @@ bool FileSystemSDFAT::start(const char *sd_path)
         Debug_printf("SD mount failed, directory \"%s\" does not exist\r\n", _basepath);
     }
 
-    return _started;
+    return _started ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 // !ESP_PLATFORM
 #endif

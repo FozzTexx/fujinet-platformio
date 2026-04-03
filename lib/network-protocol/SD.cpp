@@ -79,14 +79,14 @@ fujiError_t NetworkProtocolSD::open_dir_handle()
     if (check_fs() != FUJI_ERROR::NONE) return FUJI_ERROR::UNSPECIFIED;
 
     fnSDFAT.dir_close();
-    bool success = fnSDFAT.dir_open(dir.c_str(), filename.c_str(), 0);
-    if (!success)
+    fujiError_t success = fnSDFAT.dir_open(dir.c_str(), filename.c_str(), 0);
+    if (success != FUJI_ERROR::NONE)
         errno_to_error();
     else
         error = NDEV_STATUS::SUCCESS;
 
     Debug_printf("NetworkProtocolSD::open_dir_handle(%s) error: %d\r\n", opened_url->path.c_str(), (int) error);
-    return success ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
+    return success;
 }
 
 fujiError_t NetworkProtocolSD::mount(PeoplesUrlParser *url)
@@ -223,8 +223,8 @@ fujiError_t NetworkProtocolSD::rename(PeoplesUrlParser *url)
     if (NetworkProtocolFS::rename(url) != FUJI_ERROR::NONE)
         return FUJI_ERROR::UNSPECIFIED;
 
-    bool success = fnSDFAT.rename(filename.c_str(), destFilename.c_str());
-    if (!success)
+    fujiError_t success = fnSDFAT.rename(filename.c_str(), destFilename.c_str());
+    if (success != FUJI_ERROR::NONE)
         errno_to_error();
     else
         error = NDEV_STATUS::SUCCESS;
@@ -240,8 +240,8 @@ fujiError_t NetworkProtocolSD::del(PeoplesUrlParser *url)
     // return error if SD is not mounted
     if (check_fs() != FUJI_ERROR::NONE) return FUJI_ERROR::UNSPECIFIED;
 
-    bool success = fnSDFAT.remove(url->path.c_str());
-    if (!success)
+    fujiError_t success = fnSDFAT.remove(url->path.c_str());
+    if (success != FUJI_ERROR::NONE)
         errno_to_error();
     else
         error = NDEV_STATUS::SUCCESS;
@@ -257,8 +257,8 @@ fujiError_t NetworkProtocolSD::mkdir(PeoplesUrlParser *url)
     // return error if SD is not mounted
     if (check_fs() != FUJI_ERROR::NONE) return FUJI_ERROR::UNSPECIFIED;
 
-    bool success = fnSDFAT.mkdir(url->path.c_str());
-    if (!success)
+    fujiError_t success = fnSDFAT.mkdir(url->path.c_str());
+    if (success != FUJI_ERROR::NONE)
         errno_to_error();
     else
         error = NDEV_STATUS::SUCCESS;
@@ -274,8 +274,8 @@ fujiError_t NetworkProtocolSD::rmdir(PeoplesUrlParser *url)
     // return error if SD is not mounted
     if (check_fs() != FUJI_ERROR::NONE) return FUJI_ERROR::UNSPECIFIED;
 
-    bool success = fnSDFAT.rmdir(url->path.c_str());
-    if (!success)
+    fujiError_t success = fnSDFAT.rmdir(url->path.c_str());
+    if (success != FUJI_ERROR::NONE)
         errno_to_error();
     else
         error = NDEV_STATUS::SUCCESS;

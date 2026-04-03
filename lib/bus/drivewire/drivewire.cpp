@@ -216,7 +216,7 @@ void systemBus::op_readex()
             if (bDragon)
             {
                 Debug_printf("dragon read\n");
-                if (d->read(lsn, sector_data))
+                if (d->read(lsn, sector_data) != FUJI_ERROR::NONE)
                 {
                     Debug_printf("Read error\n");
                     _port->write(0xF4);
@@ -228,7 +228,7 @@ void systemBus::op_readex()
             else
             {
                 Debug_printf("non-dragon read\n");
-                if (d->read(lsn, use_media_buffer ? nullptr : sector_data))
+                if (d->read(lsn, use_media_buffer ? nullptr : sector_data) != FUJI_ERROR::NONE)
                 {
                     if (d->get_media_status() == 2)
                     {
@@ -322,7 +322,7 @@ void systemBus::op_write()
         return;
     }
 
-    if (d->write(lsn, sector_data))
+    if (d->write(lsn, sector_data) != FUJI_ERROR::NONE)
     {
         Debug_print("Write error\n");
         _port->write(0xF5);

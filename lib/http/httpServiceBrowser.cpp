@@ -280,7 +280,7 @@ int fnHttpServiceBrowser::browse_listdir(mg_connection *c, mg_http_message *hm, 
     }
 
     // no special action -> entering sub-directory
-    if (!fs->dir_open(path, "", 0))
+    if (fs->dir_open(path, "", 0) != FUJI_ERROR::NONE)
     {
         Debug_printf("Couldn't open host directory: %s\n", path);
         mg_http_reply(c, 400, "", "Failed to open directory.\n");
@@ -571,22 +571,22 @@ int fnHttpServiceBrowser::process_browse_get(mg_connection *c, mg_http_message *
     switch(host_type)
     {
     case HOSTTYPE_LOCAL:
-        started = ((FileSystemSDFAT *)fs)->start();
+        started = ((FileSystemSDFAT *)fs)->start() == FUJI_ERROR::NONE;
         break;
     case HOSTTYPE_SMB:
-        started = ((FileSystemSMB *)fs)->start(hostname);
+        started = ((FileSystemSMB *)fs)->start(hostname) == FUJI_ERROR::NONE;
         break;
     case HOSTTYPE_NFS:
-        started = ((FileSystemNFS *)fs)->start(hostname);
+        started = ((FileSystemNFS *)fs)->start(hostname) == FUJI_ERROR::NONE;
         break;
     case HOSTTYPE_FTP:
-        started = ((FileSystemFTP *)fs)->start(hostname);
+        started = ((FileSystemFTP *)fs)->start(hostname) == FUJI_ERROR::NONE;
         break;
     case HOSTTYPE_HTTP:
-        started = ((FileSystemHTTP *)fs)->start(hostname);
+        started = ((FileSystemHTTP *)fs)->start(hostname) == FUJI_ERROR::NONE;
         break;
     case HOSTTYPE_TNFS:
-        started = ((FileSystemTNFS *)fs)->start(hostname);
+        started = ((FileSystemTNFS *)fs)->start(hostname) == FUJI_ERROR::NONE;
         break;
     }
 

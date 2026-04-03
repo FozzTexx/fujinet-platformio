@@ -51,7 +51,7 @@ uint32_t MediaTypeATR::_sector_to_offset(uint16_t sectorNum)
     return offset;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeATR::read(uint16_t sectornum, uint16_t *readcount)
 {
     Debug_printf("ATR READ %d / %lu\r\n", sectornum, _disk_num_sectors);
@@ -95,7 +95,7 @@ bool inHighScoreRange(int minimum, int maximum, int val)
     return ((minimum <= val) && (val <= maximum));
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeATR::write(uint16_t sectornum, bool verify)
 {
     fnFile *oldFileh, *hsFileh;
@@ -192,7 +192,7 @@ void MediaTypeATR::status(uint8_t statusbuff[4])
     All sectors are filleded with the data byte $00. On completion, the drive returns
     a sector-sized buffer containing a list of 16-bit bad sector numbers terminated by $FFFF.
 */
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeATR::format(uint16_t *responsesize)
 {
     Debug_print("ATR FORMAT\r\n");
@@ -281,7 +281,7 @@ mediatype_t MediaTypeATR::mount(fnFile *f, uint32_t disksize)
     return _disktype;
 }
 
-// Returns FALSE on error
+// Returns FUJI_ERROR::UNSPECIFIED on error
 bool MediaTypeATR::create(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
 {
     Debug_print("ATR CREATE\r\n");

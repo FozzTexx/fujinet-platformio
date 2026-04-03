@@ -13,7 +13,7 @@
 
 #define DISK_CTRL_STATUS_CLEAR 0x00
 
-enum mediatype_t 
+enum mediatype_t
 {
     MEDIATYPE_UNKNOWN = 0,
     MEDIATYPE_DSK,
@@ -55,14 +55,14 @@ public:
     virtual mediatype_t mount(FILE *f, uint32_t disksize) = 0;
     virtual void unmount();
 
-    // Returns TRUE if an error condition occurred
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
     virtual bool format(uint16_t *responsesize);
 
-    // Returns TRUE if an error condition occurred
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
     virtual bool read(uint32_t blockNum, uint16_t *readcount) = 0;
-    // Returns TRUE if an error condition occurred
+    // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
     virtual bool write(uint32_t blockNum, bool verify);
-    
+
     virtual uint8_t status() = 0;
 
     static mediatype_t discover_mediatype(const char *filename);

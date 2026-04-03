@@ -33,7 +33,7 @@ public:
 
     fsdir_entry *read();
     uint16_t tell();
-    bool seek(uint16_t pos);
+    fujiError_t seek(uint16_t pos);
 };
 
 #endif // FN_DIRCACHE_H

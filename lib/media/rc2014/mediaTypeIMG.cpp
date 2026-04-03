@@ -151,7 +151,7 @@ uint32_t MediaTypeIMG::_sector_to_offset(uint16_t sectorNum)
     return (uint32_t )sectorNum * DISK_BYTES_PER_SECTOR_SINGLE;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeIMG::read(uint16_t sectornum, uint16_t *readcount)
 {
     Debug_print("IMG READ\r\n");
@@ -190,7 +190,7 @@ bool MediaTypeIMG::read(uint16_t sectornum, uint16_t *readcount)
     return err;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeIMG::write(uint16_t sectornum, bool verify)
 {
     Debug_printf("IMG WRITE %u of %lu\r\n", sectornum, _media_num_sectors);
@@ -246,7 +246,7 @@ void MediaTypeIMG::status(uint8_t statusbuff[4])
     All sectors are filleded with the data byte $00. On completion, the drive returns
     a sector-sized buffer containing a list of 16-bit bad sector numbers terminated by $FFFF.
 */
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeIMG::format(uint16_t *responsesize)
 {
     Debug_print("IMG FORMAT\r\n");
@@ -273,7 +273,7 @@ mediatype_t MediaTypeIMG::mount(FILE *f, uint32_t disksize, mediatype_t disk_typ
     return _mediatype;
 }
 
-// Returns FALSE on error
+// Returns FUJI_ERROR::UNSPECIFIED on error
 bool MediaTypeIMG::create(FILE *f, uint16_t sectorSize, uint16_t numSectors)
 {
     return true;

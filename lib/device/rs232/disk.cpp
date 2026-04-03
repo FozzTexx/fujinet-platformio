@@ -31,10 +31,10 @@ void rs232Disk::rs232_read(uint32_t sector)
 
     uint32_t readcount;
 
-    bool err = _disk->read(sector, &readcount);
+    fujiError_t err = _disk->read(sector, &readcount);
 
     // Send result to Atari
-    transaction_put(_disk->_disk_sectorbuff, readcount, err);
+    transaction_put(_disk->_disk_sectorbuff, readcount, err != FUJI_ERROR::NONE);
 }
 
 // Write disk data from computer
@@ -50,7 +50,7 @@ void rs232Disk::rs232_write(uint32_t sector, bool verify)
 
         if (transaction_get(_disk->_disk_sectorbuff, sectorSize))
         {
-            if (_disk->write(sector, verify) == false)
+            if (_disk->write(sector, verify) == FUJI_ERROR::NONE)
             {
                 transaction_complete();
                 return;
@@ -127,10 +127,10 @@ void rs232Disk::rs232_format()
     }
 
     uint32_t responsesize;
-    bool err = _disk->format(&responsesize);
+    fujiError_t err = _disk->format(&responsesize);
 
     // Send to computer
-    transaction_put(_disk->_disk_sectorbuff, responsesize, err);
+    transaction_put(_disk->_disk_sectorbuff, responsesize, err != FUJI_ERROR::NONE);
 }
 
 // Read percom block
@@ -236,7 +236,7 @@ mediatype_t rs232Disk::mountROM(fnFile *f, const char *filename, uint32_t disksi
 
     for (offset = sectorNum = 0; offset < disksize; offset += rlen, sectorNum++)
     {
-        if (romImage.read(sectorNum, &rlen) != 0)
+        if (romImage.read(sectorNum, &rlen) != FUJI_ERROR::NONE)
             break;
         if (!SYSTEM_BUS.sendCommand(FUJI_DEVICEID_DBC, NETCMD_WRITE,
                                     std::string((char *) romImage._disk_sectorbuff, rlen))) {
@@ -275,7 +275,7 @@ void rs232Disk::unmount()
 }
 
 // Create blank disk
-bool rs232Disk::write_blank(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
+fujiError_t rs232Disk::write_blank(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
 {
     Debug_print("disk CREATE NEW IMAGE\n");
 

@@ -23,17 +23,17 @@ uint16_t MediaType::sector_size(uint32_t sectornum)
 }
 
 // Default WRITE is not implemented
-bool MediaType::write(uint32_t sectornum, bool verify)
+fujiError_t MediaType::write(uint32_t sectornum, bool verify)
 {
     Debug_print("DISK WRITE NOT IMPLEMENTED\r\n");
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 // Default FORMAT is not implemented
-bool MediaType::format(uint32_t *responsesize)
+fujiError_t MediaType::format(uint32_t *responsesize)
 {
     Debug_print("DISK FORMAT NOT IMPLEMENTED\r\n");
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 // Update PERCOM block from the total # of sectors

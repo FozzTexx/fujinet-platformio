@@ -27,7 +27,7 @@ std::pair<uint32_t, uint32_t> MediaTypeDSK::_block_to_offsets(uint32_t blockNum)
     return std::make_pair(o1, o2);
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDSK::read(uint32_t blockNum, uint16_t *readcount)
 {
     if (blockNum == _media_last_block)
@@ -71,7 +71,7 @@ bool MediaTypeDSK::read(uint32_t blockNum, uint16_t *readcount)
     return err;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDSK::write(uint32_t blockNum, bool verify)
 {
     bool err = false;
@@ -134,7 +134,7 @@ uint8_t MediaTypeDSK::status()
     return _media_controller_status;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDSK::format(uint16_t *responsesize)
 {
     memset(_media_blockbuff,0xE5,1024);
@@ -160,7 +160,7 @@ mediatype_t MediaTypeDSK::mount(FILE *f, uint32_t disksize)
     return _mediatype;
 }
 
-// Returns FALSE on error
+// Returns FUJI_ERROR::UNSPECIFIED on error
 bool MediaTypeDSK::create(FILE *f, uint32_t numBlocks)
 {
     Debug_print("DSK CREATE\r\n");

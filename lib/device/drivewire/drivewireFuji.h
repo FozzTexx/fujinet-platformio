@@ -28,13 +28,14 @@ protected:
     void transaction_error() override {
         _errorCode = 144;
     }
-    bool transaction_get(void *data, size_t len) override {
-        return SYSTEM_BUS.read((uint8_t *) data, len) == len;
+    fujiError_t transaction_get(void *data, size_t len) override {
+        return SYSTEM_BUS.read((uint8_t *) data, len) == len
+            ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
     }
-    void transaction_put(const void *data, size_t len, bool err=false) override {
+    void transaction_put(const void *data, size_t len, fujiError_t err=FUJI_ERROR::NONE) override {
         transaction_complete();
         _response.append((char *) data, len);
-        if (err)
+        if (err != FUJI_ERROR::NONE)
             transaction_error();
     }
 

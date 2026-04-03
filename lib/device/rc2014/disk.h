@@ -24,7 +24,7 @@ private:
     void status();
     void get_size();
 
-    bool write_blank(FILE *f, uint16_t sectorSize, uint16_t numSectors);
+    fujiError_t write_blank(FILE *f, uint16_t sectorSize, uint16_t numSectors);
 
     void rc2014_process(uint32_t commanddata, uint8_t checksum) override;
 
@@ -34,7 +34,7 @@ public:
                       disk_access_flags_t access_mode,
                       mediatype_t disk_type = MEDIATYPE_UNKNOWN);
     void unmount();
-    bool write_blank(FILE *f, uint32_t numBlocks);
+    fujiError_t write_blank(FILE *f, uint32_t numBlocks);
 
     mediatype_t mediatype() { return _media == nullptr ? MEDIATYPE_UNKNOWN : _media->_mediatype; };
 

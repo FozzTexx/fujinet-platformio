@@ -28,12 +28,12 @@ std::pair<uint32_t, uint32_t> MediaTypeDSK::_block_to_offsets(uint32_t blockNum)
     return std::make_pair(o1,o2);
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDSK::read(uint32_t blockNum, uint16_t *readcount)
 {
     if (blockNum == _media_last_block)
         return false; // Already have
-    
+
     Debug_print("DSK READ\r\n");
 
     // Return an error if we're trying to read beyond the end of the disk
@@ -48,7 +48,7 @@ bool MediaTypeDSK::read(uint32_t blockNum, uint16_t *readcount)
 
     bool err = false;
 
-    // Read lower part of block    
+    // Read lower part of block
     std::pair <uint32_t, uint32_t> offsets = _block_to_offsets(blockNum);
     err = fseek(_media_fileh, offsets.first, SEEK_SET) != 0;
 
@@ -72,7 +72,7 @@ bool MediaTypeDSK::read(uint32_t blockNum, uint16_t *readcount)
     return err;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDSK::write(uint32_t blockNum, bool verify)
 {
     bool err = false;
@@ -92,7 +92,7 @@ bool MediaTypeDSK::write(uint32_t blockNum, bool verify)
     err = fseek(_media_fileh, offsets.first, SEEK_SET) != 0;
     if (err == false)
         err = fwrite(_media_blockbuff,1,512,_media_fileh) != 512;
-    
+
     // Write upper part of block
     if (err == false)
         err = fseek(_media_fileh, offsets.second, SEEK_SET) != 0;
@@ -113,7 +113,7 @@ uint8_t MediaTypeDSK::status()
     return _media_controller_status;
 }
 
-// Returns TRUE if an error condition occurred
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
 bool MediaTypeDSK::format(uint16_t *responsesize)
 {
     memset(_media_blockbuff,0xE5,1024);
@@ -135,7 +135,7 @@ mediatype_t MediaTypeDSK::mount(FILE *f, uint32_t disksize)
     return _mediatype;
 }
 
-// Returns FALSE on error
+// Returns FUJI_ERROR::UNSPECIFIED on error
 bool MediaTypeDSK::create(FILE *f, uint32_t numBlocks)
 {
     Debug_print("DSK CREATE\r\n");

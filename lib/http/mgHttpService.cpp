@@ -430,7 +430,7 @@ int fnHttpService::post_handler_printer_clear(struct mg_connection *c)
     printer->reset_printer();
 
     // Try to remove the file (may fail on some filesystems)
-    int remove_result = fsFlash.remove("/paper");
+    fujiError_t remove_result = fsFlash.remove("/paper");
     Debug_printf("Attempting to remove /paper, result: %d\n", remove_result);
 
     mg_http_reply(c, 200, "Content-Type: application/json\r\n",

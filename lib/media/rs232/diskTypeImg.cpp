@@ -19,8 +19,8 @@ uint32_t MediaTypeImg::_sector_to_offset(uint32_t sectorNum)
     return (uint32_t )sectorNum * 512;
 }
 
-// Returns TRUE if an error condition occurred
-bool MediaTypeImg::read(uint32_t sectornum, uint32_t *readcount)
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+fujiError_t MediaTypeImg::read(uint32_t sectornum, uint32_t *readcount)
 {
     Debug_print("IMG READ\r\n");
 
@@ -30,25 +30,27 @@ bool MediaTypeImg::read(uint32_t sectornum, uint32_t *readcount)
     if (sectornum > _disk_num_sectors)
     {
         Debug_printf("::read sector %ld > %lu\r\n", sectornum, _disk_num_sectors);
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     uint16_t sectorSize = sector_size(sectornum);
 
     memset(_disk_sectorbuff, 0, sizeof(_disk_sectorbuff));
 
-    bool err = false;
+    fujiError_t err = FUJI_ERROR::NONE;
     // Perform a seek if we're not reading the sector after the last one we read
     if (sectornum != _disk_last_sector + 1)
     {
         uint32_t offset = _sector_to_offset(sectornum);
-        err = fnio::fseek(_disk_fileh, offset, SEEK_SET) != 0;
+        err = fnio::fseek(_disk_fileh, offset, SEEK_SET) != 0
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
     }
 
-    if (err == false)
-        err = fnio::fread(_disk_sectorbuff, 1, sectorSize, _disk_fileh) != sectorSize;
+    if (err == FUJI_ERROR::NONE)
+        err = fnio::fread(_disk_sectorbuff, 1, sectorSize, _disk_fileh) != sectorSize
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
 
-    if (err == false)
+    if (err == FUJI_ERROR::NONE)
         _disk_last_sector = sectornum;
     else
         _disk_last_sector = INVALID_SECTOR_VALUE;
@@ -58,8 +60,8 @@ bool MediaTypeImg::read(uint32_t sectornum, uint32_t *readcount)
     return err;
 }
 
-// Returns TRUE if an error condition occurred
-bool MediaTypeImg::write(uint32_t sectornum, bool verify)
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+fujiError_t MediaTypeImg::write(uint32_t sectornum, bool verify)
 {
     Debug_printf("IMG WRITE\r\n");
 
@@ -67,7 +69,7 @@ bool MediaTypeImg::write(uint32_t sectornum, bool verify)
     if (sectornum > _disk_num_sectors)
     {
         Debug_printf("::write sector %ld > %lu\r\n", sectornum, _disk_num_sectors);
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     uint16_t sectorSize = sector_size(sectornum);
@@ -83,7 +85,7 @@ bool MediaTypeImg::write(uint32_t sectornum, bool verify)
         if (e != 0)
         {
             Debug_printf("::write seek error %d\r\n", e);
-            return true;
+            return FUJI_ERROR::UNSPECIFIED;
         }
     }
     // Write the data
@@ -91,7 +93,7 @@ bool MediaTypeImg::write(uint32_t sectornum, bool verify)
     if (e != sectorSize)
     {
         Debug_printf("::write error %d, %d\r\n", e, errno);
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     int ret = fnio::fflush(_disk_fileh); // Since we might get reset at any moment, go ahead and sync the file
@@ -99,7 +101,7 @@ bool MediaTypeImg::write(uint32_t sectornum, bool verify)
 
     _disk_last_sector = sectornum;
 
-    return false;
+    return FUJI_ERROR::NONE;
 }
 
 void MediaTypeImg::status(uint8_t statusbuff[4])
@@ -124,8 +126,8 @@ void MediaTypeImg::status(uint8_t statusbuff[4])
     All sectors are filleded with the data byte $00. On completion, the drive returns
     a sector-sized buffer containing a list of 16-bit bad sector numbers terminated by $FFFF.
 */
-// Returns TRUE if an error condition occurred
-bool MediaTypeImg::format(uint32_t *responsesize)
+// Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
+fujiError_t MediaTypeImg::format(uint32_t *responsesize)
 {
     Debug_print("IMG FORMAT\r\n");
 
@@ -136,7 +138,7 @@ bool MediaTypeImg::format(uint32_t *responsesize)
 
     *responsesize = _disk_sector_size;
 
-    return false;
+    return FUJI_ERROR::NONE;
 }
 
 /* 
@@ -163,9 +165,9 @@ mediatype_t MediaTypeImg::mount(fnFile *f, uint32_t disksize)
     return _disktype;
 }
 
-// Returns FALSE on error
-bool MediaTypeImg::create(fnFile *f, uint16_t sectorSize, uint32_t numSectors)
+// Returns FUJI_ERROR::UNSPECIFIED on error
+fujiError_t MediaTypeImg::create(fnFile *f, uint16_t sectorSize, uint32_t numSectors)
 {
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
-#endif /* BUILD_ATARI */
+#endif /* BUILD_RS232 */

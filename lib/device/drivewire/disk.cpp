@@ -67,9 +67,9 @@ void drivewireDisk::unmount()
 {
 }
 
-bool drivewireDisk::read(uint32_t lsn, uint8_t *buf)
+fujiError_t drivewireDisk::read(uint32_t lsn, uint8_t *buf)
 {
-    bool r = _media->read(lsn,0);
+    fujiError_t r = _media->read(lsn,0);
     // copy data to destination buffer, if provided
     if (buf)
     {
@@ -78,18 +78,16 @@ bool drivewireDisk::read(uint32_t lsn, uint8_t *buf)
     return r;
 }
 
-bool drivewireDisk::write(uint32_t lsn, uint8_t *buf)
+fujiError_t drivewireDisk::write(uint32_t lsn, uint8_t *buf)
 {
     if (!buf)
     {
         Debug_printv("BUFFER is NULL, IGNORED.");
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     memcpy(_media->_media_blockbuff,buf,MEDIA_BLOCK_SIZE);
-    bool r = _media->write(lsn,0);
-
-    return r;
+    return _media->write(lsn,0);
 }
 
 void drivewireDisk::get_media_buffer(uint8_t **p_buffer, uint16_t *p_blk_size)
@@ -113,7 +111,7 @@ uint8_t drivewireDisk::get_media_status()
     return _media->status();
 }
 
-bool drivewireDisk::write_blank(fnFile *f, uint8_t numDisks)
+fujiError_t drivewireDisk::write_blank(fnFile *f, uint8_t numDisks)
 {
     uint8_t b[512];
     size_t n = numDisks * 315;
@@ -125,7 +123,7 @@ bool drivewireDisk::write_blank(fnFile *f, uint8_t numDisks)
     for (size_t i=0;i<n;i++)
         fnio::fwrite(b,sizeof(b),1,f);
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 

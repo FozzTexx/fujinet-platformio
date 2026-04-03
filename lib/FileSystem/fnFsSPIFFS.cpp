@@ -32,13 +32,13 @@ bool FileSystemSPIFFS::is_dir(const char *path)
     return (info.st_mode == S_IFDIR) ? true: false;
 }
 
-bool FileSystemSPIFFS::dir_open(const char * path, const char * pattern, uint16_t diropts)
+fujiError_t FileSystemSPIFFS::dir_open(const char * path, const char * pattern, uint16_t diropts)
 {
     // We ignore sorting options since we don't expect user browsing on SPIFFS
     char * fpath = _make_fullpath(path);
     _dir = opendir(fpath);
     free(fpath);
-    return(_dir != nullptr);
+    return _dir != nullptr ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 fsdir_entry * FileSystemSPIFFS::dir_read()
@@ -83,9 +83,9 @@ uint16_t FileSystemSPIFFS::dir_tell()
     return 0;
 }
 
-bool FileSystemSPIFFS::dir_seek(uint16_t)
+fujiError_t FileSystemSPIFFS::dir_seek(uint16_t)
 {
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 FILE * FileSystemSPIFFS::file_open(const char* path, const char* mode)
@@ -115,16 +115,16 @@ bool FileSystemSPIFFS::exists(const char* path)
     return (i == 0);
 }
 
-bool FileSystemSPIFFS::remove(const char* path)
+fujiError_t FileSystemSPIFFS::remove(const char* path)
 {
     char * fpath = _make_fullpath(path);
     int i = ::remove(fpath);
     Debug_printf("FileSystemSPIFFS::remove returned %d on \"%s\" (%s)\r\n", i, path, fpath);
     free(fpath);
-    return (i == 0);
+    return i == 0 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
-bool FileSystemSPIFFS::rename(const char* pathFrom, const char* pathTo)
+fujiError_t FileSystemSPIFFS::rename(const char* pathFrom, const char* pathTo)
 {
     char * spath = _make_fullpath(pathFrom);
     char * dpath = _make_fullpath(pathTo);
@@ -132,7 +132,7 @@ bool FileSystemSPIFFS::rename(const char* pathFrom, const char* pathTo)
     Debug_printf("FileSystemSPIFFS::rename returned %d on \"%s\" -> \"%s\" (%s -> %s)\r\n", i, pathFrom, pathTo, spath, dpath);
     free(spath);
     free(dpath);
-    return (i == 0);
+    return i == 0 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 uint64_t FileSystemSPIFFS::total_bytes()
@@ -153,10 +153,10 @@ uint64_t FileSystemSPIFFS::used_bytes()
     return (uint64_t)used;
 }
 
-bool FileSystemSPIFFS::start()
+fujiError_t FileSystemSPIFFS::start()
 {
     if(_started)
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
 
     // Set our basepath
 #ifdef ESP_PLATFORM
@@ -201,13 +201,13 @@ bool FileSystemSPIFFS::start()
     #endif
     }
 
-    return _started;
+    return _started ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
-bool FileSystemSPIFFS::stop()
+fujiError_t FileSystemSPIFFS::stop()
 {
     if(!_started)
-        return true;
+        return FUJI_ERROR::NONE;
 
 #ifdef ESP_PLATFORM
     esp_err_t e = esp_vfs_spiffs_unregister("storage");
@@ -230,7 +230,7 @@ bool FileSystemSPIFFS::stop()
     #endif
     }
 
-    return !_started;
+    return !_started ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 #endif // FLASH_SPIFFS

@@ -35,7 +35,7 @@ public:
                       disk_access_flags_t access_mode,
                       mediatype_t disk_type = MEDIATYPE_UNKNOWN);
     void unmount();
-    bool write_blank(FILE *f, uint32_t numBlocks);
+    fujiError_t write_blank(FILE *f, uint32_t numBlocks);
     virtual void reset();
 
     mediatype_t mediatype() { return _media == nullptr ? MEDIATYPE_UNKNOWN : _media->_mediatype; };

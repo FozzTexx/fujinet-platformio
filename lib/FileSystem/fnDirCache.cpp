@@ -60,15 +60,15 @@ fsdir_entry &DirCache::new_entry()
 
 void DirCache::apply_filter(const char *pattern, uint16_t diropts)
 {
-	char realpat[MAX_PATHLEN];
-	//char *thepat = nullptr;
+        char realpat[MAX_PATHLEN];
+        //char *thepat = nullptr;
     bool have_pattern = pattern != nullptr && pattern[0] != '\0';
-	bool filter_dirs = have_pattern && pattern[strlen(pattern)-1] == '/';
-	if (filter_dirs) {
-		strlcpy (realpat, pattern, sizeof (realpat));
-		realpat[strlen(realpat)-1] = '\0';
-	}
-	//thepat = filter_dirs ? realpat : (char *)pattern;
+        bool filter_dirs = have_pattern && pattern[strlen(pattern)-1] == '/';
+        if (filter_dirs) {
+                strlcpy (realpat, pattern, sizeof (realpat));
+                realpat[strlen(realpat)-1] = '\0';
+        }
+        //thepat = filter_dirs ? realpat : (char *)pattern;
 
     _entries_filtered.clear();
     _entries_filtered.shrink_to_fit();
@@ -122,13 +122,13 @@ uint16_t DirCache::tell()
         return _current;
 }
 
-bool DirCache::seek(uint16_t pos)
+fujiError_t DirCache::seek(uint16_t pos)
 {
     if(pos <= _entries_filtered.size())
     {
         _current = pos;
-        return true;
+        return FUJI_ERROR::NONE;
     }
     else
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 }
