@@ -23,8 +23,8 @@ protected:
     void transaction_continue(transState_t expectMoreData) override {}
     void transaction_complete() override {}
     void transaction_error() override {}
-    bool transaction_get(void *data, size_t len) override {return false;}
-    void transaction_put(const void *data, size_t len, bool err) override {
+    fujiError_t transaction_get(void *data, size_t len) override {return FUJI_ERROR::UNSPECIFIED;}
+    void transaction_put(const void *data, size_t len, fujiError_t err=FUJI_ERROR::NONE) override {
         response.clear();
         response.append(reinterpret_cast<const char*>(data), len);
     }

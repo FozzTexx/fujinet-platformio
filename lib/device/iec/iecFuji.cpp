@@ -952,7 +952,7 @@ void iecFuji::unmount_host_basic()
         set_fuji_iec_status(DEVICE_ERROR, response);
         return;
     }
-    if (!fujicmd_unmount_host_success(hs)) {
+    if (fujicmd_unmount_host_success(hs) != FUJI_ERROR::NONE) {
         response = "error unmounting host";
         set_fuji_iec_status(DEVICE_ERROR, response);
         return;
@@ -970,7 +970,7 @@ void iecFuji::unmount_host_raw()
         set_fuji_iec_status(DEVICE_ERROR, "invalid host slot");
         return;
     }
-    if (!fujicmd_unmount_host_success(hs)) {
+    if (fujicmd_unmount_host_success(hs) != FUJI_ERROR::NONE) {
         set_fuji_iec_status(DEVICE_ERROR, "error unmounting host");
         return;
     }
@@ -987,7 +987,7 @@ void iecFuji::mount_host_raw()
         return;
     }
 
-    if (!fujicmd_mount_host_success(hs))
+    if (fujicmd_mount_host_success(hs) != FUJI_ERROR::NONE)
     {
         set_fuji_iec_status(DEVICE_ERROR, "Failed to mount host slot");
     }
@@ -1008,7 +1008,7 @@ void iecFuji::mount_host_basic()
         return;
     }
 
-    if (fujicmd_mount_host_success(hs)) {
+    if (fujicmd_mount_host_success(hs) == FUJI_ERROR::NONE) {
       std::string hns = _fnHosts[hs].get_hostname();
         hns = mstr::toPETSCII2(hns);
         response = hns + " MOUNTED.";
@@ -1034,7 +1034,7 @@ void iecFuji::mount_disk_image_basic()
     uint8_t ds = atoi(pt[1].c_str());
     uint8_t mode = atoi(pt[2].c_str());
 
-    if (!fujicmd_mount_disk_image_success(ds, (disk_access_flags_t) mode))
+    if (fujicmd_mount_disk_image_success(ds, (disk_access_flags_t) mode) != FUJI_ERROR::NONE)
     {
         set_fuji_iec_status(DEVICE_ERROR, response);
         return;
@@ -1045,7 +1045,7 @@ void iecFuji::mount_disk_image_basic()
 void iecFuji::mount_disk_image_raw()
 {
     populate_slots_from_config();
-    if (!fujicmd_mount_disk_image_success(payload[0], (disk_access_flags_t) payload[1]))
+    if (fujicmd_mount_disk_image_success(payload[0], (disk_access_flags_t) payload[1]) != FUJI_ERROR::NONE)
     {
         set_fuji_iec_status(DEVICE_ERROR, "Failed to mount disk image");
     }
@@ -1326,7 +1326,7 @@ void iecFuji::read_app_key_raw()
 void iecFuji::unmount_disk_image_basic()
 {
     uint8_t deviceSlot = atoi(pt[1].c_str());
-    if (!fujicmd_unmount_disk_image_success(deviceSlot)) {
+    if (fujicmd_unmount_disk_image_success(deviceSlot) != FUJI_ERROR::NONE) {
         response = "invalid device slot";
         set_fuji_iec_status(DEVICE_ERROR, "invalid device slot");
     } else {
@@ -1338,7 +1338,7 @@ void iecFuji::unmount_disk_image_basic()
 void iecFuji::unmount_disk_image_raw()
 {
     uint8_t deviceSlot = payload[0];
-    if (!fujicmd_unmount_disk_image_success(deviceSlot)) {
+    if (fujicmd_unmount_disk_image_success(deviceSlot) != FUJI_ERROR::NONE) {
         set_fuji_iec_status(DEVICE_ERROR, "invalid device slot");
     } else {
         set_fuji_iec_status(0, "");
@@ -1383,7 +1383,7 @@ void iecFuji::open_directory_basic()
     uint8_t host_slot = atoi(pt[1].c_str());
     auto [dirpath, pattern] = split_at_delim(pt[2], '~');
 
-    if (!fujicore_open_directory_success(host_slot, dirpath, pattern)) {
+    if (fujicore_open_directory_success(host_slot, dirpath, pattern) != FUJI_ERROR::NONE) {
         set_fuji_iec_status(DEVICE_ERROR, "");
         return;
     }
@@ -1404,7 +1404,7 @@ void iecFuji::open_directory_raw()
     uint8_t host_slot = payload[0];
     auto [dirpath, pattern] = split_at_delim(payload.substr(1),  '\0');
 
-    if (!fujicore_open_directory_success(host_slot, dirpath, pattern)) {
+    if (fujicore_open_directory_success(host_slot, dirpath, pattern) != FUJI_ERROR::NONE) {
         set_fuji_iec_status(DEVICE_ERROR, "Failed to open directory");
         return;
     }
@@ -1516,8 +1516,8 @@ void iecFuji::set_directory_position_basic()
         return;
     }
 
-    bool result = _fnHosts[_current_open_directory_slot].dir_seek(pos);
-    if (!result)
+    fujiError_t result = _fnHosts[_current_open_directory_slot].dir_seek(pos);
+    if (result != FUJI_ERROR::NONE)
     {
         response = "error: unable to perform directory seek";
         set_fuji_iec_status(DEVICE_ERROR, response);
@@ -1539,8 +1539,8 @@ void iecFuji::set_directory_position_raw()
     }
 
     uint16_t pos = payload[0] | (payload[1] << 8);
-    bool result = _fnHosts[_current_open_directory_slot].dir_seek(pos);
-    if (!result)
+    fujiError_t result = _fnHosts[_current_open_directory_slot].dir_seek(pos);
+    if (result != FUJI_ERROR::NONE)
     {
         set_fuji_iec_status(DEVICE_ERROR, "error: unable to perform directory seek");
         return;
