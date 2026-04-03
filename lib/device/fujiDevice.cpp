@@ -1750,7 +1750,7 @@ void fujiDevice::fujicmd_enable_udpstream(int port)
     char host[64];
 
     transaction_continue(TRANS_STATE::WILL_GET);
-    if (!transaction_get(&host, sizeof(host)))
+    if (transaction_get(&host, sizeof(host)) != FUJI_ERROR::NONE)
     {
         transaction_error();
         return;

@@ -86,12 +86,12 @@ public:
     virtual void unmount();
 
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool format(uint16_t *responsesize);
+    virtual fujiError_t format(uint16_t *responsesize);
 
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool read(uint16_t sectornum, uint16_t *readcount) = 0;
+    virtual fujiError_t read(uint16_t sectornum, uint16_t *readcount) = 0;
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool write(uint16_t sectornum, bool verify);
+    virtual fujiError_t write(uint16_t sectornum, bool verify);
 
     // Always returns 128 for the first 3 sectors, otherwise _sectorSize
     virtual uint16_t sector_size(uint16_t sectornum);

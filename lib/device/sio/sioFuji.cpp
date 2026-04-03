@@ -142,7 +142,7 @@ void sioFuji::sio_net_set_ssid()
 {
     SSIDConfig cfg;
     transaction_continue(TRANS_STATE::WILL_GET);
-    if (!transaction_get(&cfg, sizeof(cfg))) {
+    if (transaction_get(&cfg, sizeof(cfg)) != FUJI_ERROR::NONE) {
         transaction_error();
         return;
     }
@@ -431,7 +431,7 @@ void sioFuji::sio_new_disk()
     } newDisk;
 
     // Ask for details on the new disk to create
-    if (!transaction_get(&newDisk, sizeof(newDisk)))
+    if (transaction_get(&newDisk, sizeof(newDisk)) != FUJI_ERROR::NONE)
     {
         Debug_print("sio_new_disk Bad checksum\n");
         transaction_error();
@@ -466,10 +466,10 @@ void sioFuji::sio_new_disk()
         return;
     }
 
-    bool ok = disk.disk_dev.write_blank(disk.fileh, newDisk.sectorSize, newDisk.numSectors);
+    fujiError_t ok = disk.disk_dev.write_blank(disk.fileh, newDisk.sectorSize, newDisk.numSectors);
     fnio::fclose(disk.fileh);
 
-    if (ok == false)
+    if (ok != FUJI_ERROR::NONE)
     {
         Debug_print("sio_new_disk Data write failed\n");
         transaction_error();
@@ -720,12 +720,12 @@ void sioFuji::sio_base64_encode_length()
     if (!l)
     {
         Debug_printf("BASE64 buffer is 0 bytes, sending error.\n");
-        transaction_put(response, sizeof(response), true);
+        transaction_put(response, sizeof(response), FUJI_ERROR::UNSPECIFIED);
     }
 
     Debug_printf("base64 buffer length: %u bytes\n", l);
 
-    transaction_put(response, sizeof(response), false);
+    transaction_put(response, sizeof(response));
 }
 
 void sioFuji::sio_base64_encode_output()
@@ -754,13 +754,13 @@ void sioFuji::sio_base64_encode_output()
     base64.base64_buffer.erase(0, len);
     base64.base64_buffer.shrink_to_fit();
 
-    transaction_put(p.data(), len, false);
+    transaction_put(p.data(), len);
 }
 
 void sioFuji::sio_random_number()
 {
     int r = rand();
-    transaction_put(&r,sizeof(int),true);
+    transaction_put(&r, sizeof(int), FUJI_ERROR::UNSPECIFIED);
 }
 
 void sioFuji::sio_base64_decode_input()
@@ -820,13 +820,13 @@ void sioFuji::sio_base64_decode_length()
     if (!len)
     {
         Debug_printf("BASE64 buffer is 0 bytes, sending error.\n");
-        transaction_put(response, sizeof(response), true);
+        transaction_put(response, sizeof(response), FUJI_ERROR::UNSPECIFIED);
         return;
     }
 
     Debug_printf("base64 buffer length: %u bytes\n", len);
 
-    transaction_put(response, sizeof(response), false);
+    transaction_put(response, sizeof(response));
 }
 
 void sioFuji::sio_base64_decode_output()
@@ -856,7 +856,7 @@ void sioFuji::sio_base64_decode_output()
     memcpy(p.data(), base64.base64_buffer.data(), len);
     base64.base64_buffer.erase(0, len);
     base64.base64_buffer.shrink_to_fit();
-    transaction_put(p.data(), len, false);
+    transaction_put(p.data(), len);
 }
 
 void sioFuji::sio_hash_input()
@@ -893,7 +893,7 @@ void sioFuji::sio_hash_length()
     Debug_printf("FUJI: HASH LENGTH\n");
     uint16_t is_hex = sio_get_aux() == 1;
     uint8_t r = hasher.hash_length(algorithm, is_hex);
-    transaction_put(&r, 1, false);
+    transaction_put(&r, 1);
 }
 
 void sioFuji::sio_hash_output()
@@ -909,7 +909,7 @@ void sioFuji::sio_hash_output()
     } else {
         hashed_data = hasher.output_binary();
     }
-    transaction_put(hashed_data.data(), hashed_data.size(), false);
+    transaction_put(hashed_data.data(), hashed_data.size());
 }
 
 void sioFuji::sio_hash_clear()
@@ -1125,13 +1125,13 @@ void sioFuji::sio_process(uint32_t commanddata, uint8_t checksum)
     }
 }
 
-bool sioFuji::fujicore_mount_disk_image_success(uint8_t deviceSlot,
-                                                disk_access_flags_t access_mode)
+fujiError_t sioFuji::fujicore_mount_disk_image_success(uint8_t deviceSlot,
+                                                       disk_access_flags_t access_mode)
 {
-    if (!fujiDevice::fujicore_mount_disk_image_success(deviceSlot, access_mode))
-        return false;
+    if (fujiDevice::fujicore_mount_disk_image_success(deviceSlot, access_mode) != FUJI_ERROR::NONE)
+        return FUJI_ERROR::UNSPECIFIED;
     status_wait_count = 0;
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 // Atari expects this field as a 32-bit little-endian value.
@@ -1145,7 +1145,7 @@ void sioFuji::fujicmd_net_scan_networks()
     char ret[4] = {0};
     fujicore_net_scan_networks();
     ret[0] = _countScannedSSIDs;
-    transaction_put((uint8_t *)ret, 4, false);
+    transaction_put((uint8_t *)ret, 4);
 }
 
 std::optional<std::vector<uint8_t>> sioFuji::fujicore_read_app_key()

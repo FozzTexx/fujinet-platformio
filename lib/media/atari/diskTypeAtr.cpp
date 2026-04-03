@@ -52,7 +52,7 @@ uint32_t MediaTypeATR::_sector_to_offset(uint16_t sectorNum)
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeATR::read(uint16_t sectornum, uint16_t *readcount)
+fujiError_t MediaTypeATR::read(uint16_t sectornum, uint16_t *readcount)
 {
     Debug_printf("ATR READ %d / %lu\r\n", sectornum, _disk_num_sectors);
 
@@ -62,25 +62,27 @@ bool MediaTypeATR::read(uint16_t sectornum, uint16_t *readcount)
     if (sectornum > _disk_num_sectors)
     {
         Debug_printf("::read sector %d > %lu\r\n", sectornum, _disk_num_sectors);
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     uint16_t sectorSize = sector_size(sectornum);
 
     memset(_disk_sectorbuff, 0, sizeof(_disk_sectorbuff));
 
-    bool err = false;
+    fujiError_t err = FUJI_ERROR::UNSPECIFIED;
     // Perform a seek if we're not reading the sector after the last one we read
     if (sectornum != _disk_last_sector + 1)
     {
         uint32_t offset = _sector_to_offset(sectornum);
-        err = fnio::fseek(_disk_fileh, offset, SEEK_SET) != 0;
+        err = fnio::fseek(_disk_fileh, offset, SEEK_SET) != 0
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
     }
 
-    if (err == false)
-        err = fnio::fread(_disk_sectorbuff, 1, sectorSize, _disk_fileh) != sectorSize;
+    if (err == FUJI_ERROR::NONE)
+        err = fnio::fread(_disk_sectorbuff, 1, sectorSize, _disk_fileh) != sectorSize
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
 
-    if (err == false)
+    if (err == FUJI_ERROR::NONE)
         _disk_last_sector = sectornum;
     else
         _disk_last_sector = INVALID_SECTOR_VALUE;
@@ -96,7 +98,7 @@ bool inHighScoreRange(int minimum, int maximum, int val)
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeATR::write(uint16_t sectornum, bool verify)
+fujiError_t MediaTypeATR::write(uint16_t sectornum, bool verify)
 {
     fnFile *oldFileh, *hsFileh;
 
@@ -109,7 +111,7 @@ bool MediaTypeATR::write(uint16_t sectornum, bool verify)
     if (sectornum > _disk_num_sectors)
     {
         Debug_printf("::write sector %d > %lu\r\n", sectornum, _disk_num_sectors);
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     if (_high_score_sector != 0)
@@ -139,7 +141,7 @@ bool MediaTypeATR::write(uint16_t sectornum, bool verify)
         if (e != 0)
         {
             Debug_printf("::write seek error %d\r\n", e);
-            return true;
+            return FUJI_ERROR::UNSPECIFIED;
         }
     }
     // Write the data
@@ -147,7 +149,7 @@ bool MediaTypeATR::write(uint16_t sectornum, bool verify)
     if (e != sectorSize)
     {
         Debug_printf("::write error %d, %d\r\n", e, errno);
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     int ret = fnio::fflush(_disk_fileh); // Since we might get reset at any moment, go ahead and sync the file
@@ -166,7 +168,7 @@ bool MediaTypeATR::write(uint16_t sectornum, bool verify)
     else
         _disk_last_sector = sectornum;
 
-    return false;
+    return FUJI_ERROR::NONE;
 }
 
 void MediaTypeATR::status(uint8_t statusbuff[4])
@@ -193,7 +195,7 @@ void MediaTypeATR::status(uint8_t statusbuff[4])
     a sector-sized buffer containing a list of 16-bit bad sector numbers terminated by $FFFF.
 */
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeATR::format(uint16_t *responsesize)
+fujiError_t MediaTypeATR::format(uint16_t *responsesize)
 {
     Debug_print("ATR FORMAT\r\n");
 
@@ -204,7 +206,7 @@ bool MediaTypeATR::format(uint16_t *responsesize)
 
     *responsesize = _disk_sector_size;
 
-    return false;
+    return FUJI_ERROR::NONE;
 }
 
 /*
@@ -282,7 +284,7 @@ mediatype_t MediaTypeATR::mount(fnFile *f, uint32_t disksize)
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED on error
-bool MediaTypeATR::create(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
+fujiError_t MediaTypeATR::create(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
 {
     Debug_print("ATR CREATE\r\n");
 
@@ -343,7 +345,7 @@ bool MediaTypeATR::create(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
             if (out != 128)
             {
                 Debug_printf("Error writing sector %d\r\n", i);
-                return false;
+                return FUJI_ERROR::UNSPECIFIED;
             }
             offset += 128;
             numSectors--;
@@ -358,9 +360,9 @@ bool MediaTypeATR::create(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
     if (out != sectorSize)
     {
         Debug_println("Error writing last sector");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 #endif /* BUILD_ATARI */

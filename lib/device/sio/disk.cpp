@@ -31,10 +31,10 @@ void sioDisk::sio_read()
 
     uint16_t readcount;
 
-    bool err = _disk->read(UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1), &readcount);
+    fujiError_t err = _disk->read(UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1), &readcount);
 
     // Send result to Atari
-    bus_to_computer(_disk->_disk_sectorbuff, readcount, err);
+    bus_to_computer(_disk->_disk_sectorbuff, readcount, err != FUJI_ERROR::NONE);
 }
 
 // Write disk data from computer
@@ -53,7 +53,7 @@ void sioDisk::sio_write(bool verify)
 
         if (ck == sio_checksum(_disk->_disk_sectorbuff, sectorSize))
         {
-            if (_disk->write(sectorNum, verify) == false)
+            if (_disk->write(sectorNum, verify) == FUJI_ERROR::NONE)
             {
                 sio_complete();
                 return;
@@ -148,10 +148,10 @@ void sioDisk::sio_format()
     }
 
     uint16_t responsesize;
-    bool err = _disk->format(&responsesize);
+    fujiError_t err = _disk->format(&responsesize);
 
     // Send to computer
-    bus_to_computer(_disk->_disk_sectorbuff, responsesize, err);
+    bus_to_computer(_disk->_disk_sectorbuff, responsesize, err != FUJI_ERROR::NONE);
 }
 
 // Read percom block
@@ -288,7 +288,7 @@ void sioDisk::unmount()
 }
 
 // Create blank disk
-bool sioDisk::write_blank(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
+fujiError_t sioDisk::write_blank(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
 {
     Debug_print("disk CREATE NEW IMAGE\n");
 

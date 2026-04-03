@@ -116,14 +116,14 @@ void MediaTypeXEX::_fake_directory_entry()
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
+fujiError_t MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
 {
     Debug_printf("XEX READ (%d)\r\n", sectornum);
 
 
     memset(_disk_sectorbuff, 0, sizeof(_disk_sectorbuff));
 
-    bool err = false;
+    fujiError_t err = FUJI_ERROR::NONE;
 
     // Load from our bootloader first
     if (sectornum <= BOOTLOADER_END)
@@ -147,7 +147,7 @@ bool MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
 
         // Note that we may not have read an entire sector's worth of bytes. That's okay.
         _disk_last_sector = INVALID_SECTOR_VALUE; // Reset this so we're forced to seek
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     *readcount = _disk_sector_size;
@@ -158,14 +158,14 @@ bool MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
         Debug_printf("faking DOS 2 VTOC\r\n");
         _fake_vtoc();
         _disk_last_sector = INVALID_SECTOR_VALUE;
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
     else if (sectornum >= DIRECTORY_START && sectornum <= DIRECTORY_END)
     {
         Debug_print("faking DOS 2 directory\r\n");
         _fake_directory_entry();
         _disk_last_sector = INVALID_SECTOR_VALUE; // Reset this so we're forced to seek        
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     int data_bytes = _disk_sector_size - SECTOR_LINK_SIZE;
@@ -176,10 +176,11 @@ bool MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
     if (sectornum != _disk_last_sector + 1)
     {
         Debug_printf("seeking to offset %d in XEX\r\n", xex_offset);
-        err = fnio::fseek(_disk_fileh, xex_offset, SEEK_SET) != 0;
+        err = fnio::fseek(_disk_fileh, xex_offset, SEEK_SET) != 0
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
     }
 
-    if (err == false)
+    if (err == FUJI_ERROR::NONE)
     {
         Debug_printf("requesting %d bytes from XEX\r\n", data_bytes);
         int read = fnio::fread(_disk_sectorbuff, 1, data_bytes, _disk_fileh);
@@ -200,10 +201,10 @@ bool MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
             }
         }
         else
-            err = true;
+            err = FUJI_ERROR::UNSPECIFIED;
     }
 
-    if (err == false)
+    if (err == FUJI_ERROR::NONE)
         _disk_last_sector = sectornum;
     else
         _disk_last_sector = INVALID_SECTOR_VALUE;

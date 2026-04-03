@@ -316,7 +316,7 @@ void MediaTypeATX::_process_sector(AtxTrack &track, AtxSector *psector, uint16_t
 
 // Copies data for given track sector into disk buffer and sets status bits as appropriate
 // Returns TRUE on error reading sector
-bool MediaTypeATX::_copy_track_sector_data(uint8_t tracknum, uint8_t sectornum, uint16_t sectorsize)
+fujiError_t MediaTypeATX::_copy_track_sector_data(uint8_t tracknum, uint8_t sectornum, uint16_t sectorsize)
 {
     Debug_printf("copy data track %d, sector %d\r\n", tracknum, sectornum);
 
@@ -386,11 +386,12 @@ bool MediaTypeATX::_copy_track_sector_data(uint8_t tracknum, uint8_t sectornum, 
     fnSystem.delay_microseconds(_atx_drive_model == ATX_DRIVE_MODEL_810 ? US_CRC_CALCULATION_810 : US_CRC_CALCULATION_1050);
 
     // Return error condition if our controller status isn't clear
-    return _disk_controller_status != DISK_CTRL_STATUS_CLEAR;
+    return _disk_controller_status != DISK_CTRL_STATUS_CLEAR
+        ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeATX::read(uint16_t sectornum, uint16_t *readcount)
+fujiError_t MediaTypeATX::read(uint16_t sectornum, uint16_t *readcount)
 {
 #ifdef ESP_PLATFORM
     Debug_printf("ATX READ (%d) rots=%lu\r\n", sectornum, _atx_total_rotations);
@@ -410,7 +411,7 @@ bool MediaTypeATX::read(uint16_t sectornum, uint16_t *readcount)
     if (tracknumber >= _tracks.size())
     {
         Debug_printf("calculated track number %d > track count %d\r\n", tracknumber, _tracks.size());
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
     int trackdiff = tracknumber < _atx_last_track ? _atx_last_track - tracknumber : tracknumber - _atx_last_track;
     _atx_last_track = tracknumber;
@@ -428,11 +429,7 @@ bool MediaTypeATX::read(uint16_t sectornum, uint16_t *readcount)
 
     *readcount = sectorSize;
 
-    bool result = _copy_track_sector_data((uint8_t)tracknumber, (uint8_t)tracksector, sectorSize);
-
-    //util_dump_bytes(_disk_sectorbuff, sectorSize);
-
-    return result;
+    return _copy_track_sector_data((uint8_t)tracknumber, (uint8_t)tracksector, sectorSize);
 }
 
 void MediaTypeATX::status(uint8_t statusbuff[4])
@@ -455,7 +452,7 @@ void MediaTypeATX::status(uint8_t statusbuff[4])
     statusbuff[2] = _atx_density == ATX_DENSITY_DOUBLE ? ATX_FORMAT_TIMEOUT_XF551 : ATX_FORMAT_TIMEOUT_810_1050;
 }
 
-bool MediaTypeATX::_load_atx_chunk_weak_sector(chunk_header_t &chunk_hdr, AtxTrack &track)
+fujiError_t MediaTypeATX::_load_atx_chunk_weak_sector(chunk_header_t &chunk_hdr, AtxTrack &track)
 {
     #ifdef VERBOSE_ATX
     Debug_printf("::_load_atx_chunk_weak_sector (%hu = 0x%04x)\r\n",
@@ -465,13 +462,13 @@ bool MediaTypeATX::_load_atx_chunk_weak_sector(chunk_header_t &chunk_hdr, AtxTra
     if (chunk_hdr.sector_index >= track.sector_count)
     {
         Debug_println("ERROR: _load_atx_chunk_weak_sector sector index > sector_count");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
     track.sectors[chunk_hdr.sector_index].weakoffset = chunk_hdr.header_data;
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
-bool MediaTypeATX::_load_atx_chunk_extended_sector(chunk_header_t &chunk_hdr, AtxTrack &track)
+fujiError_t MediaTypeATX::_load_atx_chunk_extended_sector(chunk_header_t &chunk_hdr, AtxTrack &track)
 {
     #ifdef VERBOSE_ATX
     Debug_printf("::_load_atx_chunk_extended_sector (%hu = 0x%04x)\r\n",
@@ -481,7 +478,7 @@ bool MediaTypeATX::_load_atx_chunk_extended_sector(chunk_header_t &chunk_hdr, At
     if (chunk_hdr.sector_index >= track.sector_count)
     {
         Debug_println("ERROR: _load_atx_chunk_extended_sector sector index > sector_count");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     uint16_t xsize;
@@ -500,14 +497,14 @@ bool MediaTypeATX::_load_atx_chunk_extended_sector(chunk_header_t &chunk_hdr, At
         xsize = 1024;
         break;
     default:
-        Debug_println("WARNING: Invalid extended sector value");
-        return false;
+        Debug_println("ERROR: Invalid extended sector value");
+        return FUJI_ERROR::UNSPECIFIED;
     }
     track.sectors[chunk_hdr.sector_index].extendedsize = xsize;
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
-bool MediaTypeATX::_load_atx_chunk_sector_data(chunk_header_t &chunk_hdr, AtxTrack &track)
+fujiError_t MediaTypeATX::_load_atx_chunk_sector_data(chunk_header_t &chunk_hdr, AtxTrack &track)
 {
     #ifdef VERBOSE_ATX
     Debug_print("::_load_atx_chunk_sector_data\r\n");
@@ -522,7 +519,7 @@ bool MediaTypeATX::_load_atx_chunk_sector_data(chunk_header_t &chunk_hdr, AtxTra
 
     // Skip if there's nothing to do
     if (data_size == 0)
-        return true;
+        return FUJI_ERROR::NONE;
     
     // Attempt to the sector data
 #ifdef ESP_PLATFORM
@@ -537,7 +534,7 @@ bool MediaTypeATX::_load_atx_chunk_sector_data(chunk_header_t &chunk_hdr, AtxTra
         Debug_printf("failed reading %d sector data chunk bytes (%d, %d)\r\n", data_size, i, errno);
         delete[] track.data;
         track.data = nullptr;
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     /*
@@ -555,10 +552,10 @@ bool MediaTypeATX::_load_atx_chunk_sector_data(chunk_header_t &chunk_hdr, AtxTra
 
     //util_dump_bytes(track.data, 64);
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
-bool MediaTypeATX::_load_atx_chunk_sector_list(chunk_header_t &chunk_hdr, AtxTrack &track)
+fujiError_t MediaTypeATX::_load_atx_chunk_sector_list(chunk_header_t &chunk_hdr, AtxTrack &track)
 {
     #ifdef VERBOSE_ATX
     Debug_print("::_load_atx_chunk_sector_list\r\n");
@@ -566,7 +563,7 @@ bool MediaTypeATX::_load_atx_chunk_sector_list(chunk_header_t &chunk_hdr, AtxTra
 
     // Skip all this if this track has no sectors
     if (track.sector_count == 0)
-        return true;
+        return FUJI_ERROR::NONE;
 
     int readz = sizeof(sector_header) * track.sector_count;
     if(chunk_hdr.length != readz + sizeof(chunk_hdr))
@@ -586,7 +583,7 @@ bool MediaTypeATX::_load_atx_chunk_sector_list(chunk_header_t &chunk_hdr, AtxTra
     {
         Debug_printf("failed reading sector list chunk bytes (%d, %d)\r\n", i, errno);
         delete[] sector_list;
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     // Keep a count of how many bytes we've read into the Track Record
@@ -606,11 +603,11 @@ bool MediaTypeATX::_load_atx_chunk_sector_list(chunk_header_t &chunk_hdr, AtxTra
 
     delete[] sector_list;
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 // Skip over unknown chunks if needed
-bool MediaTypeATX::_load_atx_chunk_unknown(chunk_header_t &chunk_hdr, AtxTrack &track)
+fujiError_t MediaTypeATX::_load_atx_chunk_unknown(chunk_header_t &chunk_hdr, AtxTrack &track)
 {
     Debug_print("::_load_atx_chunk_UNKNOWN - skipping\r\n");
 
@@ -623,12 +620,12 @@ bool MediaTypeATX::_load_atx_chunk_unknown(chunk_header_t &chunk_hdr, AtxTrack &
         if ((i = fnio::fseek(_disk_fileh, chunk_size, SEEK_CUR)) < 0)
         {
             Debug_printf("seek failed (%d, %d)\r\n", i, errno);
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
         // Keep a count of how many bytes we've read into the Track Record
         track.record_bytes_read += chunk_size;
     }
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 /*
@@ -672,23 +669,23 @@ int MediaTypeATX::_load_atx_track_chunk(track_header_t &trk_hdr, AtxTrack &track
     switch (chunk_hdr.type)
     {
     case ATX_CHUNKTYPE_SECTOR_LIST:
-        if (false == _load_atx_chunk_sector_list(chunk_hdr, track))
+        if (FUJI_ERROR::NONE != _load_atx_chunk_sector_list(chunk_hdr, track))
             return -1;
         break;
     case ATX_CHUNKTYPE_SECTOR_DATA:
-        if (false == _load_atx_chunk_sector_data(chunk_hdr, track))
+        if (FUJI_ERROR::NONE != _load_atx_chunk_sector_data(chunk_hdr, track))
             return -1;
         break;
     case ATX_CHUNKTYPE_WEAK_SECTOR:
-        if (false == _load_atx_chunk_weak_sector(chunk_hdr, track))
+        if (FUJI_ERROR::NONE != _load_atx_chunk_weak_sector(chunk_hdr, track))
             return -1;
         break;
     case ATX_CHUNKTYPE_EXTENDED_HEADER:
-        if (false == _load_atx_chunk_extended_sector(chunk_hdr, track))
+        if (FUJI_ERROR::NONE != _load_atx_chunk_extended_sector(chunk_hdr, track))
             return -1;
         break;
     default:
-        if (false == _load_atx_chunk_unknown(chunk_hdr, track))
+        if (FUJI_ERROR::NONE != _load_atx_chunk_unknown(chunk_hdr, track))
             return -1;
         break;
     }
@@ -696,7 +693,7 @@ int MediaTypeATX::_load_atx_track_chunk(track_header_t &trk_hdr, AtxTrack &track
     return 0;
 }
 
-bool MediaTypeATX::_load_atx_track_record(uint32_t length)
+fujiError_t MediaTypeATX::_load_atx_track_record(uint32_t length)
 {
     #ifdef VERBOSE_ATX
     Debug_printf("::_load_atx_track_record len %lu\r\n", length);
@@ -708,7 +705,7 @@ bool MediaTypeATX::_load_atx_track_record(uint32_t length)
     if ((i = fnio::fread(&trk_hdr, 1, sizeof(trk_hdr), _disk_fileh)) != sizeof(trk_hdr))
     {
         Debug_printf("failed reading track header bytes (%d, %d)\r\n", i, errno);
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     #ifdef VERBOSE_ATX
@@ -721,7 +718,7 @@ bool MediaTypeATX::_load_atx_track_record(uint32_t length)
     if (trk_hdr.track_number >= ATX_DEFAULT_NUMTRACKS)
     {
         Debug_print("ERROR: track number > 40 - aborting\r\n");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     AtxTrack &track = _tracks[trk_hdr.track_number];
@@ -730,7 +727,7 @@ bool MediaTypeATX::_load_atx_track_record(uint32_t length)
     if (track.track_number != -1)
     {
         Debug_print("ERROR: duplicate track number - aborting!\r\n");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     // Store basic track info
@@ -756,7 +753,7 @@ bool MediaTypeATX::_load_atx_track_record(uint32_t length)
         if ((i = fnio::fseek(_disk_fileh, chunk_start_offset, SEEK_CUR)) < 0)
         {
             Debug_printf("failed seeking to first chunk in track record (%d, %d)\r\n", i, errno);
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
         // Keep a count of how many bytes we've read into the Track Record
         track.record_bytes_read += chunk_start_offset;
@@ -769,7 +766,7 @@ bool MediaTypeATX::_load_atx_track_record(uint32_t length)
     while ((i = _load_atx_track_chunk(trk_hdr, track)) == 0)
         ;
 
-    return i == 1; // Return FALSE on error condition
+    return i == 1 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 /*
@@ -777,7 +774,7 @@ bool MediaTypeATX::_load_atx_track_record(uint32_t length)
   Since there's only one type of record we care about (RECORD), all we need is the length
   Returns FUJI_ERROR::UNSPECIFIED on error, otherwise TRUE
 */
-bool MediaTypeATX::_load_atx_record()
+fujiError_t MediaTypeATX::_load_atx_record()
 {
     #ifdef VERBOSE_ATX
     Debug_printf("::_load_atx_record #%u\r\n", ++_atx_num_records);
@@ -798,7 +795,7 @@ bool MediaTypeATX::_load_atx_record()
             Debug_print("reached EOF\r\n");
             #endif
         }
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     if (rec_hdr.type != ATX_RECORDTYPE_TRACK)
@@ -808,9 +805,9 @@ bool MediaTypeATX::_load_atx_record()
         if ((i = fnio::fseek(_disk_fileh, rec_hdr.length - sizeof(rec_hdr), SEEK_CUR)) < 0)
         {
             Debug_printf("failed seeking past this record (%d, %d)\r\n", i, errno);
-            return false;
+            return FUJI_ERROR::UNSPECIFIED;
         }
-        return true; // Return TRUE since this isn't an error
+        return FUJI_ERROR::NONE;
     }
 
     // Try to read the track into memory
@@ -821,7 +818,7 @@ bool MediaTypeATX::_load_atx_record()
  Load the data records that make up the ATX image into memory
  Returns FALSE on failure
 */
-bool MediaTypeATX::_load_atx_data(atx_header_t &atx_hdr)
+fujiError_t MediaTypeATX::_load_atx_data(atx_header_t &atx_hdr)
 {
     Debug_println("MediaTypeATX::_load_atx_data starting read");
 
@@ -830,10 +827,10 @@ bool MediaTypeATX::_load_atx_data(atx_header_t &atx_hdr)
     if ((i = fnio::fseek(_disk_fileh, atx_hdr.start, SEEK_SET)) < 0)
     {
         Debug_printf("failed seeking to start of ATX data (%d, %d)\r\n", i, errno);
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
-    while (_load_atx_record())
+    while (_load_atx_record() == FUJI_ERROR::NONE)
         ;
 
     if (_atx_num_tracks != ATX_DEFAULT_NUMTRACKS)
@@ -843,7 +840,7 @@ bool MediaTypeATX::_load_atx_data(atx_header_t &atx_hdr)
 
     Debug_print("ATX load completed\r\n");
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 /* 
@@ -909,7 +906,7 @@ mediatype_t MediaTypeATX::mount(fnFile *f, uint32_t disksize)
     _disk_fileh = f;
 
     // Load all the actual ATX records into memory (return immediately if we fail)
-    if (_load_atx_data(hdr) == false)
+    if (_load_atx_data(hdr) != FUJI_ERROR::NONE)
     {
         _disk_fileh = nullptr;
         _tracks.clear();
@@ -932,7 +929,7 @@ mediatype_t MediaTypeATX::mount(fnFile *f, uint32_t disksize)
     a sector-sized buffer containing a list of 16-bit bad sector numbers terminated by $FFFF.
 */
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeATX::format(uint16_t *responsesize)
+fujiError_t MediaTypeATX::format(uint16_t *responsesize)
 {
     Debug_print("ATX FORMAT, SEND ERROR.\r\n");
 
@@ -943,7 +940,7 @@ bool MediaTypeATX::format(uint16_t *responsesize)
 
     *responsesize = _disk_sector_size;
 
-    return true; // send ERROR.
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 #endif /* BUILD_ATARI */
