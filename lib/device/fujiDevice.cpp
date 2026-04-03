@@ -592,8 +592,9 @@ fujiError_t fujiDevice::fujicore_open_directory_success(uint8_t hostSlot, const 
     return fujicore_open_directory_success(hostSlot, *finalpath, pattern);
 }
 
-fujiError_t fujiDevice::fujicore_open_directory_success(uint8_t hostSlot, const std::string &dirpath,
-                                                 const std::optional<std::string> &pattern)
+fujiError_t
+fujiDevice::fujicore_open_directory_success(uint8_t hostSlot, const std::string &dirpath,
+                                            const std::optional<std::string> &pattern)
 {
     if (validate_host_slot(hostSlot) != FUJI_ERROR::NONE)
         return FUJI_ERROR::UNSPECIFIED;
@@ -609,7 +610,7 @@ fujiError_t fujiDevice::fujicore_open_directory_success(uint8_t hostSlot, const 
     Debug_printf("Opening directory: \"%s\", pattern: \"%s\"\r\n",
                  dirpath.c_str(), pattern.value_or("").c_str());
 
-    if (_fnHosts[hostSlot].dir_open(dirpath.c_str(), pattern ? pattern->c_str() : nullptr, 0) == FUJI_ERROR::NONE)
+    if (_fnHosts[hostSlot].dir_open(dirpath.c_str(), pattern ? pattern->c_str() : nullptr, 0) != FUJI_ERROR::NONE)
         return FUJI_ERROR::UNSPECIFIED;
 
     _current_open_directory_slot = hostSlot;
