@@ -26,11 +26,11 @@ protected:
     }
     void transaction_complete() override {}
     void transaction_error() override {}
-    bool transaction_get(void *data, size_t len) override {
+    fujiError_t transaction_get(void *data, size_t len) override {
         unsigned short rlen = adamnet_recv_buffer((uint8_t *) data, len);
-        return rlen == len;
+        return rlen == len ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
     }
-    void transaction_put(const void *data, size_t len, bool err=false) override {
+    void transaction_put(const void *data, size_t len, fujiError_t err=FUJI_ERROR::NONE) override {
         memcpy(response, data, len);
         response_len = len;
     }

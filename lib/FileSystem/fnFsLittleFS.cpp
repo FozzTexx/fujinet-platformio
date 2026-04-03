@@ -31,13 +31,13 @@ bool FileSystemLittleFS::is_dir(const char *path)
     return (info.st_mode == S_IFDIR) ? true: false;
 }
 
-bool FileSystemLittleFS::dir_open(const char * path, const char * pattern, uint16_t diropts)
+fujiError_t FileSystemLittleFS::dir_open(const char * path, const char * pattern, uint16_t diropts)
 {
     // We ignore sorting options since we don't expect user browsing on LITTLEFS
     char * fpath = _make_fullpath(path);
     _dir = opendir(fpath);
     free(fpath);
-    return(_dir != nullptr);
+    return _dir != nullptr ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 fsdir_entry * FileSystemLittleFS::dir_read()
@@ -83,9 +83,9 @@ uint16_t FileSystemLittleFS::dir_tell()
     return 0;
 }
 
-bool FileSystemLittleFS::dir_seek(uint16_t)
+fujiError_t FileSystemLittleFS::dir_seek(uint16_t)
 {
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 
@@ -99,7 +99,7 @@ bool FileSystemLittleFS::dir_seek(uint16_t)
    "/abc/def"
    "abc/def/ghi"
 */
-bool FileSystemLittleFS::create_path(const char *fullpath)
+fujiError_t FileSystemLittleFS::create_path(const char *fullpath)
 {
     char segment[64];
 
@@ -144,7 +144,7 @@ bool FileSystemLittleFS::create_path(const char *fullpath)
         end++;
     }
 
-    return true;
+    return FUJI_ERROR::NONE;
 }
 
 FILE * FileSystemLittleFS::file_open(const char* path, const char* mode)
@@ -176,7 +176,7 @@ bool FileSystemLittleFS::exists(const char* path)
     return (i == 0);
 }
 
-bool FileSystemLittleFS::remove(const char* path)
+fujiError_t FileSystemLittleFS::remove(const char* path)
 {
     char * fpath = _make_fullpath(path);
     int i = ::remove(fpath);
@@ -184,10 +184,10 @@ bool FileSystemLittleFS::remove(const char* path)
     Debug_printv("FileSystemLittleFS::remove returned %d on \"%s\" (%s)\r\n", i, path, fpath);
 #endif
     free(fpath);
-    return (i == 0);
+    return i == 0 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
-bool FileSystemLittleFS::rename(const char* pathFrom, const char* pathTo)
+fujiError_t FileSystemLittleFS::rename(const char* pathFrom, const char* pathTo)
 {
     char * spath = _make_fullpath(pathFrom);
     char * dpath = _make_fullpath(pathTo);
@@ -197,7 +197,7 @@ bool FileSystemLittleFS::rename(const char* pathFrom, const char* pathTo)
 #endif
     free(spath);
     free(dpath);
-    return (i == 0);
+    return i == 0 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 uint64_t FileSystemLittleFS::total_bytes()
@@ -214,10 +214,10 @@ uint64_t FileSystemLittleFS::used_bytes()
     return (uint64_t)used;
 }
 
-bool FileSystemLittleFS::start()
+fujiError_t FileSystemLittleFS::start()
 {
     if(_started)
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
 
     // Set our basepath
     // strlcpy(_basepath, "/flash", sizeof(_basepath));
@@ -251,14 +251,14 @@ bool FileSystemLittleFS::start()
     #endif
     }
 
-    return _started;
+    return _started ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 
-bool FileSystemLittleFS::stop()
+fujiError_t FileSystemLittleFS::stop()
 {
     if(!_started)
-        return true;
+        return FUJI_ERROR::NONE;
 
     esp_err_t e = esp_vfs_littlefs_unregister("storage");
 
@@ -281,7 +281,7 @@ bool FileSystemLittleFS::stop()
     #endif
     }
 
-    return !_started;
+    return !_started ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 #endif // FLASH_LITTLEFS

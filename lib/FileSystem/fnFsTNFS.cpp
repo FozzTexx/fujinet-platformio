@@ -115,7 +115,7 @@ fujiError_t FileSystemTNFS::start(const char *host, uint16_t port, const char * 
     if(vfs_tnfs_register(_mountinfo, _basepath, sizeof(_basepath)) != 0)
     {
         Debug_println("Failed to register VFS driver!");
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     esp_timer_create_args_t tcfg = {

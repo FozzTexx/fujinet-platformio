@@ -177,7 +177,7 @@ fujiError_t FileSystemSDFAT::dir_open(const char * path, const char * pattern, u
 #ifdef ESP_PLATFORM
     FRESULT result = f_opendir(&_dir, path);
     if(result != FR_OK)
-        return false;
+        return FUJI_ERROR::UNSPECIFIED;
 #else
     char * fpath = _make_fullpath(path);
     Debug_printf("FileSystemSDFAT::dir_open - opendir \"%s\"\n", fpath);
@@ -434,7 +434,7 @@ fujiError_t FileSystemSDFAT::remove(const char* path)
 #ifdef ESP_PLATFORM
     FRESULT result = f_unlink(path);
     //Debug_printf("sdFileSystem::remove returned %d on \"%s\"\r\n", result, path);
-    return (result == FR_OK);
+    return result == FR_OK ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 #else
     char * fpath = _make_fullpath(path);
     int result = ::remove(fpath);
@@ -512,7 +512,7 @@ fujiError_t FileSystemSDFAT::create_path(const char *path)
                 if(0 != f_mkdir(cumulativePath))
                 {
                     Debug_printf("FAILED errno=%d\r\n", errno);
-                    return false;
+                    return FUJI_ERROR::UNSPECIFIED;
                 }
             }
 #else
@@ -542,7 +542,7 @@ fujiError_t FileSystemSDFAT::rename(const char* pathFrom, const char* pathTo)
 #ifdef ESP_PLATFORM
     FRESULT result = f_rename(pathFrom, pathTo);
     Debug_printf("FileSystemSDFAT::rename returned %d on \"%s\" -> \"%s\"\r\n", result, pathFrom, pathTo);
-    return (result == FR_OK);
+    return result == FR_OK ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 #else
     char * spath = _make_fullpath(pathFrom);
     char * dpath = _make_fullpath(pathTo);
@@ -620,7 +620,7 @@ const char * FileSystemSDFAT::partition_type()
 fujiError_t FileSystemSDFAT::start()
 {
     if(_started)
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
 
     // Set our basepath
     strlcpy(_basepath, "/sd", sizeof(_basepath));
@@ -709,7 +709,7 @@ fujiError_t FileSystemSDFAT::start()
         Debug_printf("SD mount failed with code #%d, \"%s\"\r\n", e, esp_err_to_name(e));
     }
 
-    return _started;
+    return _started ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 #else
 // !ESP_PLATFORM

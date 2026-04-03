@@ -684,7 +684,7 @@ esp_err_t fnHttpService::get_handler_mount(httpd_req_t *req)
             fnHTTPD.addToErrMsg("<li>mode should be either 1 for read, or 2 for write.</li>");
         }
 
-        if (theFuji->get_host(hs)->mount() == true)
+        if (theFuji->get_host(hs)->mount() == FUJI_ERROR::NONE)
         {
             fujiDisk *disk = theFuji->get_disk(ds);
             disk_access_flags_t mode = qp.query_parsed["mode"] == "2" ?
@@ -692,7 +692,7 @@ esp_err_t fnHttpService::get_handler_mount(httpd_req_t *req)
             disk->host_slot = hs;
             strcpy(disk->filename,qp.query_parsed["filename"].c_str());
 
-            if (!theFuji->fujicore_mount_disk_image_success(ds, mode))
+            if (theFuji->fujicore_mount_disk_image_success(ds, mode) != FUJI_ERROR::NONE)
             {
                 fnHTTPD.addToErrMsg("<li>Could not mount disk: " + qp.query_parsed["filename"] + "</li>");
             }
@@ -950,7 +950,7 @@ esp_err_t fnHttpService::get_handler_dir(httpd_req_t *req)
 
     theFuji->populate_slots_from_config();
 
-    if ((theFuji->get_host(hs)->mount() == true) && (theFuji->get_host(hs)->dir_open(qp.query_parsed["path"].c_str(), pattern.c_str())))
+    if ((theFuji->get_host(hs)->mount() == FUJI_ERROR::NONE) && (theFuji->get_host(hs)->dir_open(qp.query_parsed["path"].c_str(), pattern.c_str()) == FUJI_ERROR::NONE))
     {
         fsdir_entry_t *f;
         string parent;
