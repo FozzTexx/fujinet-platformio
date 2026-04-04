@@ -330,7 +330,7 @@ void iwmDisk::iwm_readblock(iwm_decoded_cmd_t cmd)
   switched = false; //if we made it here it's ok to reset switched
 
   sdstato = BLOCK_DATA_LEN;
-  if (_disk->read(block_num, &sdstato, data_buffer))
+  if (_disk->read(block_num, &sdstato, data_buffer) != FUJI_ERROR::NONE)
   {
     Debug_printf("\r\nFile Seek or Read err: %d bytes", sdstato);
     send_reply_packet(SP_ERR_IOERROR);

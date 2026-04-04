@@ -18,74 +18,74 @@
 // This table maps ProDOS blocks to pairs of DOS logical sectors.
 static const int prodos2dos[8][2] = { {0, 14}, {13, 12}, {11, 10}, {9, 8}, {7, 6}, {5, 4}, {3, 2}, {1, 15} };
 
-bool MediaTypeDO::read(uint32_t blockNum, uint16_t *count, uint8_t* buffer)
+fujiError_t MediaTypeDO::read(uint32_t blockNum, uint16_t *count, uint8_t* buffer)
 {
-    bool err = false;
     uint32_t track = blockNum / BLOCKS_PER_TRACK;
     const int* sectors = prodos2dos[blockNum % BLOCKS_PER_TRACK];
 
-    err = read_sector(track, sectors[0], buffer);
+    fujiError_t err = read_sector(track, sectors[0], buffer);
 
-    if (!err)
+    if (err == FUJI_ERROR::NONE)
         err = read_sector(track, sectors[1], &buffer[BYTES_PER_SECTOR]);
 
     return err;
 }
 
-bool MediaTypeDO::read_sector(int track, int sector, uint8_t* buffer)
+fujiError_t MediaTypeDO::read_sector(int track, int sector, uint8_t* buffer)
 {
     Debug_printf("\r\nMediaTypeDO read track %d sector %d", track, sector);
     
-    bool err = false;
     uint32_t offset = (track * BYTES_PER_TRACK) + (sector * BYTES_PER_SECTOR);
 
-    err = fnio::fseek(_media_fileh, offset, SEEK_SET) != 0;
+    fujiError_t err = fnio::fseek(_media_fileh, offset, SEEK_SET) != 0
+        ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
 
-    if (!err)
-        err = fnio::fread(buffer, 1, BYTES_PER_SECTOR, _media_fileh) != BYTES_PER_SECTOR;
+    if (err == FUJI_ERROR::NONE)
+        err = fnio::fread(buffer, 1, BYTES_PER_SECTOR, _media_fileh) != BYTES_PER_SECTOR
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
 
     return err;
 }
 
-bool MediaTypeDO::write(uint32_t blockNum, uint16_t *count, uint8_t* buffer)
+fujiError_t MediaTypeDO::write(uint32_t blockNum, uint16_t *count, uint8_t* buffer)
 {
     // Return an error if we're trying to write beyond the end of the disk
     if (blockNum >= num_blocks)
     {
         Debug_printf("\r\nwrite block BEYOND END %lu > %lu", blockNum, num_blocks);
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
-    bool err = false;
     uint32_t track = blockNum / BLOCKS_PER_TRACK;
     const int* sectors = prodos2dos[blockNum % BLOCKS_PER_TRACK];
 
-    err = write_sector(track, sectors[0], buffer);
+    fujiError_t err = write_sector(track, sectors[0], buffer);
 
-    if (!err)
+    if (err == FUJI_ERROR::NONE)
         err = write_sector(track, sectors[1], &buffer[BYTES_PER_SECTOR]);
 
     return err;
 }
 
-bool MediaTypeDO::write_sector(int track, int sector, uint8_t* buffer)
+fujiError_t MediaTypeDO::write_sector(int track, int sector, uint8_t* buffer)
 {
     Debug_printf("\r\nMediaTypeDO write track %d sector %d", track, sector);
 
-    bool err = false;
     uint32_t offset = (track * BYTES_PER_TRACK) + (sector * BYTES_PER_SECTOR);
 
-    err = fnio::fseek(_media_fileh, offset, SEEK_SET) != 0;
+    fujiError_t err = fnio::fseek(_media_fileh, offset, SEEK_SET) != 0
+        ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
 
-    if (!err)
-        err = fnio::fwrite(buffer, 1, BYTES_PER_SECTOR, _media_fileh) != BYTES_PER_SECTOR;
+    if (err == FUJI_ERROR::NONE)
+        err = fnio::fwrite(buffer, 1, BYTES_PER_SECTOR, _media_fileh) != BYTES_PER_SECTOR
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
 
     return err;
 }
 
-bool MediaTypeDO::format(uint16_t *responsesize)
+fujiError_t MediaTypeDO::format(uint16_t *responsesize)
 {
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 mediatype_t MediaTypeDO::mount(fnFile *f, uint32_t disksize)

@@ -10,10 +10,10 @@
 #define WOZ1 '1'
 #define WOZ2 '2'
 
-bool MediaTypeWOZ::write_sector(int track, int sector, uint8_t *buffer)
+fujiError_t MediaTypeWOZ::write_sector(int track, int sector, uint8_t *buffer)
 {
   Debug_printf("\r\nWOZ disk needs to write sector!");
-  return false;
+  return FUJI_ERROR::UNSPECIFIED;
 }
 
 mediatype_t MediaTypeWOZ::mount(fnFile *f, uint32_t disksize)
@@ -21,25 +21,25 @@ mediatype_t MediaTypeWOZ::mount(fnFile *f, uint32_t disksize)
     _media_fileh = f;
     diskiiemulation = true;
     // check WOZ header
-    if (wozX_check_header())
+    if (wozX_check_header() != FUJI_ERROR::NONE)
         return MEDIATYPE_UNKNOWN;
 
     // work through INFO chunk
-    if (wozX_read_info())
+    if (wozX_read_info() != FUJI_ERROR::NONE)
         return MEDIATYPE_UNKNOWN;
 
-    if (wozX_read_tmap())
+    if (wozX_read_tmap() != FUJI_ERROR::NONE)
         return MEDIATYPE_UNKNOWN;
         
     // read TRKS table
     switch (woz_version)
     {
     case WOZ1:
-        if (woz1_read_tracks())
+        if (woz1_read_tracks() != FUJI_ERROR::NONE)
             return MEDIATYPE_UNKNOWN;
         break;
     case WOZ2:
-        if (woz2_read_tracks())
+        if (woz2_read_tracks() != FUJI_ERROR::NONE)
             return MEDIATYPE_UNKNOWN;
         break;
     default:
@@ -60,7 +60,7 @@ void MediaTypeWOZ::unmount()
     }
 }
 
-bool MediaTypeWOZ::wozX_check_header()
+fujiError_t MediaTypeWOZ::wozX_check_header()
 {
     char hdr[12];
     fnio::fread(&hdr, sizeof(char), 12, _media_fileh);
@@ -72,7 +72,7 @@ bool MediaTypeWOZ::wozX_check_header()
     else
     {
         Debug_printf("\nNot a WOZ file!");
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
     // check for file integrity
     if ((unsigned char)(hdr[4]) == 0xFF && hdr[5] == 0x0A && hdr[6] == 0x0D && hdr[7] == 0x0A)
@@ -81,20 +81,20 @@ bool MediaTypeWOZ::wozX_check_header()
     }
     else
     {
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     // could check CRC if one wanted
     
-    return false;  
+    return FUJI_ERROR::NONE;  
 }
 
-bool MediaTypeWOZ::wozX_read_info()
+fujiError_t MediaTypeWOZ::wozX_read_info()
 {
     if (fnio::fseek(_media_fileh, 12, SEEK_SET))
     {
         Debug_printf("\nError seeking INFO chunk");
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
     uint32_t chunk_id, chunk_size;
     fnio::fread(&chunk_id, sizeof(chunk_id), 1, _media_fileh);
@@ -128,18 +128,18 @@ bool MediaTypeWOZ::wozX_read_info()
         break;
     default:
         Debug_printf("\nWOZ version %c not supported", woz_version);
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
-    return false;
+    return FUJI_ERROR::NONE;
 }
 
-bool MediaTypeWOZ::wozX_read_tmap()
+fujiError_t MediaTypeWOZ::wozX_read_tmap()
 { // read TMAP
     if (fnio::fseek(_media_fileh, 80, SEEK_SET))
     {
         Debug_printf("\nError seeking TMAP chunk");
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     uint32_t chunk_id, chunk_size;
@@ -156,10 +156,10 @@ bool MediaTypeWOZ::wozX_read_tmap()
         Debug_printf("\n%d/4, %d", i, tmap[i]);
 #endif
 
-    return false;
+    return FUJI_ERROR::NONE;
 }
 
-bool MediaTypeWOZ::woz1_read_tracks()
+fujiError_t MediaTypeWOZ::woz1_read_tracks()
 {    // depend upon little endian-ness
     fnio::fseek(_media_fileh, 256, SEEK_SET);
 
@@ -212,7 +212,7 @@ bool MediaTypeWOZ::woz1_read_tracks()
             else
             {
                 Debug_printf("\nNo RAM allocated!");
-                return true;
+                return FUJI_ERROR::UNSPECIFIED;
             }
         }
         else
@@ -223,7 +223,7 @@ bool MediaTypeWOZ::woz1_read_tracks()
         fnio::fread(bitstream, 1, 6, _media_fileh); // read through rest of bytes in track
     }
     free(bitstream);
-    return false;
+    return FUJI_ERROR::NONE;
 }
 
 struct WOZ2_TRK_t
@@ -233,7 +233,7 @@ struct WOZ2_TRK_t
     uint32_t bit_count;
 };
 
-bool MediaTypeWOZ::woz2_read_tracks()
+fujiError_t MediaTypeWOZ::woz2_read_tracks()
 {    // depend upon little endian-ness
     WOZ2_TRK_t trks[MAX_TRACKS];
 
@@ -270,11 +270,11 @@ bool MediaTypeWOZ::woz2_read_tracks()
             else
             {
                 Debug_printf("\nNo RAM allocated!");
-                return true;
+                return FUJI_ERROR::UNSPECIFIED;
             }
         }
     }
-    return false;
+    return FUJI_ERROR::NONE;
 }
 
 #endif // BUILD_APPLE

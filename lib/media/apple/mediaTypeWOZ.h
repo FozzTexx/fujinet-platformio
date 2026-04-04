@@ -24,32 +24,35 @@ class MediaTypeWOZ : public MediaType
 private:
     char woz_version;
 
-    bool wozX_check_header();
-    bool wozX_read_info();
-    bool wozX_read_tmap();
-    bool woz1_read_tracks();
-    bool woz2_read_tracks();
+    fujiError_t wozX_check_header();
+    fujiError_t wozX_read_info();
+    fujiError_t wozX_read_tmap();
+    fujiError_t woz1_read_tracks();
+    fujiError_t woz2_read_tracks();
 
 protected:
     uint8_t tmap[MAX_TRACKS];
     TRK_bitstream *trk_data[MAX_TRACKS];
 
 public:
-    virtual fujiError_t read(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override { return false; };
-    virtual fujiError_t write(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override { return false; };
-    virtual fujiError_t write_sector(int track, int sector, uint8_t *buffer) override;
+    fujiError_t read(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override
+    { return FUJI_ERROR::UNSPECIFIED; };
+    fujiError_t write(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override
+    { return FUJI_ERROR::UNSPECIFIED; };
+    fujiError_t write_sector(int track, int sector, uint8_t *buffer) override;
 
-    virtual fujiError_t format(uint16_t *responsesize) override { return false; };
+    fujiError_t format(uint16_t *responsesize) override { return FUJI_ERROR::UNSPECIFIED; };
 
-    virtual mediatype_t mount(fnFile *f, uint32_t disksize) override;
-    virtual void unmount() override;
+    mediatype_t mount(fnFile *f, uint32_t disksize) override;
+    void unmount() override;
 
-    virtual fujiError_t status() override {return (_media_fileh != nullptr);}
+    fujiError_t status() override {return _media_fileh != nullptr
+            ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;}
 
     uint8_t trackmap(uint8_t t) { return tmap[t]; };
     TRK_bitstream *get_track(int t) { return trk_data[tmap[t]]; };
     uint8_t optimal_bit_timing;
-    // static bool create(FILE *f, uint32_t numBlock);
+    // static fujiError_t create(FILE *f, uint32_t numBlock);
 };
 
 

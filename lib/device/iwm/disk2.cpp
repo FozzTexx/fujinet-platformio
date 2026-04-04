@@ -92,21 +92,21 @@ void iwmDisk2::unmount()
 
 }
 
-bool iwmDisk2::write_blank(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
+fujiError_t iwmDisk2::write_blank(fnFile *f, uint16_t sectorSize, uint16_t numSectors)
 {
-  return false;
+  return FUJI_ERROR::UNSPECIFIED;
 }
 
-bool IRAM_ATTR iwmDisk2::phases_valid(uint8_t phases)
+fujiError_t IRAM_ATTR iwmDisk2::phases_valid(uint8_t phases)
 {
-  return (phase2seq[phases] != -1);
+  return phase2seq[phases] != -1 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
-bool IRAM_ATTR iwmDisk2::move_head()
+fujiError_t IRAM_ATTR iwmDisk2::move_head()
 {
   int delta = 0;
   uint8_t newphases = smartport.iwm_phase_vector(); // could access through IWM instead
-  if (phases_valid(newphases))
+  if (phases_valid(newphases) == FUJI_ERROR::NONE)
   {
     int idx = (phase2seq[newphases] - phase2seq[oldphases] + 8) % 8;
     delta = seq2steps[idx];
@@ -124,7 +124,7 @@ bool IRAM_ATTR iwmDisk2::move_head()
     }
     oldphases = newphases;
   }
-  return (delta != 0);
+  return delta != 0 ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 void IRAM_ATTR iwmDisk2::change_track(int indicator)
@@ -166,7 +166,7 @@ void IRAM_ATTR iwmDisk2::change_track(int indicator)
   // Since the empty track has no data, and therefore no length, using a fake length of 51,200 bits (6400 bytes) works very well.
 }
 
-bool iwmDisk2::write_sector(int track, int sector, uint8_t* buffer)
+fujiError_t iwmDisk2::write_sector(int track, int sector, uint8_t* buffer)
 {
   return _disk->write_sector(track, sector, buffer);
 }

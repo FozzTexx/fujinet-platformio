@@ -8,18 +8,19 @@
 class MediaTypeDO : public MediaType
 {
 private:
-    bool read_sector(int track, int sector, uint8_t* buffer);
-    bool write_sector(int track, int sector, uint8_t* buffer) override;
+    fujiError_t read_sector(int track, int sector, uint8_t* buffer);
+    fujiError_t write_sector(int track, int sector, uint8_t* buffer) override;
 
 public:
-    virtual fujiError_t read(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override;
-    virtual fujiError_t write(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override;
+    fujiError_t read(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override;
+    fujiError_t write(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override;
 
-    virtual fujiError_t format(uint16_t *responsesize) override;
+    fujiError_t format(uint16_t *responsesize) override;
 
-    virtual mediatype_t mount(fnFile *f, uint32_t disksize) override;
+    mediatype_t mount(fnFile *f, uint32_t disksize) override;
 
-    virtual fujiError_t status() override {return (_media_fileh != nullptr);}
+    fujiError_t status() override {return _media_fileh != nullptr
+            ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;}
 };
 
 

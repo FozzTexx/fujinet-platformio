@@ -23,7 +23,7 @@ private:
 
     void dsk2woz_info();
     void dsk2woz_tmap();
-    bool dsk2woz_tracks(uint8_t *dsk); 
+    fujiError_t dsk2woz_tracks(uint8_t *dsk); 
 
 public:
 

@@ -139,7 +139,7 @@ void IRAM_ATTR phi_isr_handler(void *arg)
   // and then PH1 = 0 (going low) and PH3 = 1 (still high)
   else if (diskii_xface.iwm_active_drive() && !((int_gpio_num == SP_PHI1 && _phases == 0b1000)))
   {
-    if (IWM_ACTIVE_DISK2->move_head())
+    if (IWM_ACTIVE_DISK2->move_head() != FUJI_ERROR::NONE)
     {
       isrctr = isrctr + 1;
       IWM_ACTIVE_DISK2->change_track(isrctr);
