@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <cstdint>
-
+#include "global_types.h"
 
 #define INVALID_SECTOR_VALUE 0xFFFFFFFF
 

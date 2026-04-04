@@ -10,19 +10,19 @@ MediaType::~MediaType()
     unmount();
 }
 
-bool MediaType::format(uint16_t *responsesize)
+fujiError_t MediaType::format(uint16_t *responsesize)
 {
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
-bool MediaType::read(uint32_t blockNum, uint16_t *readcount)
+fujiError_t MediaType::read(uint32_t blockNum, uint16_t *readcount)
 {
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
-bool MediaType::write(uint32_t blockNum, bool verify)
+fujiError_t MediaType::write(uint32_t blockNum, bool verify)
 {
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 void MediaType::unmount()
