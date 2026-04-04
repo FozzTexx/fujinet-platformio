@@ -628,12 +628,12 @@ void sioFuji::sio_qrcode_length()
     if (!len)
     {
         Debug_printf("QR code buffer is 0 bytes, sending error.\n");
-        bus_to_computer(response, sizeof(response), true);
+        bus_to_computer(response, sizeof(response), FUJI_ERROR::UNSPECIFIED);
     }
 
     Debug_printf("QR code buffer length: %u bytes\n", len);
 
-    bus_to_computer(response, sizeof(response), false);
+    bus_to_computer(response, sizeof(response), FUJI_ERROR::NONE);
 }
 
 void sioFuji::sio_qrcode_output()
@@ -657,7 +657,7 @@ void sioFuji::sio_qrcode_output()
         Debug_printf("Requested %u bytes\n", len);
     }
 
-    bus_to_computer(&_qrManager.code[0], len, false);
+    bus_to_computer(&_qrManager.code[0], len, FUJI_ERROR::NONE);
 
     _qrManager.code.clear();
     _qrManager.code.shrink_to_fit();

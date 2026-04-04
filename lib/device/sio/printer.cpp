@@ -155,7 +155,7 @@ void sioPrinter::sio_status()
     status[2] = 5;
     status[3] = 0;
 
-    bus_to_computer(status, sizeof(status), false);
+    bus_to_computer(status, sizeof(status), FUJI_ERROR::NONE);
 }
 
 void sioPrinter::set_printer_type(sioPrinter::printer_type printer_type)

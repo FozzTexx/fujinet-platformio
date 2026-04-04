@@ -244,7 +244,7 @@ void sioVoice::sio_status()
     status[2] = 15; // set timeout > 10 seconds (SAM audio buffer)
     status[3] = 0;
 
-    bus_to_computer(status, sizeof(status), false);
+    bus_to_computer(status, sizeof(status), FUJI_ERROR::NONE);
 }
 
 void sioVoice::sio_process(uint32_t commanddata, uint8_t checksum)

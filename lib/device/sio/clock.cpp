@@ -74,41 +74,41 @@ void sioClock::sio_process(uint32_t commanddata, uint8_t checksum)
         if (cmdFrame.comnd == APETIMECMD_GETTZTIME) use_alternate_tz = true;
 
         auto apeTime = Clock::get_current_time_apetime(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
-        bus_to_computer(apeTime.data(), apeTime.size(), false);
+        bus_to_computer(apeTime.data(), apeTime.size(), FUJI_ERROR::NONE);
         break;
     }
     case 'T': {
         // Date and time, easy to be used by general programs
         sio_ack();
         auto simpleTime = Clock::get_current_time_simple(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
-        bus_to_computer(simpleTime.data(), simpleTime.size(), false);
+        bus_to_computer(simpleTime.data(), simpleTime.size(), FUJI_ERROR::NONE);
         break;
     }
     case 'P': {
         // Date and time, to be used by a ProDOS driver
         sio_ack();
         auto prodosTime = Clock::get_current_time_prodos(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
-        bus_to_computer(prodosTime.data(), prodosTime.size(), false);
+        bus_to_computer(prodosTime.data(), prodosTime.size(), FUJI_ERROR::NONE);
         break;
     }
     case 'S': {
         // Date and time, ASCII string in Apple /// SOS format: YYYYMMDD0HHMMSS000
         std::string sosTime = Clock::get_current_time_sos(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
-        bus_to_computer((uint8_t *) sosTime.c_str(), sosTime.size() + 1, false);
+        bus_to_computer((uint8_t *) sosTime.c_str(), sosTime.size() + 1, FUJI_ERROR::NONE);
         break;
     }
     case 'I': {
         // Date and time, ASCII string in ISO format - making this consistent with APPLE code
         sio_ack();
         std::string utcTime = Clock::get_current_time_iso(Clock::tz_to_use(use_alternate_tz, alternate_tz, Config.get_general_timezone()));
-        bus_to_computer((uint8_t *) utcTime.c_str(), utcTime.size() + 1, false);
+        bus_to_computer((uint8_t *) utcTime.c_str(), utcTime.size() + 1, FUJI_ERROR::NONE);
         break;
     }
     case 'Z': {
         // utc (zulu)
         sio_ack();
         std::string isoTime = Clock::get_current_time_iso("UTC+0");
-        bus_to_computer((uint8_t *) isoTime.c_str(), isoTime.size() + 1, false);
+        bus_to_computer((uint8_t *) isoTime.c_str(), isoTime.size() + 1, FUJI_ERROR::NONE);
         break;
     }
 
@@ -131,14 +131,14 @@ void sioClock::sio_process(uint32_t commanddata, uint8_t checksum)
     case APETIMECMD_GET_GENERAL: {
         // Get current system timezone
         sio_ack();
-        bus_to_computer((uint8_t *) Config.get_general_timezone().c_str(), Config.get_general_timezone().size() + 1, false); // +1 for null terminator
+        bus_to_computer((uint8_t *) Config.get_general_timezone().c_str(), Config.get_general_timezone().size() + 1, FUJI_ERROR::NONE); // +1 for null terminator
         break;
     }
     case APETIMECMD_GETTZ_LEN: {
         // Get length of system TZ
         sio_ack();
         uint8_t len = Config.get_general_timezone().size() + 1;
-        bus_to_computer(&len, 1, false);
+        bus_to_computer(&len, 1, FUJI_ERROR::NONE);
         break;
     }
 

@@ -188,7 +188,7 @@ void virtualDevice::sio_high_speed()
     int index = SYSTEM_BUS.getHighSpeedIndex();
     uint8_t hsd = index == HSIO_INVALID_INDEX ? 40 : (uint8_t)index;
 #endif
-    bus_to_computer((uint8_t *)&hsd, 1, false);
+    bus_to_computer((uint8_t *)&hsd, 1, FUJI_ERROR::NONE);
 }
 
 // Read and process a command frame from SIO

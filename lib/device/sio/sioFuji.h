@@ -47,7 +47,7 @@ protected:
     }
     void transaction_put(const void *data, size_t len, fujiError_t err=FUJI_ERROR::NONE) override {
         assert(_transaction_state == TRANS_STATE::NO_GET);
-        bus_to_computer((uint8_t *) data, len, err != FUJI_ERROR::NONE);
+        bus_to_computer((uint8_t *) data, len, err);
         _transaction_state = TRANS_STATE::INVALID;
     }
 

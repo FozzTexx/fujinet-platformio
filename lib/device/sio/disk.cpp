@@ -25,7 +25,7 @@ void sioDisk::sio_read()
         // Send error but dummy sector.
         uint8_t dummySector[128];
         memset(dummySector,0,sizeof(dummySector));
-        bus_to_computer(dummySector,128,true);
+        bus_to_computer(dummySector,128,FUJI_ERROR::UNSPECIFIED);
         return;
     }
 
@@ -34,7 +34,7 @@ void sioDisk::sio_read()
     fujiError_t err = _disk->read(UINT16_FROM_HILOBYTES(cmdFrame.aux2, cmdFrame.aux1), &readcount);
 
     // Send result to Atari
-    bus_to_computer(_disk->_disk_sectorbuff, readcount, err != FUJI_ERROR::NONE);
+    bus_to_computer(_disk->_disk_sectorbuff, readcount, err);
 }
 
 // Write disk data from computer
@@ -133,7 +133,7 @@ void sioDisk::sio_status()
 
     Debug_printf("response: 0x%02x, 0x%02x, 0x%02x\n", _status[0], _status[1], _status[2]);
 
-    bus_to_computer(_status, sizeof(_status), false);
+    bus_to_computer(_status, sizeof(_status), FUJI_ERROR::NONE);
 }
 
 // Disk format
@@ -151,7 +151,7 @@ void sioDisk::sio_format()
     fujiError_t err = _disk->format(&responsesize);
 
     // Send to computer
-    bus_to_computer(_disk->_disk_sectorbuff, responsesize, err != FUJI_ERROR::NONE);
+    bus_to_computer(_disk->_disk_sectorbuff, responsesize, err);
 }
 
 // Read percom block
@@ -168,7 +168,7 @@ void sioDisk::sio_read_percom_block()
 #ifdef VERBOSE_DISK
     _disk->dump_percom_block();
 #endif
-    bus_to_computer((uint8_t *)&_disk->_percomBlock, sizeof(_disk->_percomBlock), false);
+    bus_to_computer((uint8_t *)&_disk->_percomBlock, sizeof(_disk->_percomBlock), FUJI_ERROR::NONE);
 }
 
 // Write percom block

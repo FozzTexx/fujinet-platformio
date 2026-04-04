@@ -305,7 +305,7 @@ void sioNetwork::sio_read()
     err = sio_read_channel(num_bytes);
 
     // And send off to the computer
-    bus_to_computer((uint8_t *)receiveBuffer->data(), num_bytes, err != FUJI_ERROR::NONE);
+    bus_to_computer((uint8_t *)receiveBuffer->data(), num_bytes, err);
     receiveBuffer->erase(0, num_bytes);
     receiveBuffer->shrink_to_fit();
 }
@@ -457,30 +457,30 @@ void sioNetwork::sio_status_local()
 #ifdef VERBOSE_PROTOCOL
         Debug_printf("IP Address: %u.%u.%u.%u\n", ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
 #endif
-        bus_to_computer(ipAddress, 4, false);
+        bus_to_computer(ipAddress, 4, FUJI_ERROR::NONE);
         break;
     case 2: // Netmask
 #ifdef VERBOSE_PROTOCOL
         Debug_printf("Netmask: %u.%u.%u.%u\n", ipNetmask[0], ipNetmask[1], ipNetmask[2], ipNetmask[3]);
 #endif
-        bus_to_computer(ipNetmask, 4, false);
+        bus_to_computer(ipNetmask, 4, FUJI_ERROR::NONE);
         break;
     case 3: // Gatway
 #ifdef VERBOSE_PROTOCOL
         Debug_printf("Gateway: %u.%u.%u.%u\n", ipGateway[0], ipGateway[1], ipGateway[2], ipGateway[3]);
 #endif
-        bus_to_computer(ipGateway, 4, false);
+        bus_to_computer(ipGateway, 4, FUJI_ERROR::NONE);
         break;
     case 4: // DNS
 #ifdef VERBOSE_PROTOCOL
         Debug_printf("DNS: %u.%u.%u.%u\n", ipDNS[0], ipDNS[1], ipDNS[2], ipDNS[3]);
 #endif
-        bus_to_computer(ipDNS, 4, false);
+        bus_to_computer(ipDNS, 4, FUJI_ERROR::NONE);
         break;
     default:
         default_status.conn = status.connected;
         default_status.err = status.error;
-        bus_to_computer((uint8_t *) &default_status, sizeof(default_status), false);
+        bus_to_computer((uint8_t *) &default_status, sizeof(default_status), FUJI_ERROR::NONE);
     }
 }
 
@@ -535,7 +535,7 @@ void sioNetwork::sio_status_channel()
                  nstatus.avail, nstatus.conn, nstatus.err);
 
     // and send to computer
-    bus_to_computer((uint8_t *) &nstatus, sizeof(nstatus), err != FUJI_ERROR::NONE);
+    bus_to_computer((uint8_t *) &nstatus, sizeof(nstatus), err);
 }
 
 /**
@@ -551,7 +551,7 @@ void sioNetwork::sio_get_prefix()
 
     prefixSpec[prefix.size()] = 0x9B; // add EOL.
 
-    bus_to_computer(prefixSpec, sizeof(prefixSpec), false);
+    bus_to_computer(prefixSpec, sizeof(prefixSpec), FUJI_ERROR::NONE);
 }
 
 /**

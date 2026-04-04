@@ -166,7 +166,7 @@ void modem::sio_poll_3(uint8_t device, uint8_t aux1, uint8_t aux2)
 
     fnSystem.delay_microseconds(DELAY_FIRMWARE_DELIVERY);
 
-    bus_to_computer(type4response, sizeof(type4response), false);
+    bus_to_computer(type4response, sizeof(type4response), FUJI_ERROR::NONE);
 
     // TODO: Handle the subsequent request to load the handler properly by providing the relocation blocks
 }
@@ -221,7 +221,7 @@ void modem::sio_poll_1()
 
     fnSystem.delay_microseconds(DELAY_FIRMWARE_DELIVERY * 2);
 
-    bus_to_computer(bootBlock, sizeof(bootBlock), false);
+    bus_to_computer(bootBlock, sizeof(bootBlock), FUJI_ERROR::NONE);
 }
 
 // 0x21 / '!' - RELOCATOR DOWNLOAD
@@ -270,7 +270,7 @@ void modem::sio_send_firmware(uint8_t loadcommand)
     Debug_printf("Modem sending %d bytes of %s code\n", codesize,
                  loadcommand == MODEMCMD_LOAD_RELOCATOR ? "relocator" : "handler");
 
-    bus_to_computer(code, codesize, false);
+    bus_to_computer(code, codesize, FUJI_ERROR::NONE);
 
     // Free the buffer!
     free(code);
@@ -369,7 +369,7 @@ void modem::sio_status()
 
     Debug_printf("modem::sio_status(%02x,%02x)\n", mdmStatus[0], mdmStatus[1]);
 
-    bus_to_computer(mdmStatus, sizeof(mdmStatus), false);
+    bus_to_computer(mdmStatus, sizeof(mdmStatus), FUJI_ERROR::NONE);
 }
 
 // 0x41 / 'A' - CONTROL
@@ -555,7 +555,7 @@ void modem::sio_stream()
         break;
     }
 
-    bus_to_computer((uint8_t *)response, sizeof(response), false);
+    bus_to_computer((uint8_t *)response, sizeof(response), FUJI_ERROR::NONE);
 
     fnSystem.delay_microseconds(DELAY_FIRMWARE_DELIVERY); // macOS workaround (flush on uart was not working)
     SYSTEM_BUS.setBaudrate(modemBaud);

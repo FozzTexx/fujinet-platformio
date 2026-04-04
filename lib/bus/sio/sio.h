@@ -4,6 +4,7 @@
 #include "cmdFrame.h"
 #include "UARTChannel.h"
 #include "NetSIO.h"
+#include "global_types.h"
 #include <forward_list>
 
 #define DELAY_T4 850

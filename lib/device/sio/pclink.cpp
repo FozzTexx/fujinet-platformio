@@ -2658,7 +2658,7 @@ void sioPCLink::sio_status()
 //      if (log_flag)
                 Debug_printf("STATUS: %02x %02x %02x %02x\n", status[0], status[1], status[2], status[3]);
 // # endif
-    bus_to_computer(status, sizeof(status), false);
+    bus_to_computer(status, sizeof(status), FUJI_ERROR::NONE);
 }
 
 // Process SIO command
