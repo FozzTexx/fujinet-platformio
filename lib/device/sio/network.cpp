@@ -1243,7 +1243,7 @@ void sioNetwork::process_udp()
     case NETCMD_GET_REMOTE:
         sio_ack();
         err = udp->get_remote(receiveBuffer->data(), SPECIAL_BUFFER_SIZE);
-        bus_to_computer((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err != FUJI_ERROR::NONE);
+        bus_to_computer((uint8_t *)receiveBuffer->data(), SPECIAL_BUFFER_SIZE, err);
         break;
 #endif /* ESP_PLATFORM */
     case NETCMD_SET_DESTINATION:
