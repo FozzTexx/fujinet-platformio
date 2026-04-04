@@ -15,10 +15,10 @@ uint32_t MediaTypeROM::_block_to_offset(uint32_t blockNum)
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeROM::read(uint32_t blockNum, uint16_t *readcount)
+fujiError_t MediaTypeROM::read(uint32_t blockNum, uint16_t *readcount)
 {
     if (blockNum == _media_last_block)
-        return false; // We already have block.
+        return FUJI_ERROR::NONE; // We already have block.
 
     Debug_print("**DISK READ START**\r\n");
 
@@ -27,43 +27,48 @@ bool MediaTypeROM::read(uint32_t blockNum, uint16_t *readcount)
     {
         Debug_printf("::read block %lu > %lu\r\n", blockNum, _media_num_blocks);
         _media_controller_status=2;
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     memset(_media_blockbuff, 0, sizeof(_media_blockbuff));
 
-    bool err = false;
+    fujiError_t err = FUJI_ERROR::NONE;
     // // Perform a seek if we're not reading the sector after the last one we read
-     if (blockNum != _media_last_block + 1)
-     {
+    if (blockNum != _media_last_block + 1)
+    {
         uint32_t offset = _block_to_offset(blockNum);
-        err = fseek(_media_fileh, offset, SEEK_SET) != 0;
+        err = fseek(_media_fileh, offset, SEEK_SET) != 0
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
         _media_last_block = INVALID_SECTOR_VALUE;
-     }
+    }
 
-    if (err == false)
-        err = fread(_media_blockbuff, 1, MEDIA_BLOCK_SIZE, _media_fileh) == 0;            // handle potential last block partial read
+    if (err == FUJI_ERROR::NONE)
+    {
+        // handle potential last block partial read
+        err = fread(_media_blockbuff, 1, MEDIA_BLOCK_SIZE, _media_fileh) == 0
+            ? FUJI_ERROR::UNSPECIFIED : FUJI_ERROR::NONE;
+    }
 
-    if (err == false)
+    if (err == FUJI_ERROR::NONE)
     {
         _media_last_block = blockNum;
         _media_controller_status = 0;
-        return false;
+        return FUJI_ERROR::NONE;
     }
     else
     {
         _media_last_block = INVALID_SECTOR_VALUE;
         _media_controller_status = 2;
-        return true;
+        return FUJI_ERROR::UNSPECIFIED;
     }
 
     return err;
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeROM::write(uint32_t blockNum, bool verify)
+fujiError_t MediaTypeROM::write(uint32_t blockNum, bool verify)
 {
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 uint8_t MediaTypeROM::status()
@@ -72,9 +77,9 @@ uint8_t MediaTypeROM::status()
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-bool MediaTypeROM::format(uint16_t *responsesize)
+fujiError_t MediaTypeROM::format(uint16_t *responsesize)
 {
-    return false;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 mediatype_t MediaTypeROM::mount(FILE *f, uint32_t disksize)
@@ -91,11 +96,11 @@ mediatype_t MediaTypeROM::mount(FILE *f, uint32_t disksize)
 }
 
 // Returns FUJI_ERROR::UNSPECIFIED on error
-bool MediaTypeROM::create(FILE *f, uint32_t numBlocks)
+fujiError_t MediaTypeROM::create(FILE *f, uint32_t numBlocks)
 {
     Debug_print("FILE CREATE\r\n");
 
-    return true;
+    return FUJI_ERROR::UNSPECIFIED;
 }
 
 

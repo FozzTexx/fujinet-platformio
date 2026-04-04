@@ -2,6 +2,7 @@
 #define _MEDIA_TYPE_
 
 #include <stdio.h>
+#include "global_types.h"
 
 #define INVALID_SECTOR_VALUE 0xFFFFFFFF
 
