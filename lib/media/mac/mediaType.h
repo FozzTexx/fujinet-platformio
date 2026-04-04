@@ -65,16 +65,16 @@ public:
     virtual void unmount();
 
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool format(uint16_t *responsesize);
+    virtual fujiError_t format(uint16_t *responsesize);
 
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool read(uint32_t blockNum, uint8_t *buffer) = 0;
+    virtual fujiError_t read(uint32_t blockNum, uint8_t *buffer) = 0;
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool write(uint32_t blockNum, uint8_t *buffer) = 0;
+    virtual fujiError_t write(uint32_t blockNum, uint8_t *buffer) = 0;
 
     // virtual uint16_t sector_size(uint16_t sectornum);
 
-    virtual bool status() = 0;
+    virtual fujiError_t status() = 0;
 
     static mediatype_t discover_mediatype(const char *filename);
 

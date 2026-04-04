@@ -61,12 +61,12 @@ public:
     virtual void unmount();
 
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool format(uint16_t *responsesize);
+    virtual fujiError_t format(uint16_t *responsesize);
 
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool read(uint32_t blockNum, uint16_t *readcount) = 0;
+    virtual fujiError_t read(uint32_t blockNum, uint16_t *readcount) = 0;
     // Returns FUJI_ERROR::UNSPECIFIED if an error condition occurred
-    virtual bool write(uint32_t blockNum, bool verify);
+    virtual fujiError_t write(uint32_t blockNum, bool verify);
     
     virtual uint8_t status() = 0;
 

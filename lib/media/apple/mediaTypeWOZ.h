@@ -35,16 +35,16 @@ protected:
     TRK_bitstream *trk_data[MAX_TRACKS];
 
 public:
-    virtual bool read(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override { return false; };
-    virtual bool write(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override { return false; };
-    virtual bool write_sector(int track, int sector, uint8_t *buffer) override;
+    virtual fujiError_t read(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override { return false; };
+    virtual fujiError_t write(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override { return false; };
+    virtual fujiError_t write_sector(int track, int sector, uint8_t *buffer) override;
 
-    virtual bool format(uint16_t *responsesize) override { return false; };
+    virtual fujiError_t format(uint16_t *responsesize) override { return false; };
 
     virtual mediatype_t mount(fnFile *f, uint32_t disksize) override;
     virtual void unmount() override;
 
-    virtual bool status() override {return (_media_fileh != nullptr);}
+    virtual fujiError_t status() override {return (_media_fileh != nullptr);}
 
     uint8_t trackmap(uint8_t t) { return tmap[t]; };
     TRK_bitstream *get_track(int t) { return trk_data[tmap[t]]; };

@@ -140,9 +140,9 @@ fujiError_t fujiDevice::fujicore_mount_all_success()
         {
             nodisks = false; // We have a disk in a slot
 
-            if (host.mount() == FUJI_ERROR::NONE)
+            if (host.mount() != FUJI_ERROR::NONE)
             {
-                return FUJI_ERROR::NONE;
+                return FUJI_ERROR::UNSPECIFIED;
             }
 
             Debug_printf("Selecting '%s' from host #%u as %s on D%u:\n", disk.filename, disk.host_slot, flag, i + 1);
@@ -1314,7 +1314,7 @@ void fujiDevice::fujicmd_set_directory_position(uint16_t pos)
     }
 
     fujiError_t success = _fnHosts[_current_open_directory_slot].dir_seek(pos);
-    if (success == FUJI_ERROR::NONE)
+    if (success != FUJI_ERROR::NONE)
     {
         transaction_error();
         return;

@@ -12,14 +12,14 @@ private:
     bool write_sector(int track, int sector, uint8_t* buffer) override;
 
 public:
-    virtual bool read(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override;
-    virtual bool write(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override;
+    virtual fujiError_t read(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override;
+    virtual fujiError_t write(uint32_t blockNum, uint16_t *count, uint8_t* buffer) override;
 
-    virtual bool format(uint16_t *responsesize) override;
+    virtual fujiError_t format(uint16_t *responsesize) override;
 
     virtual mediatype_t mount(fnFile *f, uint32_t disksize) override;
 
-    virtual bool status() override {return (_media_fileh != nullptr);}
+    virtual fujiError_t status() override {return (_media_fileh != nullptr);}
 };
 
 

@@ -11,10 +11,10 @@ class MediaTypeROM : public MediaType
     uint32_t _block_to_offset(uint32_t blockNum);
 
 public:
-    virtual bool read(uint32_t blockNum, uint16_t *readcount) override;
-    virtual bool write(uint32_t blockNum, bool verify) override;
+    virtual fujiError_t read(uint32_t blockNum, uint16_t *readcount) override;
+    virtual fujiError_t write(uint32_t blockNum, bool verify) override;
 
-    virtual bool format(uint16_t *responsesize) override;
+    virtual fujiError_t format(uint16_t *responsesize) override;
 
     virtual mediatype_t mount(FILE *f, uint32_t disksize) override;
 

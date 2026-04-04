@@ -48,16 +48,16 @@ protected:
 public:
     MediaTypeMOOF() {};
     
-    virtual bool read(uint32_t blockNum, uint8_t *buffer) override { return true; };
-    virtual bool write(uint32_t blockNum, uint8_t *buffer) override { return true; };
+    virtual fujiError_t read(uint32_t blockNum, uint8_t *buffer) override { return true; };
+    virtual fujiError_t write(uint32_t blockNum, uint8_t *buffer) override { return true; };
 
-    virtual bool format(uint16_t *responsesize) override { return false; };
+    virtual fujiError_t format(uint16_t *responsesize) override { return false; };
 
     virtual mediatype_t mount(FILE *f, uint32_t disksize) override;
     mediatype_t mount(FILE *f) { return mount(f, 0); };
     virtual void unmount() override;
 
-    virtual bool status() override { return (_media_fileh != nullptr); }
+    virtual fujiError_t status() override { return (_media_fileh != nullptr); }
 
     uint8_t trackmap(uint8_t t) { return tmap[t]; };
     uint8_t *get_track(int t);

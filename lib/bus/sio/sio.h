@@ -87,10 +87,8 @@ protected:
      * @brief Send the desired buffer to the Atari.
      * @param buff The byte buffer to send to the Atari
      * @param len The length of the buffer to send to the Atari.
-     * @return TRUE if the Atari processed the data in error, FALSE if the Atari successfully processed
-     * the data.
      */
-    void bus_to_computer(uint8_t *buff, uint16_t len, bool err);
+    void bus_to_computer(uint8_t *buff, uint16_t len, fujiError_t err);
 
     /**
      * @brief Receive data from the Atari.

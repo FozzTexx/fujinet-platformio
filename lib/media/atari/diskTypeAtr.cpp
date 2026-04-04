@@ -69,7 +69,7 @@ fujiError_t MediaTypeATR::read(uint16_t sectornum, uint16_t *readcount)
 
     memset(_disk_sectorbuff, 0, sizeof(_disk_sectorbuff));
 
-    fujiError_t err = FUJI_ERROR::UNSPECIFIED;
+    fujiError_t err = FUJI_ERROR::NONE;
     // Perform a seek if we're not reading the sector after the last one we read
     if (sectornum != _disk_last_sector + 1)
     {

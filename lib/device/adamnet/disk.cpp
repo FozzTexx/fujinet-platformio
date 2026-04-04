@@ -128,7 +128,7 @@ void adamDisk::adamnet_control_receive()
     if (_media == nullptr)
         return;
 
-    if (_media->read(blockNum, nullptr))
+    if (_media->read(blockNum, nullptr) != FUJI_ERROR::NONE)
         adamnet_response_nack();
     else
         adamnet_response_ack();

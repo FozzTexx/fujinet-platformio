@@ -46,7 +46,7 @@ uint8_t sio_checksum(uint8_t *buf, unsigned short len)
    len = length of buffer
    err = along with data, send ERROR status to Atari rather than COMPLETE
 */
-void virtualDevice::bus_to_computer(uint8_t *buf, uint16_t len, bool err)
+void virtualDevice::bus_to_computer(uint8_t *buf, uint16_t len, fujiError_t err)
 {
     // Write data frame to computer
     Debug_printf("->SIO write %hu bytes\n", len);
@@ -58,7 +58,7 @@ void virtualDevice::bus_to_computer(uint8_t *buf, uint16_t len, bool err)
 #endif
 
     // Write ERROR or COMPLETE status
-    if (err == true)
+    if (err != FUJI_ERROR::NONE)
         sio_error();
     else
         sio_complete();

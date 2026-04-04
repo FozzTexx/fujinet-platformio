@@ -147,7 +147,7 @@ fujiError_t MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
 
         // Note that we may not have read an entire sector's worth of bytes. That's okay.
         _disk_last_sector = INVALID_SECTOR_VALUE; // Reset this so we're forced to seek
-        return FUJI_ERROR::UNSPECIFIED;
+        return FUJI_ERROR::NONE;
     }
 
     *readcount = _disk_sector_size;
@@ -158,14 +158,14 @@ fujiError_t MediaTypeXEX::read(uint16_t sectornum, uint16_t *readcount)
         Debug_printf("faking DOS 2 VTOC\r\n");
         _fake_vtoc();
         _disk_last_sector = INVALID_SECTOR_VALUE;
-        return FUJI_ERROR::UNSPECIFIED;
+        return FUJI_ERROR::NONE;
     }
     else if (sectornum >= DIRECTORY_START && sectornum <= DIRECTORY_END)
     {
         Debug_print("faking DOS 2 directory\r\n");
         _fake_directory_entry();
         _disk_last_sector = INVALID_SECTOR_VALUE; // Reset this so we're forced to seek        
-        return FUJI_ERROR::UNSPECIFIED;
+        return FUJI_ERROR::NONE;
     }
 
     int data_bytes = _disk_sector_size - SECTOR_LINK_SIZE;
