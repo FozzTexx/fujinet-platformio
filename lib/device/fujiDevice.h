@@ -3,11 +3,10 @@
 
 #include "fnConfig.h"
 #include "Base64Mixin.h"
+#include "HashMixin.h"
 
 #include "../fuji/fujiHost.h"
 #include "../fuji/fujiDisk.h"
-
-#include "hash.h"
 
 #include <string>
 #include <optional>
@@ -139,7 +138,7 @@ class FujiDeviceChain : public FujiDeviceMixins...
 };
 
 class fujiDevice : public virtual virtualDevice,
-                   public FujiDeviceChain<Base64Mixin>
+                   public FujiDeviceChain<Base64Mixin, HashMixin>
 {
 private:
     bool hostMounted[MAX_HOSTS];
@@ -163,8 +162,6 @@ protected:
     uint8_t _countScannedSSIDs = 0;
 
     std::atomic<bool> _startup_mount_lock{false};
-
-    Hash::Algorithm algorithm = Hash::Algorithm::UNKNOWN;
 
     virtual void transaction_begin(transState_t expectMoreData) = 0;
     virtual void transaction_complete() = 0;
