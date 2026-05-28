@@ -25,6 +25,8 @@
 #define FUJINET_OVER_USB 1
 #endif
 
+#define PROCESS_COMMAND_TYPE FujiBusPacket &
+
 enum FujiStatusReq {
     STATUS_NETWORK_CONNERR = 0,
     STATUS_NETWORK_IP      = 1,
@@ -82,7 +84,7 @@ protected:
      * @brief All RS232 devices repeatedly call this routine to fan out to other methods for each command.
      * This is typcially implemented as a switch() statement.
      */
-    virtual void rs232_process(FujiBusPacket &packet) = 0;
+    virtual void rs232_process(PROCESS_COMMAND_TYPE packet) = 0;
 
     // Optional shutdown/reboot cleanup routine
     virtual void shutdown(){};

@@ -269,6 +269,8 @@ set(SOURCES src/main.cpp
     lib/device/modem.h
     lib/device/cassette.h
     lib/device/fujiDevice.h lib/device/fujiDevice.cpp
+    lib/device/FujiDeviceMixin.h
+    lib/device/Base64Mixin.h lib/device/Base64Mixin.cpp
     lib/device/network.h
     lib/device/netstream.h
     lib/device/siocpm.h

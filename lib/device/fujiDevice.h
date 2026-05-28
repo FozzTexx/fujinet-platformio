@@ -2,6 +2,7 @@
 #define FUJIDEVICE_H
 
 #include "fnConfig.h"
+#include "Base64Mixin.h"
 
 #include "../fuji/fujiHost.h"
 #include "../fuji/fujiDisk.h"
@@ -121,7 +122,24 @@ enum DET_file_flags_t {
     DET_FF_TRUNC = 0x02,
 };
 
-class fujiDevice : public virtualDevice
+/* Mixin handling. This allows adding additional commands to a
+   fujiDevice without having to mess around with the command handling
+   in each subclass. Just add a mixin and add more commands.
+ */
+
+// This class inherits from all the mixins you list and tries each one in order
+template<typename... FujiDeviceMixins>
+class FujiDeviceChain : public FujiDeviceMixins...
+{
+ protected:
+    bool tryAllMixins(PROCESS_COMMAND_TYPE command) {
+        // Try each mixin's processCommand() until one returns true
+        return (FujiDeviceMixins::processCommand(command) || ...);
+    }
+};
+
+class fujiDevice : public virtual virtualDevice,
+                   public FujiDeviceChain<Base64Mixin>
 {
 private:
     bool hostMounted[MAX_HOSTS];
@@ -170,6 +188,9 @@ public:
                std::optional<std::string> lobbyURL);
     virtual void setup() = 0;
     void shutdown() override;
+
+    // Return true if command was handled here
+    bool processCommand(PROCESS_COMMAND_TYPE command) { return tryAllMixins(command); }
 
     fujiHost *get_host(int i) { return &_fnHosts[i]; }
     std::string get_host_prefix(int host_slot) { return _fnHosts[host_slot].get_prefix(); }
