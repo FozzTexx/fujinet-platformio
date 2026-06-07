@@ -1339,7 +1339,7 @@ bool _tnfs_send(fnUDP *udp, tnfsMountInfo *m_info, tnfsPacket &pkt, uint16_t pay
 
 bool _tnfs_tcp_send(tnfsMountInfo *m_info, tnfsPacket &pkt, uint16_t payload_size)
 {
-    fnTcpClient *tcp = &m_info->tcp_client;
+    auto tcp = &m_info->tcp_client;
     if (!tcp->connected())
     {
         bool success = false;
@@ -1406,12 +1406,8 @@ int _tnfs_recv(fnUDP *udp, tnfsMountInfo *m_info, tnfsPacket &pkt)
 
 int _tnfs_tcp_recv(tnfsMountInfo *m_info, tnfsPacket &pkt)
 {
-    fnTcpClient *tcp = &m_info->tcp_client;
+    auto tcp = &m_info->tcp_client;
     if (!tcp->connected())
-    {
-        return -1;
-    }
-    if (!tcp->available())
     {
         return -1;
     }

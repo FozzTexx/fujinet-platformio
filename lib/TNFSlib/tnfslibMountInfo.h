@@ -5,7 +5,7 @@
 #include <mutex>
 
 #include "fnDNS.h"
-#include "fnTcpClient.h"
+#include "tnfsTCPSocket.h"
 
 
 #define TNFS_DEFAULT_PORT 16384
@@ -99,7 +99,7 @@ public:
     bool get_dircache_eof() { return _dir_cache_eof; };
 
     uint8_t protocol = TNFS_PROTOCOL_UNKNOWN;
-    fnTcpClient tcp_client;
+    tnfsTCPSocket tcp_client;
 
     // These char[] sizes are abitrary...
     char hostname[64] = { '\0' };
