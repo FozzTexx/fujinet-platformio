@@ -10,10 +10,15 @@
 #ifdef ESP_PLATFORM
 #  include <lwip/sockets.h>
 #else
-#  include <sys/socket.h>
-#  include <netinet/in.h>
-#  include <unistd.h>
-#  define closesocket close
+#  if defined(_WIN32) || defined(_WIN64)
+#    include <winsock2.h>
+#    include <ws2tcpip.h>
+#  else
+#    include <sys/socket.h>
+#    include <netinet/in.h>
+#    include <unistd.h>
+#    define closesocket close
+#  endif
 #endif
 
 class tnfsTCPSocket
