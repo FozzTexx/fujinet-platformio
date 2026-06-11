@@ -1571,7 +1571,6 @@ void iecFuji::get_adapter_config_basic()
 void iecFuji::get_adapter_config_raw()
 {
     fujicmd_get_adapter_config();
-    responseV.assign(reinterpret_cast<const uint8_t*>(&cfg), reinterpret_cast<const uint8_t*>(&cfg) + sizeof(AdapterConfig));
     set_fuji_iec_status(0, "");
 }
 

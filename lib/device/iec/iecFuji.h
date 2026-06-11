@@ -25,8 +25,9 @@ protected:
     void transaction_error() override {}
     success_is_true transaction_get(void *data, size_t len) override {RETURN_ERROR_AS_FALSE();}
     void transaction_put(const void *data, size_t len, bool err) override {
-        response.clear();
-        response.append(reinterpret_cast<const char*>(data), len);
+        responseV.clear();
+        const uint8_t *ptr = reinterpret_cast<const uint8_t*>(data);
+        responseV.insert(responseV.end(), ptr, ptr + len);
     }
 
     size_t set_additional_direntry_details(fsdir_entry_t *f, uint8_t *dest,
