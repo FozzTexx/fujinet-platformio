@@ -633,7 +633,10 @@ success_is_true fujiDevice::fujicore_open_directory_success(uint8_t hostSlot,
                  dirpath.c_str(), pattern.value_or("").c_str());
 
     if (!_fnHosts[hostSlot].dir_open(dirpath.c_str(), pattern ? pattern->c_str() : nullptr, 0))
+    {
+        Debug_printf("Directory open failed\r\n");
         RETURN_ERROR_AS_FALSE();
+    }
 
     _current_open_directory_slot = hostSlot;
     RETURN_SUCCESS_AS_TRUE();

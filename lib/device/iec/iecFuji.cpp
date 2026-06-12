@@ -1443,16 +1443,10 @@ void iecFuji::read_directory_entry_basic() {
 }
 
 void iecFuji::read_directory_entry_raw() {
-    if (!validate_directory_slot()) {
-        set_fuji_iec_status(DEVICE_ERROR, "No current open directory");
-        return;
-    }
-
     uint8_t maxlen = payload[0];
     uint8_t addtlopts = payload[1];
 
-    auto entry = fujicore_read_directory_entry(maxlen, addtlopts);
-    responseV.assign(entry->begin(), entry->end());
+    fujicmd_read_directory_entry(maxlen, addtlopts);
     set_fuji_iec_status(0, "");
 }
 
@@ -1484,14 +1478,7 @@ void iecFuji::get_directory_position_basic()
 
 void iecFuji::get_directory_position_raw()
 {
-    if (!validate_directory_slot())
-    {
-        set_fuji_iec_status(DEVICE_ERROR, "no currently open directory");
-        return;
-    }
-
-    uint16_t pos = fujicore_get_directory_position();
-    responseV.assign(reinterpret_cast<const uint8_t*>(&pos), reinterpret_cast<const uint8_t*>(&pos) + sizeof(pos));
+    fujicmd_get_directory_position();
     set_fuji_iec_status(0, "");
 }
 
@@ -1529,22 +1516,8 @@ void iecFuji::set_directory_position_basic()
 
 void iecFuji::set_directory_position_raw()
 {
-    Debug_println("Fuji cmd: SET DIRECTORY POSITION");
-
-    if (!validate_directory_slot())
-    {
-        Debug_print("No currently open directory\r\n");
-        set_fuji_iec_status(DEVICE_ERROR, "error: no currently open directory");
-        return;
-    }
-
     uint16_t pos = payload[0] | (payload[1] << 8);
-    bool result = _fnHosts[_current_open_directory_slot].dir_seek(pos);
-    if (!result)
-    {
-        set_fuji_iec_status(DEVICE_ERROR, "error: unable to perform directory seek");
-        return;
-    }
+    fujicmd_set_directory_position(pos);
     set_fuji_iec_status(0, "");
 }
 
