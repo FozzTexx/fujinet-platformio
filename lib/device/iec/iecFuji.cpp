@@ -286,7 +286,8 @@ void iecFuji::process_cmd()
   } else {
     // we're in the middle of some data, let's continue
     // Debug_printf("IN CMD, processing data\r\n");
-    Debug_printv("RAW data: %s", dataToHexString((uint8_t *) payload.data(), payload.size()).c_str());
+      Debug_printv("RAW data of length %d\r\n%s", payload.size(),
+                   util_hexdump(payload.data(), payload.size()).c_str());
     process_raw_cmd_data();
   }
 
@@ -621,6 +622,9 @@ void iecFuji::process_raw_cmd_data()
     case FUJICMD_HASH_OUTPUT:
         hash_output_raw();
         break;
+    case FUJICMD_WRITE_HOST_SLOTS:
+        write_host_slots_raw();
+        break;
     default:
         was_processed = false;
     }
@@ -665,9 +669,6 @@ void iecFuji::process_immediate_raw_cmds()
         break;
     case FUJICMD_READ_HOST_SLOTS:
         read_host_slots_raw();
-        break;
-    case FUJICMD_WRITE_HOST_SLOTS:
-        write_host_slots_raw();
         break;
     case FUJICMD_READ_DEVICE_SLOTS:
         read_device_slots_raw();
@@ -1362,7 +1363,7 @@ std::pair<std::string, std::string> split_at_delim(const std::string& input, cha
     }
 
     // Remove trailing slash from firstPart, if present
-    if (!firstPart.empty() && firstPart.back() == '/') {
+    if (firstPart.size() > 1 && firstPart.back() == '/') {
         firstPart.pop_back();
     }
 

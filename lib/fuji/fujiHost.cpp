@@ -328,6 +328,7 @@ int fujiHost::mount_local()
         Debug_println("Setting type to LOCAL");
 
         set_type(HOSTTYPE_LOCAL);
+        fnSDFAT.start();
         _fs = &fnSDFAT;
     }
 
