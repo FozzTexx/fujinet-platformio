@@ -19,15 +19,8 @@
 #include "../audio/AudioSinkMiniaudio.h"
 #endif
 
-class audioDevice
+class audioDevice : public virtualDevice
 {
-protected:
-    virtual void transaction_begin(transState_t expectMoreData) = 0;
-    virtual void transaction_complete() = 0;
-    virtual void transaction_error() = 0;
-    virtual success_is_true transaction_get(void *data, size_t len) = 0;
-    virtual void transaction_put(const void *data, size_t len, bool err = false) = 0;
-
 public:
     audioDevice();
     virtual ~audioDevice() = default;

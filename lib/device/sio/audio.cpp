@@ -6,51 +6,6 @@
 
 sioAudio audioDev;
 
-void sioAudio::transaction_begin(transState_t expectMoreData)
-{
-    assert(_transaction_state == TRANS_STATE::INVALID);
-    _transaction_state = expectMoreData;
-    if (expectMoreData == TRANS_STATE::WILL_GET)
-        sio_late_ack();
-    else
-        sio_ack();
-}
-
-void sioAudio::transaction_complete()
-{
-    assert(_transaction_state == TRANS_STATE::NO_GET || _transaction_state == TRANS_STATE::DID_GET);
-    sio_complete();
-    _transaction_state = TRANS_STATE::INVALID;
-}
-
-void sioAudio::transaction_error()
-{
-    if (_transaction_state == TRANS_STATE::INVALID)
-        sio_error();
-    else
-        sio_nak();
-    _transaction_state = TRANS_STATE::INVALID;
-}
-
-success_is_true sioAudio::transaction_get(void *data, size_t len)
-{
-    assert(_transaction_state == TRANS_STATE::WILL_GET);
-    _transaction_state = TRANS_STATE::DID_GET;
-
-    uint8_t ck = bus_to_peripheral(static_cast<uint8_t *>(data), static_cast<uint16_t>(len));
-    if (sio_checksum(static_cast<uint8_t *>(data), static_cast<unsigned short>(len)) != ck)
-        RETURN_ERROR_AS_FALSE();
-
-    RETURN_SUCCESS_AS_TRUE();
-}
-
-void sioAudio::transaction_put(const void *data, size_t len, bool err)
-{
-    assert(_transaction_state == TRANS_STATE::NO_GET);
-    bus_to_computer((uint8_t *)data, static_cast<uint16_t>(len), err);
-    _transaction_state = TRANS_STATE::INVALID;
-}
-
 void sioAudio::sio_process(uint32_t commanddata, uint8_t checksum)
 {
     cmdFrame.commanddata = commanddata;
@@ -92,7 +47,7 @@ void sioAudio::sio_process(uint32_t commanddata, uint8_t checksum)
         audiocmd_seek();
         break;
     default:
-        sio_nak();
+        transaction_error();
         break;
     }
 }
