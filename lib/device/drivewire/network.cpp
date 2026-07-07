@@ -75,16 +75,16 @@ void drivewireNetwork::open(fileAccessMode_t access, netProtoTranslation_t trans
 
     char tmp[256];
 
-    size_t bytes_read = SYSTEM_BUS.read((uint8_t *)tmp, 256);
+    transaction_begin(TRANS_STATE::WILL_GET);
+    if (transaction_get(tmp, sizeof(tmp)).is_error())
+    {
+        Debug_printf("Short read. Exiting.");
+        return;
+    }
+
     tmp[sizeof(tmp)-1] = '\0';
 
     Debug_printf("tmp = %s\n",tmp);
-
-    if (bytes_read != 256)
-    {
-        Debug_printf("Short read of %u bytes. Exiting.", bytes_read);
-        return;
-    }
 
     deviceSpec = std::string(tmp);
 
@@ -115,7 +115,7 @@ void drivewireNetwork::open(fileAccessMode_t access, netProtoTranslation_t trans
             delete protocolParser;
             protocolParser = nullptr;
         }
-        //SYSTEM_BUS.write(ns.error);
+        //NO_SYSTEM_BUS.write(ns.error);
         return;
     }
 
@@ -143,7 +143,6 @@ void drivewireNetwork::open(fileAccessMode_t access, netProtoTranslation_t trans
     json->setProtocol(protocol);
     channelMode = PROTOCOL;
 
-    transaction_begin(TRANS_STATE::NO_GET);
     transaction_complete();
 }
 
@@ -164,7 +163,7 @@ void drivewireNetwork::close()
     // If no protocol enabled, we just signal complete, and return.
     if (protocol == nullptr)
     {
-        //SYSTEM_BUS.write(ns.error);
+        //NO_SYSTEM_BUS.write(ns.error);
         return;
     }
 
@@ -302,7 +301,9 @@ void drivewireNetwork::write(uint16_t num_bytes)
         return;
     }
 
-    if (SYSTEM_BUS.read((uint8_t *)txbuf, num_bytes) < num_bytes)
+    transaction_begin(TRANS_STATE::WILL_GET);
+
+    if (transaction_get(txbuf, num_bytes).is_error())
     {
         Debug_printf("drivewireNetwork::write() - short read\n");
         free(txbuf);
@@ -331,6 +332,7 @@ void drivewireNetwork::write(uint16_t num_bytes)
 
     // Do the channel write
     write_channel(num_bytes);
+    transaction_complete();
 }
 
 /**
@@ -435,6 +437,8 @@ void drivewireNetwork::status_channel()
     Debug_printf("drivewireNetwork::status_channel(%u)\n", channelMode);
 #endif /* TOO_MUCH_DEBUG */
 
+    transaction_begin(TRANS_STATE::NO_GET);
+
     switch (channelMode)
     {
     case PROTOCOL:
@@ -462,7 +466,6 @@ void drivewireNetwork::status_channel()
                  avail, ns.connected, ns.error);
 #endif /* TOO_MUCH_DEBUG */
 
-    transaction_begin(TRANS_STATE::NO_GET);
     transaction_put(&status, sizeof(status));
 }
 
@@ -485,12 +488,10 @@ void drivewireNetwork::set_prefix()
 {
     std::string prefixSpec_str;
     char tmp[256];
-    memset(tmp,0,sizeof(tmp));
-    size_t read_bytes = SYSTEM_BUS.read((uint8_t *)tmp, 256);
 
-    if (read_bytes != 256)
+    if (transaction_get(tmp, sizeof(tmp)).is_error())
     {
-        Debug_printf("Short read by %u bytes. Exiting.", read_bytes);
+        Debug_printf("Short read. Exiting.");
         return;
     }
 
@@ -553,6 +554,7 @@ void drivewireNetwork::set_prefix()
     prefix = util_get_canonical_path(prefix);
     Debug_printf("Prefix now: %s\n", prefix.c_str());
 
+    transaction_complete();
 }
 
 /**
@@ -581,17 +583,17 @@ void drivewireNetwork::set_channel_mode(uint8_t mode)
 void drivewireNetwork::set_login()
 {
     char tmp[256];
-    memset(tmp,0,sizeof(tmp));
 
-    size_t bytes_read = SYSTEM_BUS.read((uint8_t *)tmp, 256);
+    transaction_begin(TRANS_STATE::WILL_GET);
 
-    if (bytes_read != 256)
+    if (transaction_get(tmp, sizeof(tmp)).is_error())
     {
-        Debug_printf("Short read of %u bytes. Exiting.\n", bytes_read);
+        Debug_printf("Short read. Exiting.\n");
         return;
     }
 
     login = std::string(tmp,256);
+    transaction_complete();
 
     Debug_printf("drivewireNetwork::set_login(%s)\n",login.c_str());
 }
@@ -602,17 +604,17 @@ void drivewireNetwork::set_login()
 void drivewireNetwork::set_password()
 {
     char tmp[256];
-    memset(tmp,0,sizeof(tmp));
 
-    size_t bytes_read = SYSTEM_BUS.read((uint8_t *)tmp, 256);
+    transaction_begin(TRANS_STATE::WILL_GET);
 
-    if (bytes_read != 256)
+    if (transaction_get(tmp, sizeof(tmp)).is_error())
     {
-        Debug_printf("Short read of %u bytes. Exiting.\n", bytes_read);
+        Debug_printf("Short read. Exiting.\n");
         return;
     }
 
     password = std::string(tmp,256);
+    transaction_complete();
 
     Debug_printf("drivewireNetwork::set_password(%s)\n", password.c_str());
 }
@@ -739,14 +741,12 @@ void drivewireNetwork::json_query()
 {
     std::string in_string;
     char tmpq[256];
-    memset(tmpq,0,sizeof(tmpq));
 
-    size_t bytes_read = SYSTEM_BUS.read((uint8_t *)tmpq,256);
+    transaction_begin(TRANS_STATE::WILL_GET);
 
-    // why does it need to be 256 bytes?
-    if (bytes_read != 256)
+    if (transaction_get(tmpq, sizeof(tmpq)).is_error())
     {
-        Debug_printf("Short read of %u bytes. Exiting\n", bytes_read);
+        Debug_printf("Short read. Exiting\n");
         return;
     }
 
@@ -782,6 +782,7 @@ void drivewireNetwork::json_query()
 #endif
 
     Debug_printf("Query set to >%s<\r\n", in_string.c_str());
+    transaction_complete();
 }
 
 void drivewireNetwork::process()
@@ -993,24 +994,29 @@ void drivewireNetwork::process_udp(fujiCommandID_t cmd)
     case NETCMD_GET_REMOTE:
         receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
         err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
+        transaction_begin(TRANS_STATE::NO_GET);
         transaction_put(*receiveBuffer);
         break;
 #endif /* ESP_PLATFORM */
     case NETCMD_SET_DESTINATION:
         {
             uint8_t spData[SPECIAL_BUFFER_SIZE];
-            size_t bytes_read = SYSTEM_BUS.read(spData, sizeof(spData));
-            err = udp->set_destination(spData, bytes_read);
+            transaction_begin(TRANS_STATE::WILL_GET);
+            transaction_get(spData, sizeof(spData));
+            err = udp->set_destination(spData, sizeof(spData));
             if (err != FUJI_ERROR::NONE)
             {
                 transaction_error();
+                return;
             }
         }
         break;
     default:
         transaction_error();
-        break;
+        return;
     }
+
+    transaction_complete();
 }
 
 #endif /* BUILD_COCO */
