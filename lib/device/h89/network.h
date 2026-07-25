@@ -108,7 +108,7 @@ public:
      * Process incoming H89 command for device 0x7X
      * @param b The incoming command byte
      */
-    virtual void process(uint32_t commanddata, uint8_t checksum) override;
+    void process(uint32_t commanddata, uint8_t checksum) override;
 
 private:
     /**

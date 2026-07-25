@@ -10,7 +10,7 @@
 class connector_com : public connector
 {
 public:
-	virtual std::shared_ptr<Connection> create_connection() override;
+	std::shared_ptr<Connection> create_connection() override;
 };
 
 #endif

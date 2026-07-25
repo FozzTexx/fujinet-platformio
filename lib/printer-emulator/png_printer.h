@@ -42,9 +42,9 @@ protected:
     void png_add_data(uint8_t *buf, uint32_t n);
     void png_end();
 
-    virtual void post_new_file() override;
-    virtual void pre_close_file() override;
-    virtual bool process_buffer(uint8_t linelen, uint8_t aux1, uint8_t aux2) override;
+    void post_new_file() override;
+    void pre_close_file() override;
+    bool process_buffer(uint8_t linelen, uint8_t aux1, uint8_t aux2) override;
 public:
     pngPrinter() { _paper_type = PNG;};
     const char *modelname()  override 

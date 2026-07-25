@@ -12,14 +12,14 @@ protected:
 
 public:
     FileHandlerLocal(FILE *fh);
-    virtual ~FileHandlerLocal() override;
+    ~FileHandlerLocal() override;
 
-    virtual int close(bool destroy=true) override;
-    virtual int seek(long int off, int whence) override;
-    virtual long int tell() override;
-    virtual size_t read(void *ptr, size_t size, size_t n) override;
-    virtual size_t write(const void *ptr, size_t size, size_t n) override;
-    virtual int flush() override;
+    int close(bool destroy=true) override;
+    int seek(long int off, int whence) override;
+    long int tell() override;
+    size_t read(void *ptr, size_t size, size_t n) override;
+    size_t write(const void *ptr, size_t size, size_t n) override;
+    int flush() override;
 };
 
 

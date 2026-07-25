@@ -8,8 +8,8 @@
 class epsonTPS : public epson80
 {
 protected:
-    // virtual void pdf_clear_modes() override{};
-    virtual void post_new_file() override
+    // void pdf_clear_modes() override{};
+    void post_new_file() override
     {
         epson80::post_new_file();
         pdf_dY = lineHeight;

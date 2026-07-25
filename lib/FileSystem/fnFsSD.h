@@ -24,7 +24,7 @@ public:
 #else
     success_is_true start(const char *sd_path = nullptr);
 #endif
-    virtual bool is_global() override { return true; };
+    bool is_global() override { return true; };
 
     fsType type() override { return FSTYPE_SDFAT; };
     const char * typestring() override { return type_to_string(FSTYPE_SDFAT); };

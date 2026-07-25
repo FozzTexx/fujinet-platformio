@@ -56,7 +56,7 @@ class iecChannelHandlerFile : public iecChannelHandler
 
   virtual uint8_t readBufferData();
   virtual uint8_t writeBufferData();
-  virtual MStream *getStream() override { return m_stream; };
+  MStream *getStream() override { return m_stream; };
 
  private:
   MStream  *m_stream;

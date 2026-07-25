@@ -56,16 +56,16 @@ class fnTestTask : public fnTask
 {
 public:
     fnTestTask(int count);
-    virtual ~fnTestTask() override;
-    virtual int get_progress() override;
-    virtual void * get_result() override;
+    ~fnTestTask() override;
+    int get_progress() override;
+    void * get_result() override;
 
 protected:
-    virtual int start() override;
-    virtual int pause() override;
-    virtual int resume() override;
-    virtual int abort() override;
-    virtual int step() override;
+    int start() override;
+    int pause() override;
+    int resume() override;
+    int abort() override;
+    int step() override;
 
 private:
     int _count;

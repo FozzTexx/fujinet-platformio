@@ -7,9 +7,9 @@
 
 class filePrinter : public printer_emu
 {
-    virtual bool process_buffer(uint8_t linelen, uint8_t aux1, uint8_t aux2) override;
-    virtual void post_new_file() override {};
-    virtual void pre_close_file() override {};
+    bool process_buffer(uint8_t linelen, uint8_t aux1, uint8_t aux2) override;
+    void post_new_file() override {};
+    void pre_close_file() override {};
 
 public:
     filePrinter(paper_t ptype=TRIM) { _paper_type = ptype; };

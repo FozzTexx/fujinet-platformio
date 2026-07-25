@@ -15,14 +15,14 @@ protected:
     struct nfsfh *_handle;
 public:
     FileHandlerNFS(struct nfs_context *nfs, struct nfsfh *handle);
-    virtual ~FileHandlerNFS() override;
+    ~FileHandlerNFS() override;
 
-    virtual int close(bool destroy=true) override;
-    virtual int seek(long int off, int whence) override;
-    virtual long int tell() override;
-    virtual size_t read(void *ptr, size_t size, size_t count) override;
-    virtual size_t write(const void *ptr, size_t size, size_t count) override;
-    virtual int flush() override;
+    int close(bool destroy=true) override;
+    int seek(long int off, int whence) override;
+    long int tell() override;
+    size_t read(void *ptr, size_t size, size_t count) override;
+    size_t write(const void *ptr, size_t size, size_t count) override;
+    int flush() override;
 };
 
 

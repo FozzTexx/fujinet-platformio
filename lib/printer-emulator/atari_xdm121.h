@@ -26,10 +26,10 @@ protected:
     bool escMode;
     void reset_cmd();
 
-    virtual void pdf_handle_char(uint16_t c, uint8_t aux1, uint8_t aux2) override;
-    virtual void pdf_clear_modes() override{};
+    void pdf_handle_char(uint16_t c, uint8_t aux1, uint8_t aux2) override;
+    void pdf_clear_modes() override{};
     void at_reset();
-    virtual void post_new_file() override;
+    void post_new_file() override;
 
     double charPitch = 7.2;
     double wheelSize = 12;

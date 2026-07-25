@@ -18,7 +18,7 @@ protected:
     void sio_write();
 
     void sio_process(uint32_t commanddata, uint8_t checksum) override;
-    virtual void sio_status() override;
+    void sio_status() override;
 
 private:
     bool sing = false;

@@ -34,7 +34,7 @@ private:
     void adamnet_control_send();
     void adamnet_control_send_block_num();
     void adamnet_control_send_block_data();
-    virtual void adamnet_response_status() override;
+    void adamnet_response_status() override;
     void adamnet_response_send();
 
     void adamnet_process(const FujiAdamPacket &packet) override;
@@ -46,7 +46,7 @@ public:
                       mediatype_t disk_type = MEDIATYPE_UNKNOWN);
     void unmount();
     error_is_true write_blank(fnFile *f, uint32_t numBlocks);
-    virtual void reset() override;
+    void reset() override;
     MediaType *get_media() { return  _media; }
     void set_media(MediaType *__media) { _media = __media; }
 

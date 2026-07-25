@@ -35,10 +35,10 @@ protected:
     uint8_t epson_font_lookup(uint16_t code);
     double epson_font_width(uint16_t code);
     void epson_set_font(uint8_t F, double w);
-    virtual void pdf_clear_modes() override;
+    void pdf_clear_modes() override;
     void at_reset();
-    virtual void pdf_handle_char(uint16_t c, uint8_t aux1, uint8_t aux2) override;
-    virtual void post_new_file() override;
+    void pdf_handle_char(uint16_t c, uint8_t aux1, uint8_t aux2) override;
+    void post_new_file() override;
 
     // had to use "int" here because "uint16_t" gave a compile error
     const int fnt_regular = 0;

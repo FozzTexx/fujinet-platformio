@@ -24,9 +24,9 @@ class fnHttpSendFileTask : public fnTask
 public:
     fnHttpSendFileTask(FileSystem *fs, fnFile *fh, mg_connection *c);
 protected:
-    virtual int start() override;
-    virtual int abort() override;
-    virtual int step() override;
+    int start() override;
+    int abort() override;
+    int step() override;
 private:
     char buf[FNWS_SEND_BUFF_SIZE];
     FileSystem * _fs;

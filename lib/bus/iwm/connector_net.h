@@ -11,7 +11,7 @@
 class connector_net : public connector
 {
 public:
-	virtual std::shared_ptr<Connection> create_connection() override;
+	std::shared_ptr<Connection> create_connection() override;
 
 private:
 	int host_port = 0;

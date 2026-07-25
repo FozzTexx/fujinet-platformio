@@ -186,7 +186,7 @@ protected:
 
     virtual bool seek(uint32_t pos);
 
-    virtual bool seekPath(std::string path) override {
+    bool seekPath(std::string path) override {
         Debug_printv( "path[%s]", path.c_str() );
         return false;
     }

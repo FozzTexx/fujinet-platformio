@@ -142,9 +142,9 @@ public:
     uint32_t read(uint8_t* buf, uint32_t size) override;
     uint32_t write(const uint8_t *buf, uint32_t size) override;
 
-    virtual bool seek(uint32_t pos) override;
+    bool seek(uint32_t pos) override;
 
-    virtual bool seekPath(std::string path) override {
+    bool seekPath(std::string path) override {
         Debug_printv( "path[%s]", path.c_str() );
         return false;
     }

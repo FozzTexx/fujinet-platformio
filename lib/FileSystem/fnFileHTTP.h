@@ -58,20 +58,20 @@ private:
 
 public:
     FileHandlerHTTP(const std::string &url, long size);
-    virtual ~FileHandlerHTTP() override;
+    ~FileHandlerHTTP() override;
 
     // Probe url for byte-range support. Returns a new handler on success, or
     // nullptr when the server can't serve ranges / size is unknown (caller
     // should fall back to caching the whole file).
     static FileHandlerHTTP *create(const std::string &url);
 
-    virtual int close(bool destroy = true) override;
-    virtual int seek(long int off, int whence) override;
-    virtual long int tell() override;
-    virtual size_t read(void *ptr, size_t size, size_t count) override;
-    virtual size_t write(const void *ptr, size_t size, size_t count) override;
-    virtual int flush() override;
-    virtual int eof() override;
+    int close(bool destroy = true) override;
+    int seek(long int off, int whence) override;
+    long int tell() override;
+    size_t read(void *ptr, size_t size, size_t count) override;
+    size_t write(const void *ptr, size_t size, size_t count) override;
+    int flush() override;
+    int eof() override;
 };
 
 #endif // !FNIO_IS_STDIO

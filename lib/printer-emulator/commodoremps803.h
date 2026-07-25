@@ -36,8 +36,8 @@ protected:
     //      local char set switch mode - see page 34 or chr$(17) and chr$(145)
     } mps_modes;
 
-    virtual void pdf_clear_modes() override;
-    virtual void post_new_file() override;
+    void pdf_clear_modes() override;
+    void post_new_file() override;
     void mps_set_font(uint8_t F);
     void mps_update_font();
     void pdf_handle_char(uint16_t c, uint8_t aux1, uint8_t aux2) override; // need a custom one to handle sideways printing

@@ -15,16 +15,16 @@ class iecClock : public IECDevice
     size_t responsePtr;
 
 protected:
-    virtual void talk(uint8_t secondary) override;
-    virtual void listen(uint8_t secondary) override;
-    virtual void untalk() override;
-    virtual void unlisten() override;
-    virtual int8_t canWrite() override;
-    virtual int8_t canRead() override;
-    virtual void write(uint8_t data, bool eoi) override;
-    virtual uint8_t read() override;
-    virtual void task() override;
-    virtual void reset() override;
+    void talk(uint8_t secondary) override;
+    void listen(uint8_t secondary) override;
+    void untalk() override;
+    void unlisten() override;
+    int8_t canWrite() override;
+    int8_t canRead() override;
+    void write(uint8_t data, bool eoi) override;
+    uint8_t read() override;
+    void task() override;
+    void reset() override;
 
     public:
 

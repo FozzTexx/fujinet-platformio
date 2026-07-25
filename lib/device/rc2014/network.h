@@ -111,13 +111,13 @@ public:
     /**
      * Check to see if PROCEED needs to be asserted.
      */
-    virtual bool rc2014_poll_interrupt() override;
+    bool rc2014_poll_interrupt() override;
 
     /**
      * Process incoming rc2014 command for device 0x7X
      * @param b The incoming command byte
      */
-    virtual void rc2014_process(uint32_t commanddata, uint8_t checksum) override;
+    void rc2014_process(uint32_t commanddata, uint8_t checksum) override;
 
 private:
     /**

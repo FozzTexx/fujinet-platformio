@@ -69,7 +69,7 @@ public:
         }
     };
 
-    virtual uint8_t speedZone( uint8_t track) override
+    uint8_t speedZone( uint8_t track) override
     {
         if ( track < 35 )
 		    return (track < 18) + (track < 25) + (track < 31);

@@ -20,7 +20,7 @@ protected:
 public:
     iwmDisk2();
     void init();
-    virtual mediatype_t mount_file(fnFile *f, uint32_t disksize, mediatype_t disk_type) override;
+    mediatype_t mount_file(fnFile *f, uint32_t disksize, mediatype_t disk_type) override;
     void unmount();
     error_is_true write_blank(fnFile *f, uint16_t sectorSize, uint16_t numSectors);
     int get_track_pos() { return track_pos; };

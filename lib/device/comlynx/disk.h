@@ -34,7 +34,7 @@ public:
                       mediatype_t disk_type = MEDIATYPE_UNKNOWN);
     void unmount();
     error_is_true write_blank(FILE *f, uint32_t numBlocks);
-    virtual void reset() override;
+    void reset() override;
 
     mediatype_t mediatype() { return _media == nullptr ? MEDIATYPE_UNKNOWN : _media->_mediatype; };
 

@@ -254,7 +254,7 @@ public:
 
     unsigned short modem_read(uint8_t *buf, unsigned short len);
 
-//  virtual void startup_hack() override {};
+//  void startup_hack() override {};
 };
 
 #endif /* apple_MODEM_H */

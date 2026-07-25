@@ -26,9 +26,9 @@ protected:
 
     void sio_write(uint8_t aux1, uint8_t aux2);
 
-    //virtual void comlynx_control_status() override;
+    //void comlynx_control_status() override;
     //virtual void comlynx_control_send();
-    //virtual void comlynx_control_ready() override;
+    //void comlynx_control_ready() override;
 
     void comlynx_process() override;
     void shutdown() override;

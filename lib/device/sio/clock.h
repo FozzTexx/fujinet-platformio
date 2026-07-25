@@ -19,7 +19,7 @@ private:
 
 public:
     void sio_process(uint32_t commanddata, uint8_t checksum) override;
-    virtual void sio_status() override {};
+    void sio_status() override {};
 };
 
 #endif // SIO_CLOCK_H

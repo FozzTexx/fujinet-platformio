@@ -58,7 +58,7 @@ public:
         }
     };
 
-    // virtual std::unordered_map<std::string, std::string> info() override { 
+    // std::unordered_map<std::string, std::string> info() override { 
     //     return {
     //         {"System", "Commodore"},
     //         {"Format", "D8B"},
@@ -70,7 +70,7 @@ public:
     //     }; 
     // };
 
-    virtual uint8_t speedZone(uint8_t track) override { return 0; };
+    uint8_t speedZone(uint8_t track) override { return 0; };
 
 protected:
 

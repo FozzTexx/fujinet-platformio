@@ -82,14 +82,14 @@ public:
     std::unordered_map<uint8_t, NetworkData> network_data_map;
 
 protected:
-    virtual void task() override;
-    virtual bool open(uint8_t channel, const char *name) override;
-    virtual void close(uint8_t channel) override;
-    virtual uint8_t write(uint8_t channel, uint8_t *buffer, uint8_t bufferSize, bool eoi) override;
-    virtual uint8_t read(uint8_t channel, uint8_t *buffer, uint8_t bufferSize, bool *eoi) override;
-    virtual void execute(const char *command, uint8_t cmdLen) override;
-    virtual uint8_t getStatusData(char *buffer, uint8_t bufferSize) override;
-    virtual void reset() override;
+    void task() override;
+    bool open(uint8_t channel, const char *name) override;
+    void close(uint8_t channel) override;
+    uint8_t write(uint8_t channel, uint8_t *buffer, uint8_t bufferSize, bool eoi) override;
+    uint8_t read(uint8_t channel, uint8_t *buffer, uint8_t bufferSize, bool *eoi) override;
+    void execute(const char *command, uint8_t cmdLen) override;
+    uint8_t getStatusData(char *buffer, uint8_t bufferSize) override;
+    void reset() override;
 
 private:
     /**

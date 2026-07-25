@@ -43,7 +43,7 @@ namespace tinyxml2
 		public:
 			XMLCopy (XMLElement * target) : _target(target) { _newDoc = target->GetDocument(); }
 
-			virtual bool VisitEnter (const XMLElement & element, const XMLAttribute * attribute) override
+			bool VisitEnter (const XMLElement & element, const XMLAttribute * attribute) override
 			{
 				auto e = _newDoc->NewElement (element.Name());
 				_target->InsertEndChild (e);
@@ -56,27 +56,27 @@ namespace tinyxml2
 				return true;
 			}
 
-			virtual bool VisitExit (const XMLElement & element) override
+			bool VisitExit (const XMLElement & element) override
 			{
 				_target = const_cast <XMLElement *> (_target->Parent()->ToElement());
 				return true;
 			}
 
-			virtual bool Visit (const XMLDeclaration & declaration) override
+			bool Visit (const XMLDeclaration & declaration) override
 			{
 				auto d = declaration.ShallowClone (_newDoc);
 				_target->InsertEndChild (d);
 				return true;
 			}
 
-			virtual bool Visit (const XMLText & txt) override
+			bool Visit (const XMLText & txt) override
 			{
 				auto t = txt.ShallowClone (_newDoc);
 				_target->InsertEndChild (t);
 				return true;
 			}
 
-			virtual bool Visit (const XMLComment & comment) override
+			bool Visit (const XMLComment & comment) override
 			{
 				auto c = comment.ShallowClone (_newDoc);
 				_target->InsertEndChild (c);
@@ -113,7 +113,7 @@ namespace tinyxml2
 					return false;
 			}
 
-			virtual bool Visit (const XMLText & txt) override
+			bool Visit (const XMLText & txt) override
 			{
 				if (XMLCopy::Visit (txt))
 				{

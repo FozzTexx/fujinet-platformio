@@ -13,7 +13,7 @@ public:
 
     // these methods must be implemented
     void sio_process(uint32_t commanddata, uint8_t checksum) override;
-    virtual void sio_status() override;
+    void sio_status() override;
 
     // public wrapper around protected virtualDevice::sio_ack(), virtualDevice::sio_nak()
     //  to make these protected methotds reachable from sio2bsd/pclink code

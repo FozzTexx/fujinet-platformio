@@ -19,7 +19,7 @@ public:
     fsType type() override { return FSTYPE_LITTLEFS; };
     const char * typestring() override { return type_to_string(FSTYPE_LITTLEFS); };
 
-    virtual bool is_global() override { return true; };    
+    bool is_global() override { return true; };    
 
     FILE * file_open(const char* path, const char* mode = FILE_READ) override;
 #ifndef FNIO_IS_STDIO

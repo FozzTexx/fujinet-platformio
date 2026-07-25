@@ -17,14 +17,14 @@ protected:
     long int _position;
 public:
     FileHandlerMem();
-    virtual ~FileHandlerMem() override;
+    ~FileHandlerMem() override;
 
-    virtual int close(bool destroy=true) override;
-    virtual int seek(long int off, int whence) override;
-    virtual long int tell() override;
-    virtual size_t read(void *ptr, size_t size, size_t count) override;
-    virtual size_t write(const void *ptr, size_t size, size_t count) override;
-    virtual int flush() override;
+    int close(bool destroy=true) override;
+    int seek(long int off, int whence) override;
+    long int tell() override;
+    size_t read(void *ptr, size_t size, size_t count) override;
+    size_t write(const void *ptr, size_t size, size_t count) override;
+    int flush() override;
 
     int grow(long filesize);
 };

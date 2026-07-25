@@ -198,7 +198,7 @@ public:
 
     };
 
-	// virtual std::unordered_map<std::string, std::string> info() override { 
+	// std::unordered_map<std::string, std::string> info() override { 
     //     return {
     //         {"System", "Commodore"},
     //         {"Format", "D64"},
@@ -233,7 +233,7 @@ public:
         return partitions[0].block_allocation_map[0].end_track;
     }
 
-    virtual bool seekPath(std::string path) override;
+    bool seekPath(std::string path) override;
     uint32_t readFile(uint8_t* buf, uint32_t size) override;
     uint32_t writeFile(uint8_t* buf, uint32_t size) override;
 
