@@ -16,7 +16,7 @@
 //#define IDLE_TIME 500 // Idle tolerance in microseconds (roughly three characters at 62500 baud)
 
 
-uint8_t comlynx_checksum(uint8_t *buf, unsigned short len)
+uint8_t comlynx_checksum(const uint8_t *buf, unsigned short len)
 {
     uint8_t checksum = 0x00;
 
@@ -39,7 +39,7 @@ void virtualDevice::comlynx_send(uint8_t b)
     SYSTEM_BUS.read();
 }
 
-void virtualDevice::comlynx_send_buffer(uint8_t *buf, unsigned short len)
+void virtualDevice::comlynx_send_buffer(const uint8_t *buf, unsigned short len)
 {
     Debug_printf("comlynx_send_buffer - len:%d\n", len);
 
@@ -48,7 +48,6 @@ void virtualDevice::comlynx_send_buffer(uint8_t *buf, unsigned short len)
         SYSTEM_BUS.wait_for_idle();
 
     SYSTEM_BUS.write(buf, len);
-    SYSTEM_BUS.read(buf, len);
 }
 
 bool virtualDevice::comlynx_recv_ck()
@@ -216,7 +215,7 @@ void systemBus::_comlynx_process_cmd()
     {
         if (d == devicep->_devnum)
         {
-            //_activeDev = devicep;
+            _activeDev = devicep;
             // handle command
             //_activeDev->sio_process(tempFrame.commanddata, tempFrame.checksum);
 
@@ -263,7 +262,7 @@ void systemBus::service()
     // Handle NetStream if active
     if (_streamDev != nullptr && _streamDev->netstreamActive) {
         if (_streamDev->redeye_mode)
-            _streamDev->comlynx_handle_redeye_netstream();    
+            _streamDev->comlynx_handle_redeye_netstream();
         else
             _streamDev->comlynx_handle_netstream();
     }
@@ -284,6 +283,7 @@ void systemBus::setup()
                 .deviceID(FN_UART_BUS)
                 .baud(COMLYNX_BAUDRATE)
                 .parity(UART_PARITY_ODD)
+                .halfDuplex(true)
                 );
 }
 
@@ -463,53 +463,54 @@ void systemBus::setRedeyeGameRemap(uint32_t remap)
     }
 }
 
-void virtualDevice::transaction_begin(transState_t expectMoreData)
-{    
-}
-
-void virtualDevice::transaction_complete()
+void systemBus::transaction_accept(transState_t expectMoreData)
 {
-    Debug_println("transaction_complete - sent ACK");
-    comlynx_response_ack();
+    assert(_transaction_state == TRANS_STATE::INVALID);
+    _transaction_state = expectMoreData;
 }
 
-void virtualDevice::transaction_error()
+void systemBus::transaction_success()
+{
+    assert(_transaction_state == TRANS_STATE::NO_GET || _transaction_state == TRANS_STATE::DID_GET);
+    Debug_println("transaction_complete - sent ACK");
+    _activeDev->comlynx_response_ack();
+    _transaction_state = TRANS_STATE::INVALID;
+}
+
+void systemBus::transaction_error()
 {
     Debug_println("transaction_error - send NAK");
-    comlynx_response_nack();
-    
+    _activeDev->comlynx_response_nack();
+
     // throw away any waiting bytes
     while (SYSTEM_BUS.available() > 0)
         SYSTEM_BUS.read();
 }
-    
-success_is_true virtualDevice::transaction_get(void *data, size_t len) 
+
+success_is_true systemBus::transaction_get(void *data, size_t len)
 {
-    size_t remaining = recvbuffer_len - (recvbuf_pos - recvbuffer);
-    size_t to_copy = (len > remaining) ? remaining : len;
-
-    memcpy(data, recvbuf_pos, to_copy);
-    recvbuf_pos += to_copy;
-
+    assert(_transaction_state == TRANS_STATE::WILL_GET);
+    _transaction_state = TRANS_STATE::DID_GET;
+    auto to_copy = std::min<size_t>(len, _activeDev->recvbuffer_len);
+    memcpy(data, _activeDev->recvbuffer, to_copy);
     RETURN_SUCCESS_IF(to_copy != 0);
 }
 
-void virtualDevice::transaction_put(const void *data, size_t len, bool err)
+void systemBus::transaction_send(const void *data, size_t len, bool err)
 {
     uint8_t b;
+    const uint8_t *ptr = reinterpret_cast<const uint8_t *>(data);
 
-    // set response buffer
-    memcpy(response, data, len);
-    response_len = len;
+    assert(_transaction_state == TRANS_STATE::NO_GET);
 
     // send all data back to Lynx
-    uint8_t ck = comlynx_checksum(response, response_len);
-    comlynx_send_length(response_len);
-    comlynx_send_buffer(response, response_len);
-    comlynx_send(ck);
+    uint8_t ck = comlynx_checksum(ptr, len);
+    _activeDev->comlynx_send_length(len);
+    _activeDev->comlynx_send_buffer(ptr, len);
+    _activeDev->comlynx_send(ck);
 
     // get ACK or NACK from Lynx, we're ignoring currently
-    uint8_t r = comlynx_recv();
+    uint8_t r = _activeDev->comlynx_recv();
     #ifdef DEBUG
         if (r == FUJICMD_ACK)
             Debug_println("transaction_put - Lynx ACKed");
@@ -517,6 +518,7 @@ void virtualDevice::transaction_put(const void *data, size_t len, bool err)
             Debug_println("transaction put - Lynx NAKed");
     #endif
 
+    _transaction_state = TRANS_STATE::INVALID;
     return;
 }
 
@@ -529,7 +531,7 @@ void systemBus::change_baud(int32_t baud)
                 .baud(baud)
                 .parity(UART_PARITY_ODD)
                 );
-    
+
     vTaskDelay(pdMS_TO_TICKS(10));
 
     //uart_set_baudrate(FN_UART_BUS, baud);

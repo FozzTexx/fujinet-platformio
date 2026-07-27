@@ -5,6 +5,7 @@
 
 #include <soc/uart_reg.h>
 #include <hal/gpio_types.h>
+#include <hal/uart_ll.h>
 
 #define MAX_FLUSH_WAIT_TICKS 200
 
@@ -67,6 +68,7 @@ void ESP32UARTChannel::begin(const ChannelConfig& conf)
     uart_driver_install(_uart_num, uart_buffer_size, conf.tx_buffer_size, uart_queue_size, &_uart_q,
                         intr_alloc_flags);
 
+    _halfDuplex = conf.isHalfDuplex;
     controlPins = conf.pins;
 
     if (controlPins.rts >= 0)
@@ -123,7 +125,7 @@ void ESP32UARTChannel::updateFIFO()
             size_t old_len = _fifo.size();
             _fifo.resize(old_len + event.size);
             int result = uart_read_bytes(_uart_num, &_fifo[old_len], event.size, 0);
-            if (result < 0)
+            if (result < 0 || _discardRX)
                 result = 0;
             _fifo.resize(old_len + result);
         }
@@ -141,7 +143,7 @@ void ESP32UARTChannel::updateFIFO()
     size_t old_len = _fifo.size();
     _fifo.resize(old_len + avail);
     int result = uart_read_bytes(_uart_num, &_fifo[old_len], avail, 0);
-    if (result < 0)
+    if (result < 0 || _discardRX)
         result = 0;
     _fifo.resize(old_len + result);
 
@@ -175,7 +177,34 @@ void ESP32UARTChannel::setBaudrate(uint32_t baud)
 
 size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
 {
-    return uart_write_bytes(_uart_num, (const char *)buffer, size);
+    if (_uart_num == FN_UART_DEBUG)
+        return uart_write_bytes(_uart_num, (const char *)buffer, size);
+
+    if (_halfDuplex)
+        _discardRX = true;
+
+    uart_dev_t *uart = UART_LL_GET_HW(_uart_num);
+    size_t count = 0;
+    uint8_t *data = (uint8_t *) buffer;
+    while (count < size) {
+        // How many bytes can we write now without overflowing FIFO?
+        size_t space = uart_ll_get_txfifo_len(uart);
+
+        if (space > 0) {
+            size_t chunk = std::min(size - count, space);
+            uart_ll_write_txfifo(uart, &data[count], chunk);
+            count += chunk;
+            flushOutput();
+        }
+    }
+
+    if (_halfDuplex)
+    {
+        //flushOutput();
+        updateFIFO();
+        _discardRX = false;
+    }
+    return count;
 }
 
 bool ESP32UARTChannel::getPin(int pin)

@@ -36,7 +36,7 @@ class fujiDevice;
 
  * @return checksum value (0x00 - 0xFF)
  */
-uint8_t comlynx_checksum(uint8_t *buf, unsigned short len);
+uint8_t comlynx_checksum(const uint8_t *buf, unsigned short len);
 
 /**
  * @brief An Comlynx Device
@@ -49,7 +49,7 @@ class virtualDevice
 protected:
     void comlynx_send_length(uint16_t l);
     void comlynx_send(uint8_t b);
-    void comlynx_send_buffer(uint8_t *buf, unsigned short len);
+    void comlynx_send_buffer(const uint8_t *buf, unsigned short len);
     bool comlynx_recv_ck();
     uint8_t comlynx_recv();
     uint16_t comlynx_recv_length();
@@ -58,12 +58,14 @@ protected:
     virtual void comlynx_response_ack();
     virtual void comlynx_response_nack();
 
+#ifdef OBSOLETE
     transState_t _transaction_state = TRANS_STATE::INVALID;
     virtual void transaction_begin(transState_t expectMoreData);
     virtual void transaction_complete();
     virtual void transaction_error();
     virtual success_is_true transaction_get(void *data, size_t len);
     virtual void transaction_put(const void *data, size_t len, bool err=false);
+#endif /* OBSOLETE */
 
     virtual void reset();
     virtual void shutdown() {}
@@ -116,7 +118,7 @@ public:
 /**
  * @brief The Comlynx Bus
  */
-class systemBus
+class systemBus : public SystemBusBase
 {
 private:
     std::forward_list<virtualDevice *> _daisyChain;
@@ -164,6 +166,13 @@ public:
 
     bool shuttingDown = false;                                  // TRUE if we are in shutdown process
     bool getShuttingDown() { return shuttingDown; };
+
+    void transaction_accept(transState_t expectMoreData) override;
+    void transaction_success() override;
+    void transaction_error() override;
+    success_is_true transaction_get(void *data, size_t len) override;
+    using SystemBusBase::transaction_send;
+    void transaction_send(const void *data, size_t len, bool is_error=false) override;
 
     // Everybody thinks "oh I know how a serial port works, I'll just
     // access it directly and bypass the bus!" ಠ_ಠ
