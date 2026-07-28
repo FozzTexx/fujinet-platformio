@@ -404,19 +404,16 @@ void lynxNetwork::set_password(const FujiLynxPacket &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void lynxNetwork::set_channel_mode()
+void lynxNetwork::set_channel_mode(const FujiLynxPacket &packet)
 {
-    unsigned char m;
-
     if ((protocol == nullptr) || (receiveBuffer == nullptr)) {
         SYSTEM_BUS.transaction_error();
         return; // Punch out.
     }
 
-    SYSTEM_BUS.transaction_get(&m, sizeof(m));
-    Debug_printf("lynxNetwork::channel_mode - mode: %02X\n", m);
+    Debug_printf("lynxNetwork::channel_mode - mode: %02X\n", packet.param8(0));
 
-    switch (m)
+    switch (packet.param8(0))
     {
     case 0:
         channelMode = PROTOCOL;
@@ -586,7 +583,7 @@ void lynxNetwork::comlynx_process(const FujiLynxPacket &packet)
         write(packet);
         break;
     case NETCMD_CHANNEL_MODE:
-        set_channel_mode();
+        set_channel_mode(packet);
         break;
     case NETCMD_PARSE:
     case NETCMD_PARSE_ALT:

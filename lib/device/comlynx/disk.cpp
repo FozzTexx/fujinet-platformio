@@ -145,6 +145,7 @@ void lynxDisk::write_block(uint32_t block)
         return;
     }
 
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     SYSTEM_BUS.transaction_get(_media->_media_blockbuff, MEDIA_BLOCK_SIZE);
     //memcpy(_media->_media_blockbuff, data, MEDIA_BLOCK_SIZE);
     _media->write(block, false);

@@ -103,7 +103,7 @@ public:
     /**
      * @brief set channel mode
      */
-    void set_channel_mode();
+    void set_channel_mode(const FujiLynxPacket &packet);
 
     /**
      * @brief parse incoming data
