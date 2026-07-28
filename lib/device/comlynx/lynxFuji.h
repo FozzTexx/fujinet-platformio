@@ -30,7 +30,7 @@ protected:
     void fujicmd_get_time();               // 0xD2
     void fujicmd_enable_netstream(int port, size_t host_payload_len);
 
-    void comlynx_process() override;
+    void comlynx_process(const FujiLynxPacket &packet) override;
 
     void shutdown() override;
 

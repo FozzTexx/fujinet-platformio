@@ -6,8 +6,8 @@
  */
 
 #include "bus.h"
+#include "FujiLynxPacket.h"
 #include "global_types.h"
-#include "cmdFrame.h"
 #include "UARTChannel.h"
 #include "fujiDeviceID.h"
 #include "fujiCommandID.h"
@@ -47,6 +47,7 @@ class virtualDevice
     friend fujiDevice;
 
 protected:
+#ifdef OBSOLETE
     void comlynx_send_length(uint16_t l);
     void comlynx_send(uint8_t b);
     void comlynx_send_buffer(const uint8_t *buf, unsigned short len);
@@ -57,6 +58,7 @@ protected:
     unsigned short comlynx_recv_buffer(uint8_t *buf, unsigned short len);
     virtual void comlynx_response_ack();
     virtual void comlynx_response_nack();
+#endif /* OBSOLETE */
 
 #ifdef OBSOLETE
     transState_t _transaction_state = TRANS_STATE::INVALID;
@@ -69,7 +71,7 @@ protected:
 
     virtual void reset();
     virtual void shutdown() {}
-    virtual void comlynx_process();
+    virtual void comlynx_process(const FujiLynxPacket &packet);
 
 
 
@@ -78,11 +80,14 @@ protected:
      */
     fujiDeviceID_t _devnum;
 
+#ifdef OBSOLETE
     /**
      * @brief command frame, used by network protocol, ultimately
      */
     cmdFrame_t cmdFrame;
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
     /**
      * Response buffer and length
      */
@@ -95,6 +100,7 @@ protected:
     uint8_t recvbuffer[1024];
     uint16_t recvbuffer_len = 0;
     uint8_t *recvbuf_pos;
+#endif /* OBSOLETE */
 
 public:
 
@@ -123,6 +129,7 @@ class systemBus : public SystemBusBase
 private:
     std::forward_list<virtualDevice *> _daisyChain;
     virtualDevice *_activeDev = nullptr;
+    const FujiLynxPacket *_activePacket;
     lynxFuji *_fujiDev = nullptr;
     lynxPrinter *_printerDev = nullptr;
     lynxNetwork *_netDev[8] = {nullptr};
@@ -174,6 +181,9 @@ public:
     using SystemBusBase::transaction_send;
     void transaction_send(const void *data, size_t len, bool is_error=false) override;
 
+    void sendAckPacket();
+    void sendNakPacket();
+    
     // Everybody thinks "oh I know how a serial port works, I'll just
     // access it directly and bypass the bus!" ಠ_ಠ
     size_t read(void *buffer, size_t length) { return _port.read(buffer, length); }

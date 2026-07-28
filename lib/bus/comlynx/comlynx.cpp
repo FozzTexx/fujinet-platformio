@@ -26,6 +26,7 @@ uint8_t comlynx_checksum(const uint8_t *buf, unsigned short len)
     return checksum;
 }
 
+#ifdef OBSOLETE
 void virtualDevice::comlynx_send(uint8_t b)
 {
     //Debug_printf("comlynx_send_buffer - %X\n", b);
@@ -151,12 +152,14 @@ unsigned short virtualDevice::comlynx_recv_buffer(uint8_t *buf, unsigned short l
 
     return(b);
 }
+#endif /* OBSOLETE */
 
 void virtualDevice::reset()
 {
     Debug_printf("No Reset implemented for device %u\n", _devnum);
 }
 
+#ifdef OBSOLETE
 void virtualDevice::comlynx_response_ack()
 {
     comlynx_send(FUJICMD_ACK);
@@ -166,6 +169,7 @@ void virtualDevice::comlynx_response_nack()
 {
     comlynx_send(FUJICMD_NAK);
 }
+#endif /* OBSOLETE */
 
 bool systemBus::wait_for_idle()
 {
@@ -184,7 +188,7 @@ bool systemBus::wait_for_idle()
         dur = current - start;
 
         // Did we get any data in the FIFO while waiting?
-        if (SYSTEM_BUS.available() > 0)
+        if (available() > 0)
             return false;
 
     } while (dur < COMLYNX_IDLE_TIME);
@@ -200,33 +204,52 @@ bool systemBus::netstreamActive() const
     return _streamDev != nullptr && _streamDev->netstreamActive;
 }
 
-void virtualDevice::comlynx_process()
+void virtualDevice::comlynx_process(const FujiLynxPacket &packet)
 {
     fnDebugConsole.printf("comlynx_process() not implemented yet for this device.\n");
 }
 
 void systemBus::_comlynx_process_cmd()
 {
-    uint8_t d;
+    fujiDeviceID_t dev;
+    u16be_t len;
+    ByteBuffer buffer;
+    uint8_t ck;
+    size_t rlen;
 
-    d = SYSTEM_BUS.read();
+    dev = (fujiDeviceID_t) read();
+    read(&len, sizeof(len));
+    buffer.resize(len, 0);
+    rlen = read(buffer.data(), buffer.size());
+    if (rlen != buffer.size())
+        buffer.resize(rlen);
+    ck = read();
+
+    FujiLynxPacket tmpPacket(dev);
+    if (tmpPacket.setPayload(buffer, ck).is_error())
+    {
+        Debug_printf(" checksum bad\n");
+        sendNakPacket();
+        goto done;
+    }
+
+    sendAckPacket();
 
     for (auto devicep : _daisyChain)
     {
-        if (d == devicep->_devnum)
+        if (tmpPacket.device() == devicep->_devnum)
         {
             _activeDev = devicep;
-            // handle command
-            //_activeDev->sio_process(tempFrame.commanddata, tempFrame.checksum);
+            _activePacket = &tmpPacket;
 
             #ifdef DEBUG
             Debug_println("---");
-            Debug_printf("comlynx_process_cmd - dev:%X\n", d);
+            Debug_printf("comlynx_process_cmd - dev:%X\n", tmpPacket.device());
             #endif
 
             // turn on Comlynx Indicator LED
             fnLedManager.set(eLed::LED_BUS, true);
-            devicep->comlynx_process();
+            devicep->comlynx_process(tmpPacket);
             // turn off Comlynx Indicator LED
             fnLedManager.set(eLed::LED_BUS, false);
         }
@@ -250,7 +273,8 @@ void systemBus::_comlynx_process_cmd()
         fnLedManager.set(eLed::LED_BUS, false);
     }*/
 
-    SYSTEM_BUS.flush();
+ done:
+    flush();
 }
 
 void systemBus::_comlynx_process_queue()
@@ -267,7 +291,7 @@ void systemBus::service()
             _streamDev->comlynx_handle_netstream();
     }
     // Process anything waiting
-    else if (SYSTEM_BUS.available() > 0)
+    else if (available() > 0)
         _comlynx_process_cmd();
 }
 
@@ -473,55 +497,62 @@ void systemBus::transaction_success()
 {
     assert(_transaction_state == TRANS_STATE::NO_GET || _transaction_state == TRANS_STATE::DID_GET);
     Debug_println("transaction_complete - sent ACK");
-    _activeDev->comlynx_response_ack();
+    sendAckPacket();
     _transaction_state = TRANS_STATE::INVALID;
 }
 
 void systemBus::transaction_error()
 {
     Debug_println("transaction_error - send NAK");
-    _activeDev->comlynx_response_nack();
+    sendNakPacket();
 
     // throw away any waiting bytes
-    while (SYSTEM_BUS.available() > 0)
-        SYSTEM_BUS.read();
+    _port.discardInput();
 }
 
 success_is_true systemBus::transaction_get(void *data, size_t len)
 {
     assert(_transaction_state == TRANS_STATE::WILL_GET);
     _transaction_state = TRANS_STATE::DID_GET;
-    auto to_copy = std::min<size_t>(len, _activeDev->recvbuffer_len);
-    memcpy(data, _activeDev->recvbuffer, to_copy);
+    auto to_copy = std::min<size_t>(len, _activePacket->data()->size());
+    std::copy(_activePacket->data()->begin(), _activePacket->data()->begin() + to_copy,
+              static_cast<uint8_t *>(data));
     RETURN_SUCCESS_IF(to_copy != 0);
 }
 
 void systemBus::transaction_send(const void *data, size_t len, bool err)
 {
-    uint8_t b;
     const uint8_t *ptr = reinterpret_cast<const uint8_t *>(data);
 
     assert(_transaction_state == TRANS_STATE::NO_GET);
 
     // send all data back to Lynx
-    uint8_t ck = comlynx_checksum(ptr, len);
-    _activeDev->comlynx_send_length(len);
-    _activeDev->comlynx_send_buffer(ptr, len);
-    _activeDev->comlynx_send(ck);
+    FujiLynxPacket packet(_activeDev->_devnum, ByteBuffer(ptr, ptr + len));
+    auto encoded = packet.serialize();
+    _port.write(encoded.data(), encoded.size());
 
     // get ACK or NACK from Lynx, we're ignoring currently
-    uint8_t r = _activeDev->comlynx_recv();
-    #ifdef DEBUG
-        if (r == FUJICMD_ACK)
-            Debug_println("transaction_put - Lynx ACKed");
-        else
-            Debug_println("transaction put - Lynx NAKed");
-    #endif
+    uint8_t r = _port.read();
+#ifdef DEBUG
+    if (r == FUJICMD_ACK)
+        Debug_println("transaction_put - Lynx ACKed");
+    else
+        Debug_println("transaction put - Lynx NAKed");
+#endif
 
     _transaction_state = TRANS_STATE::INVALID;
     return;
 }
 
+void systemBus::sendAckPacket()
+{
+    _port.write(FUJICMD_ACK);
+}
+
+void systemBus::sendNakPacket()
+{
+    _port.write(FUJICMD_NAK);
+}
 
 void systemBus::change_baud(int32_t baud)
 {

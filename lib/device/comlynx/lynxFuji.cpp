@@ -227,7 +227,7 @@ void lynxFuji::setup()
 
     for (int i = 0; i < MAX_DISK_DEVICES; i++)
         SYSTEM_BUS.addDevice(&_fnDisks[i].disk_dev, (fujiDeviceID_t) (FUJI_DEVICEID_DISK + i));
-    
+
     for (int i = 0; i < MAX_NETWORK_DEVICES; i++)
         SYSTEM_BUS.addDevice(lynxNetDevs[i].get(), (fujiDeviceID_t) (FUJI_DEVICEID_NETWORK + i));
 
@@ -317,31 +317,13 @@ void lynxFuji::fujicmd_enable_netstream(int port, size_t host_payload_len)
     SYSTEM_BUS.setStreamHostWithOptions(host_out, port, stream_mode, register_enabled, redeye_enabled);
 }
 
-void lynxFuji::comlynx_process()
+void lynxFuji::comlynx_process(const FujiLynxPacket &packet)
 {
-    uint8_t c;
     uint8_t slot;
-    
-    // Get the entire payload from Lynx
-    uint16_t len = comlynx_recv_length();
-    Debug_printf("lynxFuji::comlynx_process - len: %ld, ", (long int)len);
 
-    comlynx_recv_buffer(recvbuffer, len);
-    if (comlynx_recv_ck()) {
-        Debug_printf("checksum good\n");
-        comlynx_response_ack();        // good checksum
-    }
-    else {
-        Debug_printf(" checksum bad\n");
-        comlynx_response_nack();       // good checksum
-        return;
-    }
+    Debug_printf("lynxFuji::process - command: %02X\n", packet.command());
 
-    // get command
-    transaction_get(&c, sizeof(c));
-    Debug_printf("lynxFuji::process - command: %02X\n", c);
-
-    switch (c)
+    switch (packet.command())
     {
     case FUJICMD_RESET:
         fujicmd_reset();
@@ -367,7 +349,7 @@ void lynxFuji::comlynx_process()
     case FUJICMD_GET_WIFISTATUS:
         fujicmd_net_get_wifi_status();
         break;
-    case FUJICMD_MOUNT_HOST:   
+    case FUJICMD_MOUNT_HOST:
         transaction_get(&slot, sizeof(slot));
         fujicmd_mount_host_success(slot);
         break;
@@ -457,7 +439,7 @@ void lynxFuji::comlynx_process()
         fujicmd_close_app_key();
         break;
     case FUJICMD_WRITE_APPKEY:
-        fujicmd_write_app_key((len > 1) ? (len - 1) : 0, (len > 1) ? (len - 1) : 0);
+        fujicmd_write_app_key(packet.param(0));
         break;
     case FUJICMD_READ_APPKEY:
         fujicmd_read_app_key();
@@ -470,22 +452,19 @@ void lynxFuji::comlynx_process()
         break;
     case FUJICMD_COPY_FILE:
         {
-            uint8_t source;
-            uint8_t dest;
-            char dirpath[256];
-            transaction_get(&source, sizeof(source));
-            transaction_get(&dest, sizeof(dest));
-            transaction_get(dirpath, len - 3);
-            fujicmd_copy_file_success(source, dest, dirpath);
+            uint8_t source = packet.param(0);
+            uint8_t dest = packet.param(1);
+            fujicmd_copy_file_success(source, dest, packet.dataAsString()->c_str());
         }
         break;
     case FUJICMD_ENABLE_UDPSTREAM:
-        uint16_t port;
-        transaction_get(&port, sizeof(port));
-        fujicmd_enable_netstream(port, (len > 3) ? (len - 3) : 0);
+        {
+            uint16_t port = packet.param(0);
+            fujicmd_enable_netstream(port, packet.data()->size());
+        }
         break;
     default:
-        Debug_printf("lynxFuji::process - unknown command: %02X\n", c);
+        Debug_printf("lynxFuji::process - unknown command: %02X\n", packet.command());
         transaction_error();
         break;
     }

@@ -69,25 +69,11 @@ lynxNetwork::~lynxNetwork()
  * Called in response to 'O' command. Instantiate a protocol, pass URL to it, call its open
  * method. Also set up RX interrupt.
  */
-void lynxNetwork::open(unsigned short len)
+void lynxNetwork::open(const FujiLynxPacket &packet)
 {
-    uint8_t _aux1;
-    uint8_t _aux2;
-    string d;
+    fileAccessMode_t open_mode = (fileAccessMode_t) packet.param8(0);
+    netProtoTranslation_t open_trans = (netProtoTranslation_t) packet.param8(1);
 
-
-    SYSTEM_BUS.transaction_get(&_aux1, sizeof(_aux1));
-    SYSTEM_BUS.transaction_get(&_aux2, sizeof(_aux2));
-
-    memset(response, 0, sizeof(response));
-    SYSTEM_BUS.transaction_get(&response, len);
-
-      // persist aux1/aux2 values
-    cmdFrame.aux1 = _aux1;
-    cmdFrame.aux2 = _aux2;
-
-    open_aux1 = cmdFrame.aux1;
-    open_aux2 = cmdFrame.aux2;
 
     // Shut down protocol if we are sending another open before we close.
     if (protocol != nullptr)
@@ -106,11 +92,12 @@ void lynxNetwork::open(unsigned short len)
     // Reset status buffer
     statusByte.byte = 0x00;
 
-    Debug_printf("lynxNetwork::open - aux1:%02X aux2:%02X %s\n", open_aux1, open_aux2, response);
+    Debug_printf("lynxNetwork::open - aux1:%02X aux2:%02X %s\n",
+                 open_mode, open_trans, packet.dataAsString()->c_str());
 
     // Parse and instantiate protocol
-    d = string((char *)response, len);
-    parse_and_instantiate_protocol(d);
+    bool is_dir = static_cast<fileAccessMode_t>(packet.param8(0)) == ACCESS_MODE::DIRECTORY;
+    parse_and_instantiate_protocol(*packet.dataAsString(), is_dir);
 
     if (protocol == nullptr)
     {
@@ -119,7 +106,7 @@ void lynxNetwork::open(unsigned short len)
     }
 
     // Attempt protocol open
-    if (protocol->open(urlParser.get(), (fileAccessMode_t) cmdFrame.aux1, (netProtoTranslation_t) cmdFrame.aux2) != FUJI_ERROR::NONE)
+    if (protocol->open(urlParser.get(), open_mode, open_trans) != FUJI_ERROR::NONE)
     {
         statusByte.bits.client_error = true;
         Debug_printf("Protocol unable to make connection. Error: %d\n", (int)err);
@@ -203,20 +190,21 @@ fujiError_t lynxNetwork::read_channel(unsigned short num_bytes)
         read_channel_protocol();
         break;
     case JSON:
-        response_len = json->available();
-        response_len = response_len % SERIAL_PACKET_SIZE;
-        json->readValue(response, response_len);
-
-        _err = FUJI_ERROR::NONE;
+        {
+            std::string buffer(json->available() % SERIAL_PACKET_SIZE, 0);
+            json->readValue(reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
+            Debug_printf("lynxNetwork:receive_channel_json, len:%d %s\n",
+                         buffer.size(), buffer.c_str());
+            SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+            SYSTEM_BUS.transaction_send(buffer);
+            _err = FUJI_ERROR::NONE;
+        }
         break;
     default:
         Debug_println("lynxNetwork::read_channel - unknown channelMode");
         SYSTEM_BUS.transaction_error();
         return FUJI_ERROR::UNSPECIFIED;
     }
-
-    Debug_printf("lynxNetwork:receive_channel_json, len:%d %s\n",response_len, response);
-    SYSTEM_BUS.transaction_send(response, response_len);
 
     return _err;
 }
@@ -226,7 +214,7 @@ fujiError_t lynxNetwork::read_channel(unsigned short num_bytes)
  * Write # of bytes specified by aux1/aux2 from tx_buffer out to LYNX. If protocol is unable to return requested
  * number of bytes, return ERROR.
  */
-void lynxNetwork::write(uint16_t num_bytes)
+void lynxNetwork::write(const FujiLynxPacket &packet)
 {
     if ((protocol == nullptr) || (receiveBuffer == nullptr)) {
         SYSTEM_BUS.transaction_error();
@@ -234,12 +222,9 @@ void lynxNetwork::write(uint16_t num_bytes)
     }
 
     Debug_printf("lynxNetwork::write\n");
-    memset(response, 0, sizeof(response));
 
-    SYSTEM_BUS.transaction_get(response, num_bytes);
-
-    *transmitBuffer += string((char *)response, num_bytes);
-    err = write_channel(num_bytes) == FUJI_ERROR::NONE ? NDEV_STATUS::SUCCESS : NDEV_STATUS::GENERAL;
+    *transmitBuffer += *packet.dataAsString();
+    err = write_channel(packet.dataAsString()->size()) == FUJI_ERROR::NONE ? NDEV_STATUS::SUCCESS : NDEV_STATUS::GENERAL;
 }
 
 
@@ -330,30 +315,21 @@ void lynxNetwork::get_prefix()
     }
 
     Debug_printf("lynxNetwork::comlynx_getprefix(%s)\n", prefix.c_str());
-    memcpy(response, prefix.data(), prefix.size());
-    response_len = prefix.size();
-
-    SYSTEM_BUS.transaction_send(response, response_len);
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    SYSTEM_BUS.transaction_send(prefix);
 }
 
 /**
  * Set Prefix
  */
-void lynxNetwork::set_prefix(unsigned short len)
+void lynxNetwork::set_prefix(const FujiLynxPacket &packet)
 {
-    uint8_t prefixSpec[256];
-    string prefixSpec_str;
-
     if ((protocol == nullptr) || (receiveBuffer == nullptr)) {
         SYSTEM_BUS.transaction_error();
         return; // Punch out.
     }
 
-    memset(prefixSpec, 0, sizeof(prefixSpec));
-    SYSTEM_BUS.transaction_get(&prefixSpec, len);
-
-    prefixSpec_str = string((const char *)prefixSpec);
-    prefixSpec_str = prefixSpec_str.substr(prefixSpec_str.find_first_of(":") + 1);
+    std::string prefixSpec_str = *packet.dataAsString();
     Debug_printf("lynxNetwork::comlynx_set_prefix(%s)\n", prefixSpec_str.c_str());
 
     if (prefixSpec_str == "..") // Devance path N:..
@@ -401,38 +377,29 @@ void lynxNetwork::set_prefix(unsigned short len)
 /**
  * Set login
  */
-void lynxNetwork::set_login(uint16_t len)
+void lynxNetwork::set_login(const FujiLynxPacket &packet)
 {
-    uint8_t loginspec[256];
-
     if ((protocol == nullptr) || (receiveBuffer == nullptr)) {
         SYSTEM_BUS.transaction_error();
         return; // Punch out.
     }
 
-    memset(loginspec, 0, sizeof(loginspec));
-    SYSTEM_BUS.transaction_get(loginspec, len);
-
-    login = string((char *)loginspec, len);
+    login = *packet.dataAsString();
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_success();
 }
 
 /**
  * Set password
  */
-void lynxNetwork::set_password(uint16_t len)
+void lynxNetwork::set_password(const FujiLynxPacket &packet)
 {
-    uint8_t passwordspec[256];
-
     if ((protocol == nullptr) || (receiveBuffer == nullptr)) {
         SYSTEM_BUS.transaction_error();
         return; // Punch out.
     }
 
-    memset(passwordspec, 0, sizeof(passwordspec));
-    SYSTEM_BUS.transaction_get(passwordspec, len);
-
-    password = string((char *)passwordspec, len);
+    password = *packet.dataAsString();
     SYSTEM_BUS.transaction_success();
 }
 
@@ -464,22 +431,19 @@ void lynxNetwork::set_channel_mode()
     }
 }
 
-void lynxNetwork::json_query(unsigned short len)
+void lynxNetwork::json_query(const FujiLynxPacket &packet)
 {
-    std::string in(len, '\0');
-
     if ((protocol == nullptr) || (receiveBuffer == nullptr)) {
         SYSTEM_BUS.transaction_error();
         return; // Punch out.
     }
 
     // get the query string
-    SYSTEM_BUS.transaction_get(in.data(), len);
-    Debug_printf("lynxNetwork::json_query - query:%s\n", in.c_str());
+    Debug_printf("lynxNetwork::json_query - query:%s\n", packet.dataAsString()->c_str());
 
     // read the json value from query, there may be more bytes than we can transfer
     // in one response
-    json->setReadQuery(in, cmdFrame.aux2);
+    json->setReadQuery(*packet.dataAsString(), packet.param(1));
     uint16_t jsonlen = json->available();
     jsonlen = std::min<uint16_t>(json->available(), SERIAL_PACKET_SIZE);
     Debug_printf("lynxNetwork::json_query - json->available:%d, len:%d\n", json->available(), jsonlen);
@@ -535,17 +499,18 @@ void lynxNetwork::read_channel_json()
     }
 
     // check how many bytes available and truncated to packet size
-    response_len = json->available();
-    response_len = std::min<uint16_t>(response_len, SERIAL_PACKET_SIZE);
+    size_t len = std::min<uint16_t>(json->available(), SERIAL_PACKET_SIZE);
 
-    if (response_len == 0) {
+    if (len == 0) {
       SYSTEM_BUS.transaction_error();
       return;
     }
 
-    json->readValue(response, response_len);
-    Debug_printf("lynxNetwork:read_channel_json, len:%d %s\n",response_len, response);
-    SYSTEM_BUS.transaction_send(response, response_len);
+    std::string buffer(len, 0);
+    json->readValue(reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
+    Debug_printf("lynxNetwork:read_channel_json, len:%d %s\n", buffer.size(), buffer.c_str());
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    SYSTEM_BUS.transaction_send(buffer);
 }
 
 void lynxNetwork::read_channel_protocol()
@@ -571,23 +536,20 @@ void lynxNetwork::read_channel_protocol()
 
     // Truncate bytes waiting to response size
     avail = std::min<uint16_t>(avail, SERIAL_PACKET_SIZE);
-    response_len = avail;
 
-    if (protocol->read(response_len) != FUJI_ERROR::NONE) // protocol adapter returned error
+    if (protocol->read(avail) != FUJI_ERROR::NONE) // protocol adapter returned error
     {
         statusByte.bits.client_error = true;
         err = protocol->error;
         SYSTEM_BUS.transaction_error();
         return;
     }
-    else // everything ok
-    {
-        statusByte.bits.client_error = 0;
-        statusByte.bits.client_data_available = response_len > 0;
-        memcpy(response, receiveBuffer->data(), response_len);
-        receiveBuffer->erase(0, response_len);
-        SYSTEM_BUS.transaction_send(response, response_len);
-    }
+
+    statusByte.bits.client_error = 0;
+    statusByte.bits.client_data_available = avail > 0;
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    SYSTEM_BUS.transaction_send(receiveBuffer->data(), avail);
+    receiveBuffer->erase(0, avail);
 }
 
 /**
@@ -595,41 +557,20 @@ void lynxNetwork::read_channel_protocol()
  * @param comanddata incoming 4 bytes containing command and aux bytes
  * @param checksum 8 bit checksum
  */
-void lynxNetwork::comlynx_process()
+void lynxNetwork::comlynx_process(const FujiLynxPacket &packet)
 {
-    fujiCommandID_t cmd;
+    Debug_printf("lynxNetwork::comlynx_process - command: %02X\n", packet.command());
 
-
-    // Get the entire payload from Lynx
-    uint16_t len = comlynx_recv_length();
-    Debug_printf("lynxNetwork::comlynx_process - len: %ld, ", (long int)len);
-
-    comlynx_recv_buffer(recvbuffer, len);
-    if (comlynx_recv_ck()) {
-        Debug_printf("checksum good\n");
-        comlynx_response_ack();        // good checksum
-    }
-    else {
-        Debug_printf(" checksum bad\n");
-        comlynx_response_nack();       // good checksum
-        return;
-    }
-
-    // get command
-    SYSTEM_BUS.transaction_get(&cmd, 1);
-    Debug_printf("lynxNetwork::comlynx_process - command: %02X\n", cmd);
-    len--;      // we received command already
-
-    switch (cmd)
+    switch (packet.command())
     {
     case NETCMD_CHDIR:
-        set_prefix(len);
+        set_prefix(packet);
         break;
     case NETCMD_GETCWD:
         get_prefix();
         break;
     case NETCMD_OPEN:
-        open(len);
+        open(packet);
         break;
     case NETCMD_CLOSE:
         close();
@@ -641,7 +582,7 @@ void lynxNetwork::comlynx_process()
         read();
         break;
     case NETCMD_WRITE:
-        write(len);
+        write(packet);
         break;
     case NETCMD_CHANNEL_MODE:
         set_channel_mode();
@@ -652,13 +593,13 @@ void lynxNetwork::comlynx_process()
         break;
     case NETCMD_QUERY:
     case NETCMD_QUERY_ALT:
-        json_query(len);
+        json_query(packet);
         break;
     case NETCMD_USERNAME: // login
-        set_login(len);
+        set_login(packet);
         break;
     case NETCMD_PASSWORD: // password
-        set_password(len);
+        set_password(packet);
         break;
 
     case NETCMD_RENAME:
@@ -667,26 +608,26 @@ void lynxNetwork::comlynx_process()
     case NETCMD_UNLOCK:
     case NETCMD_MKDIR:
     case NETCMD_RMDIR:
-        process_fs(cmd, len);
+        process_fs(packet);
         break;
 
     case NETCMD_CONTROL:
     case NETCMD_CLOSE_CLIENT:
-        process_tcp(cmd);
+        process_tcp(packet);
         break;
 
     case NETCMD_SET_CHANNEL_MODE:
-        process_http(cmd);
+        process_http(packet);
         break;
 
     case NETCMD_GET_REMOTE:
     case NETCMD_SET_DESTINATION:
-        process_udp(cmd);
+        process_udp(packet);
         break;
 
     default:
         statusByte.bits.client_error = true;
-        Debug_printf("lynxnetwork::comlynx_process - unknown command: %02X", cmd);
+        Debug_printf("lynxnetwork::comlynx_process - unknown command: %02X", packet.command());
         SYSTEM_BUS.transaction_error();
         break;
     }
@@ -721,9 +662,9 @@ bool lynxNetwork::instantiate_protocol()
  * Preprocess deviceSpec given aux1 open mode. This is used to work around various assumptions that different
  * disk utility packages do when opening a device, such as adding wildcards for directory opens.
  */
-void lynxNetwork::create_devicespec(string d)
+void lynxNetwork::create_devicespec(string d, bool is_dir)
 {
-    deviceSpec = util_devicespec_fix_for_parsing(d, prefix, cmdFrame.aux1 == 6, false);
+    deviceSpec = util_devicespec_fix_for_parsing(d, prefix, is_dir, false);
 }
 
 /*
@@ -736,9 +677,9 @@ void lynxNetwork::create_url_parser()
     urlParser = PeoplesUrlParser::parseURL(url);
 }
 
-void lynxNetwork::parse_and_instantiate_protocol(string d)
+void lynxNetwork::parse_and_instantiate_protocol(string d, bool is_dir)
 {
-    create_devicespec(d);
+    create_devicespec(d, is_dir);
     create_url_parser();
 
     // Invalid URL returns error 165 in status.
@@ -769,12 +710,12 @@ void lynxNetwork::parse_and_instantiate_protocol(string d)
 }*/
 
 
-void lynxNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
+void lynxNetwork::process_fs(const FujiLynxPacket &packet)
 {
-    SYSTEM_BUS.transaction_get(response, pkt_len);
     statusByte.byte = 0x00;
 
-    parse_and_instantiate_protocol(string((char *)response, pkt_len));
+    bool is_dir = static_cast<fileAccessMode_t>(packet.param8(0)) == ACCESS_MODE::DIRECTORY;
+    parse_and_instantiate_protocol(*packet.dataAsString(), is_dir);
 
     // Make sure this is really a FS protocol instance
     NetworkProtocolFS *fs = dynamic_cast<NetworkProtocolFS *>(protocol);
@@ -787,7 +728,7 @@ void lynxNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
 
     fujiError_t cmd_err;
     auto url = urlParser.get();
-    switch (cmd)
+    switch (packet.command())
     {
     case NETCMD_RENAME:
         cmd_err = fs->rename(url);
@@ -820,7 +761,7 @@ void lynxNetwork::process_fs(fujiCommandID_t cmd, unsigned pkt_len)
         SYSTEM_BUS.transaction_success();
 }
 
-void lynxNetwork::process_tcp(fujiCommandID_t cmd)
+void lynxNetwork::process_tcp(const FujiLynxPacket &packet)
 {
     statusByte.byte = 0x00;
 
@@ -834,7 +775,7 @@ void lynxNetwork::process_tcp(fujiCommandID_t cmd)
     }
 
     fujiError_t cmd_err;
-    switch (cmd)
+    switch (packet.command())
     {
     case NETCMD_CONTROL:
         cmd_err = FUJI_ERROR::NONE;
@@ -869,7 +810,7 @@ void lynxNetwork::process_tcp(fujiCommandID_t cmd)
         SYSTEM_BUS.transaction_success();
 }
 
-void lynxNetwork::process_http(fujiCommandID_t cmd)
+void lynxNetwork::process_http(const FujiLynxPacket &packet)
 {
     statusByte.byte = 0x00;
 
@@ -883,10 +824,10 @@ void lynxNetwork::process_http(fujiCommandID_t cmd)
     }
 
     fujiError_t cmd_err;
-    switch (cmd)
+    switch (packet.command())
     {
     case NETCMD_SET_CHANNEL_MODE:
-        cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) cmdFrame.aux2);
+        cmd_err = http->set_channel_mode((netProtoHTTPChannelMode_t) packet.param8(1));
         break;
     default:
         cmd_err = FUJI_ERROR::UNSPECIFIED;
@@ -901,7 +842,7 @@ void lynxNetwork::process_http(fujiCommandID_t cmd)
         SYSTEM_BUS.transaction_success();
 }
 
-void lynxNetwork::process_udp(fujiCommandID_t cmd)
+void lynxNetwork::process_udp(const FujiLynxPacket &packet)
 {
     statusByte.byte = 0x00;
 
@@ -915,7 +856,7 @@ void lynxNetwork::process_udp(fujiCommandID_t cmd)
     }
 
     fujiError_t cmd_err;
-    switch (cmd)
+    switch (packet.command())
     {
 #ifndef ESP_PLATFORM
     case NETCMD_GET_REMOTE:

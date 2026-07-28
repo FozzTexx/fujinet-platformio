@@ -153,44 +153,23 @@ void lynxDisk::write_block(uint32_t block)
 
     blockNum = 0xFFFFFFFF;
     _media->_media_last_block = 0xFFFFFFFE;
-    
+
     SYSTEM_BUS.transaction_success();
 }
 
-void lynxDisk::comlynx_process()
+void lynxDisk::comlynx_process(const FujiLynxPacket &packet)
 {
-    unsigned char c;
-    int32_t block;
+    Debug_printf("lynxDisk::comlynx_process - command: %02X\n", packet.command());
 
- 
-     // Get the entire payload from Lynx
-    uint16_t len = comlynx_recv_length();
-    Debug_printf("lynxDisk::comlynx_process - len: %ld, ", (long int)len);
-
-    comlynx_recv_buffer(recvbuffer, len);
-    if (comlynx_recv_ck()) {
-        Debug_printf("checksum good\n");
-        comlynx_response_ack();        // good checksum
-    }
-    else {
-        Debug_printf(" checksum bad\n");
-        comlynx_response_nack();       // good checksum
-        return;
-    }
-
-    // get command
-    SYSTEM_BUS.transaction_get(&c, sizeof(c));
-    Debug_printf("lynxDisk::comlynx_process - command: %02X\n", c);
-
-    switch (c)
+    switch (packet.command())
     {
     case DISKCMD_READ:
-        SYSTEM_BUS.transaction_get(&block, sizeof(block));
-        read_block(block);
+        read_block(packet.param(0));
         break;
     case DISKCMD_WRITE:
-        SYSTEM_BUS.transaction_get(&block, sizeof(block));
-        write_block(block);
+        write_block(packet.param(0));
+        break;
+    default:
         break;
     }
 }
