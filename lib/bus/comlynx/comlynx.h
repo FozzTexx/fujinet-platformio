@@ -16,6 +16,7 @@
 #include <forward_list>
 #include <map>
 
+#define FUJI_COMMAND_PACKET FujiLynxPacket
 
 #define COMLYNX_BAUDRATE 62500
 #define COMLYNX_IDLE_TIME 500
@@ -183,7 +184,7 @@ public:
 
     void sendAckPacket();
     void sendNakPacket();
-    
+
     // Everybody thinks "oh I know how a serial port works, I'll just
     // access it directly and bypass the bus!" ಠ_ಠ
     size_t read(void *buffer, size_t length) { return _port.read(buffer, length); }

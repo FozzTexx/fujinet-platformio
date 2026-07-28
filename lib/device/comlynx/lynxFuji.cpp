@@ -320,6 +320,10 @@ void lynxFuji::comlynx_process(const FujiLynxPacket &packet)
 {
     Debug_printf("lynxFuji::process - command: %02X\n", packet.command());
 
+    // Let the base class handle standard commands
+    if (fujiDevice::processCommand(packet))
+        return;
+
     switch (packet.command())
     {
     case FUJICMD_RESET:
