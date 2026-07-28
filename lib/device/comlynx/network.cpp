@@ -93,7 +93,8 @@ void lynxNetwork::open(const FujiLynxPacket &packet)
     statusByte.byte = 0x00;
 
     Debug_printf("lynxNetwork::open - aux1:%02X aux2:%02X %s\n",
-                 open_mode, open_trans, packet.dataAsString()->c_str());
+                 (unsigned int) open_mode, (unsigned int) open_trans,
+                 packet.dataAsString()->c_str());
 
     // Parse and instantiate protocol
     bool is_dir = static_cast<fileAccessMode_t>(packet.param8(0)) == ACCESS_MODE::DIRECTORY;

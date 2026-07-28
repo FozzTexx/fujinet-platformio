@@ -59,6 +59,9 @@
 
 #ifdef ESP_PLATFORM
     #include <esp_heap_caps.h>
+    #ifdef Debug_memory
+    #undef Debug_memory
+    #endif
     #define Debug_memory() Debug_printf("Free heap: %u bytes (min free: %u bytes)\r\n", \
                                         (unsigned) heap_caps_get_free_size(MALLOC_CAP_INTERNAL), \
                                         (unsigned) heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL))
