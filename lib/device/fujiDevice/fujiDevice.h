@@ -192,9 +192,7 @@ public:
     void shutdown() override;
 
     // Return true if command was handled here
-    bool processCommand(const FUJI_COMMAND_PACKET &packet) {
-        return tryAllMixins(packet);
-    }
+    bool processCommand(const FUJI_COMMAND_PACKET &packet);
     // Return true if command is one that can be handled
     bool recognizesCommand(const FUJI_COMMAND_PACKET &packet) {
         return checkAllMixins(packet);
