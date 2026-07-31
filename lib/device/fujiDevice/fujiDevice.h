@@ -14,6 +14,7 @@
 #include <optional>
 #include <map>
 #include <atomic>
+#include <functional>
 
 #define MAX_HOSTS MAX_HOST_SLOTS
 #define MAX_DISK_DEVICES MAX_MOUNT_SLOTS
@@ -113,6 +114,11 @@ concept FujiPacketLike = requires(T p) {
 static_assert(FujiPacketLike<FUJI_COMMAND_PACKET>,
               "FUJI_COMMAND_PACKET must satisfy FujiPacketLike");
 
+using FujiCommandHandlers = std::unordered_map<
+    fujiCommandID_t,
+    std::function<void(const FUJI_COMMAND_PACKET &cmd)>
+    >;
+
 // This class inherits from all the mixins you list and tries each one in order
 template<typename... FujiDeviceMixins>
 requires FujiPacketLike<FUJI_COMMAND_PACKET>
@@ -138,6 +144,7 @@ class fujiDevice : public virtual virtualDevice,
                    public FujiDeviceChain<Base64Mixin, HashMixin, QRMixin, AppKeyMixin>
 {
 private:
+    FujiCommandHandlers handlers;
     bool hostMounted[MAX_HOSTS];
 
     void fujicmd_read_directory_block(uint8_t num_pages, uint8_t group_size);
@@ -194,9 +201,7 @@ public:
     // Return true if command was handled here
     bool processCommand(const FUJI_COMMAND_PACKET &packet);
     // Return true if command is one that can be handled
-    bool recognizesCommand(const FUJI_COMMAND_PACKET &packet) {
-        return checkAllMixins(packet);
-    }
+    bool recognizesCommand(const FUJI_COMMAND_PACKET &packet);
 
     fujiHost *get_host(int i) { return &_fnHosts[i]; }
     std::string get_host_prefix(int host_slot) { return _fnHosts[host_slot].get_prefix(); }
@@ -220,7 +225,7 @@ public:
     virtual void fujicmd_net_scan_networks();
     void fujicmd_net_scan_result(uint8_t index);
     void fujicmd_net_get_ssid();
-    success_is_true fujicmd_net_set_ssid_success(const char *ssid, const char *password, bool save);
+    success_is_true fujicmd_net_set_ssid_success();
     void fujicmd_net_get_wifi_enabled();
     virtual success_is_true fujicmd_mount_disk_image_success(uint8_t deviceSlot, disk_access_flags_t access_mode);
     success_is_true fujicmd_unmount_disk_image_success(uint8_t deviceSlot);

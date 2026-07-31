@@ -50,6 +50,112 @@ fujiDevice::fujiDevice(unsigned int numDisk, std::string extension,
     // Helpful for debugging
     for (int i = 0; i < MAX_HOSTS; i++)
         _fnHosts[i].slotid = i;
+
+    handlers = {
+        { FUJICMD_RESET, [this](const FUJI_COMMAND_PACKET &packet) {
+            fnSystem.reboot();
+        } },
+        { FUJICMD_GET_ADAPTERCONFIG, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_get_adapter_config();
+        } },
+        { FUJICMD_GET_ADAPTERCONFIG_EXTENDED, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_get_adapter_config_extended();
+        } },
+        { FUJICMD_GET_SCAN_RESULT, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_net_scan_result(packet.param(0));
+        } },
+        { FUJICMD_SCAN_NETWORKS, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_net_scan_networks();
+        } },
+        { FUJICMD_SET_SSID, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_net_set_ssid_success();
+        } },
+        { FUJICMD_GET_SSID, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_net_get_ssid();
+        } },
+        { FUJICMD_READ_HOST_SLOTS, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_read_host_slots();
+        } },
+        { FUJICMD_READ_DEVICE_SLOTS, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_read_device_slots();
+        } },
+        { FUJICMD_WRITE_DEVICE_SLOTS, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_write_device_slots();
+        } },
+        { FUJICMD_WRITE_HOST_SLOTS, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_write_host_slots();
+        } },
+        { FUJICMD_GET_WIFI_ENABLED, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_net_get_wifi_enabled();
+        } },
+        { FUJICMD_GET_WIFISTATUS, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_net_get_wifi_status();
+        } },
+        { FUJICMD_MOUNT_HOST, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_mount_host_success(packet.param(0));
+        } },
+        { FUJICMD_OPEN_DIRECTORY, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_open_directory_success(packet.param(0));
+        } },
+        { FUJICMD_CLOSE_DIRECTORY, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_close_directory();
+        } },
+        { FUJICMD_READ_DIR_ENTRY, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_read_directory_entry(packet.param(0), packet.param(1));
+        } },
+        { FUJICMD_SET_DIRECTORY_POSITION, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_set_directory_position(packet.param(0));
+        } },
+        { FUJICMD_SET_DEVICE_FULLPATH, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_set_device_filename_success(packet.param(0), packet.param(1),
+                                                (disk_access_flags_t) packet.param(2));
+        } },
+        { FUJICMD_GET_DEVICE_FULLPATH, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_get_device_filename(packet.param(0));
+        } },
+        { FUJICMD_MOUNT_IMAGE, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_mount_disk_image_success(packet.param(0),
+                                             (disk_access_flags_t) packet.param(1));
+        } },
+        { FUJICMD_UNMOUNT_HOST, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_unmount_host_success(packet.param(0));
+        } },
+        { FUJICMD_UNMOUNT_IMAGE, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_unmount_disk_image_success(packet.param(0));
+        } },
+        { FUJICMD_RANDOM_NUMBER, [this](const FUJI_COMMAND_PACKET &packet) {
+            random();
+        } },
+        { FUJICMD_SET_BOOT_MODE, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_set_boot_mode(packet.param(0), MEDIATYPE_UNKNOWN, &bootdisk);
+        } },
+        { FUJICMD_MOUNT_ALL, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_mount_all_success();
+        } },
+        { FUJICMD_GET_HOST_PREFIX, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_get_host_prefix(packet.param(0));
+        } },
+        { FUJICMD_SET_HOST_PREFIX, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_set_host_prefix(packet.param(0));
+        } },
+        { FUJICMD_COPY_FILE, [this](const FUJI_COMMAND_PACKET &packet) {
+            uint8_t source = packet.param(0);
+            uint8_t dest = packet.param(1);
+            fujicmd_copy_file_success(source, dest, packet.dataAsString().value_or(""));
+        } },
+        { FUJICMD_GENERATE_GUID, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_generate_guid();
+        } },
+        { FUJICMD_STATUS, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_status();
+        } },
+        { FUJICMD_GET_DIRECTORY_POSITION, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_get_directory_position();
+        } },
+        { FUJICMD_CONFIG_BOOT, [this](const FUJI_COMMAND_PACKET &packet) {
+            fujicmd_set_boot_config(packet.param(0));
+        } },
+    };
 }
 
 // Public method to update host in specific slot
@@ -454,13 +560,20 @@ success_is_true fujiDevice::fujicore_net_set_ssid_success(const char *ssid,
 }
 
 // Set SSID
-success_is_true fujiDevice::fujicmd_net_set_ssid_success(const char *ssid,
-                                                         const char *password, bool save)
+success_is_true fujiDevice::fujicmd_net_set_ssid_success()
 {
-    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     Debug_println("Fuji cmd: SET SSID");
 
-    if (!fujicore_net_set_ssid_success(ssid, password, save)) {
+    SSIDConfig cfg;
+    if (!SYSTEM_BUS.transaction_get(&cfg, sizeof(cfg)))
+    {
+        SYSTEM_BUS.transaction_error();
+        RETURN_ERROR_AS_FALSE();
+    }
+
+    if (fujicore_net_set_ssid_success(cfg.ssid, cfg.password, true).is_error())
+    {
         SYSTEM_BUS.transaction_error();
         RETURN_ERROR_AS_FALSE();
     }
@@ -1577,146 +1690,18 @@ bool fujiDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
     if (tryAllMixins(packet))
         return true;
 
-    switch (packet.command())
-    {
-    case FUJICMD_RESET:
-        fnSystem.reboot();
-        break;
-    case FUJICMD_GET_ADAPTERCONFIG:
-        fujicmd_get_adapter_config();
-        break;
-    case FUJICMD_GET_ADAPTERCONFIG_EXTENDED:
-        fujicmd_get_adapter_config_extended();
-        break;
-    case FUJICMD_GET_SCAN_RESULT:
-        fujicmd_net_scan_result(packet.param(0));
-        break;
-    case FUJICMD_SCAN_NETWORKS:
-        fujicmd_net_scan_networks();
-        break;
-    case FUJICMD_SET_SSID:
-        {
-            SSIDConfig cfg;
-            // Handler owns the transaction because it must transaction_get the
-            // payload first, so call the core (not fujicmd_) set-ssid helper.
-            transaction_begin(TRANS_STATE::WILL_GET);
-            if (!transaction_get(&cfg, sizeof(cfg)))
-                transaction_error();
-            else if (fujicore_net_set_ssid_success(cfg.ssid, cfg.password, true).is_error())
-                transaction_error();
-            else
-                transaction_complete();
-        }
-        break;
-    case FUJICMD_GET_SSID:
-        fujicmd_net_get_ssid();
-        break;
-    case FUJICMD_READ_HOST_SLOTS:
-        fujicmd_read_host_slots();
-        break;
-    case FUJICMD_READ_DEVICE_SLOTS:
-        fujicmd_read_device_slots();
-        break;
-    case FUJICMD_WRITE_DEVICE_SLOTS:
-        fujicmd_write_device_slots();
-        break;
-    case FUJICMD_WRITE_HOST_SLOTS:
-        fujicmd_write_host_slots();
-        break;
-    case FUJICMD_GET_WIFI_ENABLED:
-        fujicmd_net_get_wifi_enabled();
-        break;
-    case FUJICMD_GET_WIFISTATUS:
-        fujicmd_net_get_wifi_status();
-        break;
-    case FUJICMD_MOUNT_HOST:
-        fujicmd_mount_host_success(packet.param8(0));
-        break;
-    case FUJICMD_OPEN_DIRECTORY:
-        fujicmd_open_directory_success(packet.param(0));
-        break;
-    case FUJICMD_CLOSE_DIRECTORY:
-        fujicmd_close_directory();
-        break;
-    case FUJICMD_READ_DIR_ENTRY:
-        fujicmd_read_directory_entry(packet.param8(0), packet.param(1));
-        break;
-    case FUJICMD_SET_DIRECTORY_POSITION:
-        fujicmd_set_directory_position(packet.param(0));
-        break;
-    case FUJICMD_SET_DEVICE_FULLPATH:
-        fujicmd_set_device_filename_success(packet.param(0), packet.param(1),
-                                            (disk_access_flags_t) packet.param8(2));
-        break;
-    case FUJICMD_GET_DEVICE_FULLPATH:
-        fujicmd_get_device_filename(packet.param(0));
-        break;
-    case FUJICMD_MOUNT_IMAGE:
-        fujicmd_mount_disk_image_success(packet.param(0),
-                                         (disk_access_flags_t) packet.param8(1));
-        break;
-    case FUJICMD_UNMOUNT_HOST:
-        fujicmd_unmount_host_success(packet.param(0));
-        break;
-    case FUJICMD_UNMOUNT_IMAGE:
-        fujicmd_unmount_disk_image_success(packet.param(0));
-        break;
-    case FUJICMD_OPEN_APPKEY:
-        fujicmd_open_app_key();
-        break;
-    case FUJICMD_CLOSE_APPKEY:
-        fujicmd_close_app_key();
-        break;
-    case FUJICMD_READ_APPKEY:
-        fujicmd_read_app_key();
-        break;
-    case FUJICMD_WRITE_APPKEY:
-        // fujinet-lib always sends MAX_APPKEY_LEN data bytes
-        // regardless of len. Drain the full payload so leftover
-        // bytes don't get interpreted as bus opcodes.
-        fujicmd_write_app_key(packet.param(0), MAX_APPKEY_LEN);
-        break;
-    case FUJICMD_RANDOM_NUMBER:
-        random();
-        break;
-    case FUJICMD_SET_BOOT_MODE:
-        fujicmd_set_boot_mode(packet.param(0), MEDIATYPE_UNKNOWN, &bootdisk);
-        break;
-    case FUJICMD_MOUNT_ALL:
-        fujicmd_mount_all_success();
-        break;
-    case FUJICMD_GET_HOST_PREFIX:
-        fujicmd_get_host_prefix(packet.param(0));
-        break;
-    case FUJICMD_SET_HOST_PREFIX:
-        fujicmd_set_host_prefix(packet.param(0));
-        break;
-    case FUJICMD_COPY_FILE:
-        {
-            uint8_t source = packet.param(0);
-            uint8_t dest = packet.param(1);
-            char dirpath[256];
-            transaction_begin(TRANS_STATE::WILL_GET);
-            transaction_get(dirpath, sizeof(dirpath));
-            if (fujicore_copy_file_success(source, dest, dirpath).is_error())
-                transaction_error();
-            else
-                transaction_complete();
-        }
-        break;
-    case FUJICMD_GENERATE_GUID:
-        fujicmd_generate_guid();
-        break;
-    case FUJICMD_STATUS:
-        fujicmd_status();
-        break;
-    case FUJICMD_GET_DIRECTORY_POSITION:
-        fujicmd_get_directory_position();
-        break;
-
-    default:
+    auto cmdHandler = handlers.find(packet.command());
+    if (cmdHandler == handlers.end())
         return false;
-    }
 
-    return false;
+    auto cmdMethod = cmdHandler->second;
+    cmdMethod(packet);
+    return true;
+}
+
+bool fujiDevice::recognizesCommand(const FUJI_COMMAND_PACKET &packet)
+{
+    if (checkAllMixins(packet))
+        return true;
+    return handlers.find(packet.command()) != handlers.end();
 }
