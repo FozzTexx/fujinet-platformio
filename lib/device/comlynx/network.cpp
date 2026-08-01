@@ -128,6 +128,7 @@ void lynxNetwork::open(const FujiLynxPacket &packet)
     json->setProtocol(protocol);
     channelMode = PROTOCOL;
 
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_success();
 }
 
@@ -139,7 +140,8 @@ void lynxNetwork::close()
 {
     Debug_printf("lynxNetwork::close\n");
 
-     statusByte.byte = 0x00;
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    statusByte.byte = 0x00;
 
     if (protocolParser != nullptr)
     {
@@ -262,6 +264,7 @@ fujiError_t lynxNetwork::write_channel(unsigned short num_bytes)
         break;
     }
 
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_success();
     return err;
 }
@@ -302,6 +305,7 @@ void lynxNetwork::status()
     status.err = s.error;
 
     Debug_printf("lynxNetwork::comlynx_status - avail:%d conn:%d err:%d\n", status.avail, status.conn, (int)status.err);
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_send(&status, sizeof(status));
 }
 
@@ -372,6 +376,7 @@ void lynxNetwork::set_prefix(const FujiLynxPacket &packet)
     }
 
     Debug_printf("Prefix now: %s\n", prefix.c_str());
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_success();
 }
 
@@ -401,6 +406,7 @@ void lynxNetwork::set_password(const FujiLynxPacket &packet)
     }
 
     password = *packet.dataAsString();
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_success();
 }
 
@@ -412,6 +418,8 @@ void lynxNetwork::set_channel_mode(const FujiLynxPacket &packet)
     }
 
     Debug_printf("lynxNetwork::channel_mode - mode: %02X\n", packet.param8(0));
+
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
     switch (packet.param8(0))
     {
@@ -459,6 +467,7 @@ void lynxNetwork::json_query(const FujiLynxPacket &packet)
     //*receiveBuffer += std::string(tmp.begin(), null_pos);
 
     Debug_printf("lynxNetwork::json_query - value:%.*s\n", static_cast<int>(jsonlen), reinterpret_cast<const char*>(tmp.data()));
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_send(tmp.data(), tmp.size());
 }
 
@@ -471,6 +480,7 @@ void lynxNetwork::json_parse()
 
     Debug_println("lynxNetwork::json_parse");
     json->parse();
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_success();
 }
 
@@ -751,6 +761,7 @@ void lynxNetwork::process_fs(const FujiLynxPacket &packet)
         break;
     }
 
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     if (cmd_err != FUJI_ERROR::NONE) {
         SYSTEM_BUS.transaction_error();
         statusByte.bits.client_error = true;
@@ -800,6 +811,7 @@ void lynxNetwork::process_tcp(const FujiLynxPacket &packet)
         break;
     }
 
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     if (cmd_err != FUJI_ERROR::NONE) {
         statusByte.bits.client_error = true;
         SYSTEM_BUS.transaction_error();
@@ -832,6 +844,7 @@ void lynxNetwork::process_http(const FujiLynxPacket &packet)
         return;
     }
 
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     if (cmd_err != FUJI_ERROR::NONE) {
         statusByte.bits.client_error = true;
         SYSTEM_BUS.transaction_error();
@@ -878,6 +891,7 @@ void lynxNetwork::process_udp(const FujiLynxPacket &packet)
         break;
     }
 
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     if (cmd_err != FUJI_ERROR::NONE)
         SYSTEM_BUS.transaction_error();
     else
