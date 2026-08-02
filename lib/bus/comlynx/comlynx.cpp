@@ -564,7 +564,6 @@ void systemBus::transaction_send(const void *data, size_t len, bool err)
     auto encoded = packet.serialize();
     _port->write(encoded.data(), encoded.size());
 
-#ifdef OBSOLETE
     // get ACK or NACK from Lynx, we're ignoring currently
     uint8_t r = _port->read();
 #ifdef DEBUG
@@ -573,7 +572,6 @@ void systemBus::transaction_send(const void *data, size_t len, bool err)
     else
         Debug_println("transaction put - Lynx NAKed");
 #endif
-#endif /* OBSOLETE */
 
     _transaction_state = TRANS_STATE::INVALID;
     return;
