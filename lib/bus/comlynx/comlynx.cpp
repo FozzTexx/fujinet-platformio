@@ -12,6 +12,7 @@
 #include "fnDNS.h"
 #include "led.h"
 #include "fnConfig.h"
+#include "utils.h"
 #include <cstring>
 
 #ifdef ESP_PLATFORM

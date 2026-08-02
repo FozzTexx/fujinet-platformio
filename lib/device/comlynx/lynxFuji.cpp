@@ -3,6 +3,9 @@
 #include "lynxFuji.h"
 
 #include <cstring>
+#ifdef ESP_PLATFORM
+#include <PSRAMAllocator.h>
+#endif /* ESP_PLATFORM */
 
 #include "../../include/debug.h"
 
