@@ -19,8 +19,10 @@
 
 #pragma once
 
+#ifdef UNUSED
 #include <esp_heap_caps.h>
 #include "sdkconfig.h"
+#endif /* UNUSED */
 
 template <class T>
 class PSRAMAllocator
@@ -49,7 +51,11 @@ public:
 
         // If the allocation in PSRAM failed (or PSRAM not enabled), try to
         // allocate from the default memory pool.
+#ifdef UNUSED
         auto p2 = static_cast<value_type*>(heap_caps_malloc(n * sizeof(value_type), MALLOC_CAP_DEFAULT));
+#else
+        auto p2 = static_cast<value_type*>(malloc(n * sizeof(value_type)));
+#endif /* UNUSED */
         if (p2)
         {
             return p2;

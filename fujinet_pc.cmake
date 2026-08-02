@@ -482,6 +482,29 @@ if(FUJINET_TARGET STREQUAL "RS232")
     )
 endif()
 
+if(FUJINET_TARGET STREQUAL "LYNX")
+    list(APPEND SOURCES
+
+    lib/bus/comlynx/comlynx.h lib/bus/comlynx/comlynx.cpp
+    lib/bus/comlynx/FujiLynxPacket.h lib/bus/comlynx/FujiLynxPacket.cpp
+    lib/hardware/BoIPChannel.h lib/hardware/BoIPChannel.cpp
+
+    lib/media/lynx/mediaType.h lib/media/lynx/mediaType.cpp
+    lib/media/lynx/mediaTypeROM.h lib/media/lynx/mediaTypeROM.cpp
+
+    lib/device/comlynx/disk.cpp lib/device/comlynx/disk.h
+    lib/device/comlynx/lynxFuji.cpp lib/device/comlynx/lynxFuji.h
+    lib/device/comlynx/netstream.cpp lib/device/comlynx/netstream.h
+    lib/device/comlynx/network.cpp lib/device/comlynx/network.h
+    lib/device/comlynx/printer.cpp lib/device/comlynx/printer.h
+    lib/device/comlynx/printerlist.cpp lib/device/comlynx/printerlist.h
+    lib/device/comlynx/redeye.cpp lib/device/comlynx/redeye.h
+
+    lib/printer-emulator/coleco_printer.h lib/printer-emulator/coleco_printer.cpp
+
+    )
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(SOURCES ${SOURCES} lib/compat/win32_uname.c)
 endif()

@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "string_utils.h"
 #include "fuji_endian.h"
+#include "compat_string.h"
 
 #define IMAGE_EXTENSION ".lnx"
 #define COPY_SIZE 532

@@ -468,7 +468,7 @@ void lynxNetwork::json_query(const FujiLynxPacket &packet)
 
     Debug_printf("lynxNetwork::json_query - value:%.*s\n", static_cast<int>(jsonlen), reinterpret_cast<const char*>(tmp.data()));
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    SYSTEM_BUS.transaction_send(tmp.data(), tmp.size());
+    SYSTEM_BUS.transaction_send(tmp);
 }
 
 void lynxNetwork::json_parse()
@@ -873,7 +873,8 @@ void lynxNetwork::process_udp(const FujiLynxPacket &packet)
     case NETCMD_GET_REMOTE:
         receiveBuffer->resize(SPECIAL_BUFFER_SIZE);
         cmd_err = udp->get_remote(receiveBuffer->data(), receiveBuffer->size());
-        response += *receiveBuffer;
+        SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+        SYSTEM_BUS.transaction_send(*receiveBuffer);
         break;
 #endif /* ESP_PLATFORM */
     case NETCMD_SET_DESTINATION:

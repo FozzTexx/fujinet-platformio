@@ -13,6 +13,7 @@
 #include <vector>
 #include <cassert>
 #include <string>
+#include <memory>
 
 /**
  * Lynx implementation of the RS232 FujiBusPacket interface.
@@ -45,6 +46,7 @@ private:
 
     std::uint32_t getParam(size_t index, size_t psize) const;
     void fillParams(size_t count, size_t psize) const;
+    bool parse(const ByteBuffer& input);
     std::uint8_t calcChecksum(const ByteBuffer& buf) const;
 
     // Variadic constructor helpers for parameters
@@ -63,7 +65,7 @@ private:
     }
 
 public:
-    FujiLynxPacket(fujiDeviceID_t dest) : _device(dest) {}
+    FujiLynxPacket() = default;
     template<typename... Args>
     FujiLynxPacket(fujiDeviceID_t source, Args&&... args)
         : _device(source)
@@ -71,14 +73,13 @@ public:
         (processArg(std::forward<Args>(args)), ...);  // fold expression
     }
 
+    static std::unique_ptr<FujiLynxPacket> fromSerialized(const ByteBuffer& input);
     ByteBuffer serialize() const;
 
     fujiDeviceID_t device() const { return _device; }
     fujiCommandID_t command() const;
 
     ParamProxy param(size_t index) const { return ParamProxy{ index, this }; }
-
-    error_is_true setPayload(ByteBuffer &payload, std::uint8_t checksum);
 
     const std::optional<ByteBuffer>& data() const;
     const std::optional<const std::string> dataAsString() const {

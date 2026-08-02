@@ -46,7 +46,9 @@ void printerTask(void *param)
             need_print=false;
         }
 
+#ifdef UNUSED
     vTaskDelay(1);
+#endif /* UNUSED */
 
     }
 }

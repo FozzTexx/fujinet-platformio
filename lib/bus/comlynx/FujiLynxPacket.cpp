@@ -1,6 +1,7 @@
 #ifdef BUILD_LYNX
 
 #include "FujiLynxPacket.h"
+#include "debug.h"
 
 namespace {
     // write `size` bytes of `value` (1,2,4) in little-endian
@@ -70,19 +71,36 @@ fujiCommandID_t FujiLynxPacket::command() const
     return *_command;
 }
 
-error_is_true FujiLynxPacket::setPayload(ByteBuffer &payload, uint8_t checksum)
-{
-    assert(!_payload.has_value());
-    _payload = payload;
-    _payload_checksum = checksum;
-    RETURN_ERROR_IF(_payload_checksum != calcChecksum(_payload.value()));
-}
-
 const std::optional<ByteBuffer>& FujiLynxPacket::data() const
 {
   if (!_data.has_value())
     _data = _payload;
   return _data;
+}
+
+bool FujiLynxPacket::parse(const ByteBuffer& input)
+{
+    // Extract header from the front of input
+    u16be_t len;
+    memcpy(&len, input.data() + 1, sizeof(len));
+    if (len != input.size() - 4)
+        return false;
+
+    // Verify checksum:
+    // - ck1 is the transmitted checksum
+    // - ck2 is computed with the checksum byte zeroed
+    const std::uint8_t ck1 = input.back();
+    ByteBuffer payload(input.begin() + 3, input.end() - 1);
+    const std::uint8_t ck2 = calcChecksum(payload);
+
+    if (ck1 != ck2)
+        return false;
+
+    _device  = static_cast<fujiDeviceID_t>(input.front());
+    _payload = payload;
+    _payload_checksum = ck1;
+
+    return true;
 }
 
 ByteBuffer FujiLynxPacket::serialize() const
@@ -113,6 +131,15 @@ std::uint8_t FujiLynxPacket::calcChecksum(const ByteBuffer& buf) const
         checksum ^= buf[idx];
 
     return checksum;
+}
+
+// ------------------ Factory ------------------
+std::unique_ptr<FujiLynxPacket> FujiLynxPacket::fromSerialized(const ByteBuffer& input)
+{
+    auto packet = std::make_unique<FujiLynxPacket>();
+    if (!packet->parse(input))
+        return nullptr;
+    return packet;
 }
 
 #endif /* BUILD_LYNX */

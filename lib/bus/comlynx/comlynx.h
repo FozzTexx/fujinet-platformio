@@ -9,9 +9,12 @@
 #include "FujiLynxPacket.h"
 #include "global_types.h"
 #include "UARTChannel.h"
+#include "BoIPChannel.h"
 #include "fujiDeviceID.h"
 #include "fujiCommandID.h"
+#ifdef ESP_PLATFORM
 #include <freertos/queue.h>
+#endif /* ESP_PLATFORM */
 
 #include <forward_list>
 #include <map>
@@ -136,7 +139,9 @@ private:
     lynxNetwork *_netDev[8] = {nullptr};
     lynxNetStream *_streamDev = nullptr;
 
-    UARTChannel _port;
+    IOChannel *_port;
+    UARTChannel _serial;
+    BoIPChannel _boip;
 
     void _comlynx_process_cmd();
     void _comlynx_process_queue();
@@ -165,7 +170,9 @@ public:
     virtualDevice *deviceById(fujiDeviceID_t device_id);
     void changeDeviceId(virtualDevice *pDevice, int device_id);
     bool deviceEnabled(fujiDeviceID_t device_id);
+#ifdef UNUSED
     QueueHandle_t qComlynxMessages = nullptr;
+#endif /* UNUSED */
     void setStreamHost(const char *newhost, int port);
     void setStreamHostWithOptions(const char *newhost, int port, int mode, bool register_enabled, bool redeye_enabled);
 
@@ -187,15 +194,15 @@ public:
 
     // Everybody thinks "oh I know how a serial port works, I'll just
     // access it directly and bypass the bus!" ಠ_ಠ
-    size_t read(void *buffer, size_t length) { return _port.read(buffer, length); }
-    size_t read() { return _port.read(); }
-    size_t write(const void *buffer, size_t length) { return _port.write(buffer, length); }
-    size_t write(int n) { return _port.write(n); }
-    size_t available() { return _port.available(); }
-    void flush() { _port.flushOutput(); }
-    size_t print(int n, int base = 10) { return _port.print(n, base); }
-    size_t print(const char *str) { return _port.print(str); }
-    size_t print(const std::string &str) { return _port.print(str); }
+    size_t read(void *buffer, size_t length) { return _port->read(buffer, length); }
+    size_t read() { return _port->read(); }
+    size_t write(const void *buffer, size_t length) { return _port->write(buffer, length); }
+    size_t write(int n) { return _port->write(n); }
+    size_t available() { return _port->available(); }
+    void flush() { _port->flushOutput(); }
+    size_t print(int n, int base = 10) { return _port->print(n, base); }
+    size_t print(const char *str) { return _port->print(str); }
+    size_t print(const std::string &str) { return _port->print(str); }
 };
 
 extern systemBus SYSTEM_BUS;

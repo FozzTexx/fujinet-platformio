@@ -11,7 +11,14 @@
 #include "fnSystem.h"
 #include "fnDNS.h"
 #include "led.h"
+#include "fnConfig.h"
 #include <cstring>
+
+#ifdef ESP_PLATFORM
+#define SERIAL_DEVICE FN_UART_BUS
+#else /* !ESP_PLATFORM */
+#define SERIAL_DEVICE Config.get_serial_port()
+#endif /* ESP_PLATFORM */
 
 //#define IDLE_TIME 500 // Idle tolerance in microseconds (roughly three characters at 62500 baud)
 
@@ -181,10 +188,10 @@ bool systemBus::wait_for_idle()
     //
     // Check that the bus is truly idle for the whole duration, and then we can start sending?
 
-    start = esp_timer_get_time();
+    start = GET_TIMESTAMP();
 
     do {
-        current = esp_timer_get_time();
+        current = GET_TIMESTAMP();
         dur = current - start;
 
         // Did we get any data in the FIFO while waiting?
@@ -206,30 +213,42 @@ bool systemBus::netstreamActive() const
 
 void virtualDevice::comlynx_process(const FujiLynxPacket &packet)
 {
-    fnDebugConsole.printf("comlynx_process() not implemented yet for this device.\n");
+    Debug_printf("comlynx_process() not implemented yet for this device.\n");
 }
 
 void systemBus::_comlynx_process_cmd()
 {
     fujiDeviceID_t dev;
     u16be_t len;
-    ByteBuffer buffer;
+    ByteBuffer buffer, payload;
     uint8_t ck;
     size_t rlen;
 
-    dev = (fujiDeviceID_t) read();
-    read(&len, sizeof(len));
-    buffer.resize(len, 0);
+    buffer.resize(3, 0);
     rlen = read(buffer.data(), buffer.size());
     if (rlen != buffer.size())
-        buffer.resize(rlen);
-    ck = read();
-
-    FujiLynxPacket tmpPacket(dev);
-    if (tmpPacket.setPayload(buffer, ck).is_error())
     {
-        Debug_printf(" checksum bad\n");
+        Debug_printf("failed to read packet header\n");
         sendNakPacket();
+        return;
+    }
+
+    memcpy(&len, buffer.data() + 1, sizeof(len));
+    payload.resize(len, 0);
+    rlen = read(payload.data(), payload.size());
+    if (rlen != payload.size())
+        payload.resize(rlen);
+    buffer.insert(buffer.end(), payload.begin(), payload.end());
+    buffer.push_back(read());
+
+    Debug_printf("Received packet\n%s", util_hexdump(buffer.data(), buffer.size()).c_str());
+
+    auto tmpPacket = FujiLynxPacket::fromSerialized(buffer);
+    if (!tmpPacket)
+    {
+        Debug_printf("bad packet\n");
+        sendNakPacket();
+        _port->discardInput();
         goto done;
     }
 
@@ -237,19 +256,19 @@ void systemBus::_comlynx_process_cmd()
 
     for (auto devicep : _daisyChain)
     {
-        if (tmpPacket.device() == devicep->_devnum)
+        if (tmpPacket->device() == devicep->_devnum)
         {
             _activeDev = devicep;
-            _activePacket = &tmpPacket;
+            _activePacket = tmpPacket.get();
 
             #ifdef DEBUG
             Debug_println("---");
-            Debug_printf("comlynx_process_cmd - dev:%X\n", tmpPacket.device());
+            Debug_printf("comlynx_process_cmd - dev:%X\n", tmpPacket->device());
             #endif
 
             // turn on Comlynx Indicator LED
             fnLedManager.set(eLed::LED_BUS, true);
-            devicep->comlynx_process(tmpPacket);
+            devicep->comlynx_process(*tmpPacket);
             // turn off Comlynx Indicator LED
             fnLedManager.set(eLed::LED_BUS, false);
         }
@@ -302,13 +321,27 @@ void systemBus::setup()
     // Set up NetStream device
     //_streamDev = new lynxnetstream();
 
-    // Set up UART
-    _port.begin(ChannelConfig()
-                .deviceID(FN_UART_BUS)
-                .baud(COMLYNX_BAUDRATE)
-                .parity(UART_PARITY_ODD)
-                .halfDuplex(true)
-                );
+    if (Config.get_boip_enabled())
+    {
+        Debug_printf("RS232 SETUP: BOIP host: %s\n", Config.get_boip_host().c_str());
+        _boip.begin(BoIPConfig()
+                    .hostName(Config.get_boip_host())
+                    .portNum(Config.get_boip_port())
+                    );
+        _port = &_boip;
+    }
+    else {
+        // Set up UART
+        _serial.begin(ChannelConfig()
+                      .deviceID(SERIAL_DEVICE)
+                      .baud(COMLYNX_BAUDRATE)
+#ifdef UNUSED
+                      .parity(UART_PARITY_ODD)
+                      .halfDuplex(true)
+#endif /* UNUSED */
+                      );
+        _port = &_serial;
+    }
 }
 
 void systemBus::shutdown()
@@ -507,7 +540,7 @@ void systemBus::transaction_error()
     sendNakPacket();
 
     // throw away any waiting bytes
-    _port.discardInput();
+    _port->discardInput();
 }
 
 success_is_true systemBus::transaction_get(void *data, size_t len)
@@ -529,16 +562,18 @@ void systemBus::transaction_send(const void *data, size_t len, bool err)
     // send all data back to Lynx
     FujiLynxPacket packet(_activeDev->_devnum, ByteBuffer(ptr, ptr + len));
     auto encoded = packet.serialize();
-    _port.write(encoded.data(), encoded.size());
+    _port->write(encoded.data(), encoded.size());
 
+#ifdef OBSOLETE
     // get ACK or NACK from Lynx, we're ignoring currently
-    uint8_t r = _port.read();
+    uint8_t r = _port->read();
 #ifdef DEBUG
     if (r == FUJICMD_ACK)
         Debug_println("transaction_put - Lynx ACKed");
     else
         Debug_println("transaction put - Lynx NAKed");
 #endif
+#endif /* OBSOLETE */
 
     _transaction_state = TRANS_STATE::INVALID;
     return;
@@ -546,27 +581,34 @@ void systemBus::transaction_send(const void *data, size_t len, bool err)
 
 void systemBus::sendAckPacket()
 {
-    _port.write(FUJICMD_ACK);
+    _port->write(FUJICMD_ACK);
 }
 
 void systemBus::sendNakPacket()
 {
-    _port.write(FUJICMD_NAK);
+    _port->write(FUJICMD_NAK);
 }
 
 void systemBus::change_baud(int32_t baud)
 {
-    _port.flushOutput();
-    _port.begin(ChannelConfig()
-                .deviceID(FN_UART_BUS)
-                .baud(baud)
-                .parity(UART_PARITY_ODD)
-                );
+    _port->flushOutput();
+    if (_port == &_serial)
+    {
+        _serial.begin(ChannelConfig()
+                      .deviceID(SERIAL_DEVICE)
+                      .baud(baud)
+#ifdef UNUSED
+                      .parity(UART_PARITY_ODD)
+#endif /* UNUSED */
+                      );
+    }
 
+#ifdef UNUSED
     vTaskDelay(pdMS_TO_TICKS(10));
+#endif /* UNUSED */
 
     //uart_set_baudrate(FN_UART_BUS, baud);
-    //_port.setBaudrate(baud);
+    //_port->setBaudrate(baud);
 }
 
 #endif /* BUILD_LYNX */
