@@ -483,6 +483,10 @@ if(FUJINET_TARGET STREQUAL "RS232")
 endif()
 
 if(FUJINET_TARGET STREQUAL "LYNX")
+    # ComLynx headers use bare names, so add their directories after the
+    # platform-dispatch directories used by the common source list.
+    list(APPEND INCLUDE_DIRS lib/bus/comlynx lib/device/comlynx lib/media/lynx components/lz4/lib)
+
     list(APPEND SOURCES
 
     lib/bus/comlynx/comlynx.h lib/bus/comlynx/comlynx.cpp
@@ -502,6 +506,7 @@ if(FUJINET_TARGET STREQUAL "LYNX")
 
     lib/printer-emulator/coleco_printer.h lib/printer-emulator/coleco_printer.cpp
 
+    components/lz4/lib/lz4.h components/lz4/lib/lz4.c
     )
 endif()
 

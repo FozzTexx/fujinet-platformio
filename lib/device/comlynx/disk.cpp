@@ -118,7 +118,6 @@ void lynxDisk::read_block(uint32_t block)
         SYSTEM_BUS.transaction_error();
     }
 
-#ifdef UNUSED
     // Try compressing the block
     // using LZ4 for now, since Fujinet already supplied it
     // first byte sent is the compression type field, followed by data, up to 1024 bytes
@@ -133,13 +132,10 @@ void lynxDisk::read_block(uint32_t block)
     }
     else {
         Debug_printf("lynxdisk::read_block - sending raw 1024 bytes, compressed size was: %d\n", c_size);
-#endif /* UNUSED */
         compressed_block[0] = BLOCK_RAW;
         memcpy(&compressed_block[1], _media->_media_blockbuff, MEDIA_BLOCK_SIZE);
         SYSTEM_BUS.transaction_send(&compressed_block, MEDIA_BLOCK_SIZE+1);
-#ifdef UNUSED
     }
-#endif /* UNUSED */
 }
 
 void lynxDisk::write_block(uint32_t block)

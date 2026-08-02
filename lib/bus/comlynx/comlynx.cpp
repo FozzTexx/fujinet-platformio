@@ -335,10 +335,10 @@ void systemBus::setup()
         _serial.begin(ChannelConfig()
                       .deviceID(SERIAL_DEVICE)
                       .baud(COMLYNX_BAUDRATE)
-#ifdef UNUSED
+#ifdef ESP_PLATFORM
                       .parity(UART_PARITY_ODD)
                       .halfDuplex(true)
-#endif /* UNUSED */
+#endif /* ESP_PLATFORM */
                       );
         _port = &_serial;
     }
@@ -596,15 +596,15 @@ void systemBus::change_baud(int32_t baud)
         _serial.begin(ChannelConfig()
                       .deviceID(SERIAL_DEVICE)
                       .baud(baud)
-#ifdef UNUSED
+#ifdef ESP_PLATFORM
                       .parity(UART_PARITY_ODD)
-#endif /* UNUSED */
+#endif /* ESP_PLATFORM */
                       );
     }
 
-#ifdef UNUSED
+#ifdef ESP_PLATFORM
     vTaskDelay(pdMS_TO_TICKS(10));
-#endif /* UNUSED */
+#endif /* ESP_PLATFORM */
 
     //uart_set_baudrate(FN_UART_BUS, baud);
     //_port->setBaudrate(baud);

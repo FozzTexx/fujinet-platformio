@@ -3,7 +3,6 @@
 #include "lynxFuji.h"
 
 #include <cstring>
-#include <PSRAMAllocator.h>
 
 #include "../../include/debug.h"
 

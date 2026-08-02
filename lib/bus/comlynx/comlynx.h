@@ -170,9 +170,6 @@ public:
     virtualDevice *deviceById(fujiDeviceID_t device_id);
     void changeDeviceId(virtualDevice *pDevice, int device_id);
     bool deviceEnabled(fujiDeviceID_t device_id);
-#ifdef UNUSED
-    QueueHandle_t qComlynxMessages = nullptr;
-#endif /* UNUSED */
     void setStreamHost(const char *newhost, int port);
     void setStreamHostWithOptions(const char *newhost, int port, int mode, bool register_enabled, bool redeye_enabled);
 
