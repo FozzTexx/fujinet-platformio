@@ -562,6 +562,7 @@ void systemBus::transaction_send(const void *data, size_t len, bool err)
     // send all data back to Lynx
     FujiLynxPacket packet(_activeDev->_devnum, ByteBuffer(ptr, ptr + len));
     auto encoded = packet.serialize();
+    Debug_printf("Sending reply\n%s", util_hexdump(encoded.data(), encoded.size()).c_str());
     _port->write(encoded.data(), encoded.size());
 
     // get ACK or NACK from Lynx, we're ignoring currently

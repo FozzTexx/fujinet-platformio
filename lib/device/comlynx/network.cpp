@@ -444,12 +444,12 @@ void lynxNetwork::json_query(const FujiLynxPacket &packet)
         return; // Punch out.
     }
 
-    // get the query string
-    Debug_printf("lynxNetwork::json_query - query:%s\n", packet.dataAsString()->c_str());
-
     // read the json value from query, there may be more bytes than we can transfer
     // in one response
-    json->setReadQuery(*packet.dataAsString(), packet.param(1));
+    uint8_t val = packet.param(1);
+    // get the query string
+    Debug_printf("lynxNetwork::json_query - query:%s\n", packet.dataAsString()->c_str());
+    json->setReadQuery(*packet.dataAsString(), val);
     uint16_t jsonlen = json->available();
     jsonlen = std::min<uint16_t>(json->available(), SERIAL_PACKET_SIZE);
     Debug_printf("lynxNetwork::json_query - json->available:%d, len:%d\n", json->available(), jsonlen);
