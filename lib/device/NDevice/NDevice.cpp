@@ -113,9 +113,11 @@ std::string NDevice::native_eol() const
 
 std::string NDevice::create_devicespec(bool is_dir)
 {
-    std::string spec(256, 0);
+    uint8_t buf[256];
 
-    SYSTEM_BUS.transaction_get(spec);
+    SYSTEM_BUS.transaction_get(buf, sizeof(buf));
+
+    std::string spec((char *)buf);
     return util_devicespec_fix_for_parsing(spec, prefix, is_dir, true);
 }
 
@@ -131,8 +133,8 @@ void NDevice::status_local(uint8_t mode, NDeviceStatus &out)
 
 void NDevice::open(const FUJI_COMMAND_PACKET &packet)
 {
-    uint8_t access = static_cast<uint8_t>(packet.param(0));
-    uint8_t trans = static_cast<uint8_t>(packet.param(1));
+    uint8_t access = packet.param(0);
+    uint8_t trans = packet.param(1);
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
 
@@ -275,7 +277,7 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
 
 void NDevice::status(const FUJI_COMMAND_PACKET &packet)
 {
-    uint8_t mode = static_cast<uint8_t>(packet.param(1));
+    uint8_t mode = packet.param(1);
 
     if (protocol == nullptr)
     {
@@ -386,10 +388,9 @@ void NDevice::set_prefix(const FUJI_COMMAND_PACKET &packet)
 
 void NDevice::json_query(const FUJI_COMMAND_PACKET &packet)
 {
-    uint16_t len = packet.param(0);
-    uint8_t query_param = static_cast<uint8_t>(packet.param(1));
+    uint8_t query_param = packet.param(1);
 
-    std::string in(len, '\0');
+    std::string in(256, '\0');
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     SYSTEM_BUS.transaction_get(in);
@@ -397,16 +398,15 @@ void NDevice::json_query(const FUJI_COMMAND_PACKET &packet)
     json->setReadQuery(in, query_param);
     json_bytes_remaining = json->available();
 
-    if (json_bytes_remaining == 0)
-    {
-        SYSTEM_BUS.transaction_error();
-        return;
-    }
-
-    std::vector<uint8_t> tmp(json_bytes_remaining);
+    ByteBuffer tmp(json_bytes_remaining);
     json->readValue(tmp.data(), json_bytes_remaining);
 
-    SYSTEM_BUS.transaction_send(tmp.data(), tmp.size(), false);
+    // don't copy past first nul char in tmp
+    auto null_pos = std::find(tmp.begin(), tmp.end(), 0);
+    *receiveBuffer += std::string(tmp.begin(), null_pos);
+
+    Debug_printf("Query set to >%s<\r\n", in.c_str());
+    SYSTEM_BUS.transaction_success();
 }
 
 bool NDevice::parse_and_instantiate_protocol(bool is_dir, std::unique_ptr<PeoplesUrlParser> &url_out)
@@ -496,8 +496,8 @@ void NDevice::set_eol(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
-    uint8_t eol0 = static_cast<uint8_t>(packet.param(0));
-    uint8_t eol1 = static_cast<uint8_t>(packet.param(1));
+    uint8_t eol0 = packet.param(0);
+    uint8_t eol1 = packet.param(1);
 
     native_eol_override.clear();
     if (eol0 != 0x00)
@@ -618,7 +618,7 @@ void NDevice::fs_op(const FUJI_COMMAND_PACKET &packet, fujiError_t (NetworkProto
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
 
-    uint8_t mode = static_cast<uint8_t>(packet.param(0));
+    uint8_t mode = packet.param(0);
     bool is_dir = static_cast<fileAccessMode_t>(mode) == ACCESS_MODE::DIRECTORY;
 
     std::unique_ptr<PeoplesUrlParser> url;
@@ -767,7 +767,7 @@ void NDevice::udp_set_destination(const FUJI_COMMAND_PACKET &packet)
 
 void NDevice::get_dstats_value(const FUJI_COMMAND_PACKET &packet)
 {
-    uint8_t queried_command = static_cast<uint8_t>(packet.param(0));
+    uint8_t queried_command = packet.param(0);
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
