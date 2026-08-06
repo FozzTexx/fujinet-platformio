@@ -1,6 +1,16 @@
 #ifdef BUILD_COCO
 
+#include "drivewire.h"
+#include "drivewire/drivewireFuji.h"
+#include "drivewire/drivewireClock.h"
+#include "NDevice.h"
+#include "led.h"
+#include "debug.h"
+
 #include <queue>
+
+#ifdef OBSOLETE
+
 
 #include "drivewire.h"
 #include "drivewire/drivewireFuji.h"
@@ -11,14 +21,12 @@
 #include "modem.h"
 #include "cassette.h"
 #include "printer.h"
-#include "drivewire/network.h"
 #include "../../lib/device/drivewire/cpm.h"
 
 #include "fnSystem.h"
 #include "fnConfig.h"
 #include "fnWiFi.h"
 #include "fnDNS.h"
-#include "led.h"
 #include "utils.h"
 
 #ifdef ESP_PLATFORM
@@ -28,6 +36,7 @@
 
 #include "../../include/pinmap.h"
 #include "../../include/debug.h"
+#endif /* OBSOLETE */
 
 #ifdef ESP_PLATFORM
 static QueueHandle_t drivewire_evt_queue = NULL;
@@ -430,7 +439,7 @@ void systemBus::op_net(dwOpcode_t opcode)
     if (!_netDev.contains(packet.unit()))
     {
         Debug_printf("Opening new network device %u\n", packet.unit());
-        _netDev[packet.unit()] = new drivewireNetwork();
+        _netDev[packet.unit()] = new NDevice();
     }
 
     if (_transaction_handle_command(packet, platformFuji))
@@ -961,7 +970,7 @@ void systemBus::shutdown()
 
     // TODO: implement device shutdown for all sub-busses
 
-    for (std::map<uint8_t, drivewireNetwork *>::iterator it = _netDev.begin();
+    for (std::map<uint8_t, NDevice *>::iterator it = _netDev.begin();
          it != _netDev.end();
          ++it)
     {

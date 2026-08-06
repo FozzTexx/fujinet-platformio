@@ -29,6 +29,9 @@ public:
      */
     bool processCommand(const FUJI_COMMAND_PACKET &packet);
 
+    /** returns true when data is available */
+    bool poll_interrupt();
+
 protected:
     /**
      * The channel mode for the currently open N: device. By default it is
