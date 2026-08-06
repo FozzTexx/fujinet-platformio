@@ -1,6 +1,4 @@
-#include "ProtocolParser.h"
-
-#include <algorithm>
+#include "NetworkProtocolFactory.h"
 
 #include "CLIPBOARD.h"
 #include "CPM.h"
@@ -25,11 +23,12 @@
 #include "NFS.h"
 #include "S3.h"
 #include "SD.h"
+#include "string_utils.h"
+#include "debug.h"
 
-#include "../utils/string_utils.h"
-#include "../../include/debug.h"
+#include <algorithm>
 
-std::unique_ptr<NetworkProtocol> ProtocolParser::createProtocol(std::string scheme, std::string *receiveBuffer, std::string *transmitBuffer, std::string *specialBuffer, std::string *login, std::string *password)
+std::unique_ptr<NetworkProtocol> NetworkProtocolFactory::createProtocol(std::string scheme, std::string *receiveBuffer, std::string *transmitBuffer, std::string *specialBuffer, std::string *login, std::string *password)
 {
     std::unique_ptr<NetworkProtocol> protocol = nullptr;
 

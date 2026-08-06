@@ -11,7 +11,7 @@
 #include "modem.h"
 #include "cassette.h"
 #include "printer.h"
-#include "network.h"
+#include "drivewire/network.h"
 #include "../../lib/device/drivewire/cpm.h"
 
 #include "fnSystem.h"

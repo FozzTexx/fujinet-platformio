@@ -146,7 +146,8 @@ set(INCLUDE_DIRS include
     lib/webdav lib/http lib/sam lib/task
     lib/modem-sniffer lib/printer-emulator
     lib/network-protocol
-    lib/fuji lib/bus lib/device lib/device/fujiDevice lib/device/fujiClock lib/media
+    lib/fuji lib/bus lib/device lib/media
+    lib/device/fujiDevice lib/device/fujiClock lib/device/NDevice
     lib/encrypt lib/base64
     lib/devrelay/commands lib/devrelay/service lib/devrelay/slip lib/devrelay/types
     lib/encoding
@@ -262,11 +263,10 @@ set(SOURCES src/main.cpp
     lib/printer-emulator/png_printer.h lib/printer-emulator/png_printer.cpp
     lib/printer-emulator/printer_emulator.h lib/printer-emulator/printer_emulator.cpp
     lib/printer-emulator/svg_plotter.h lib/printer-emulator/svg_plotter.cpp
-    lib/network-protocol/NetworkProtocolFactory.h
+    lib/network-protocol/NetworkProtocolFactory.h lib/network-protocol/NetworkProtocolFactory.cpp
     lib/network-protocol/network_data.h
     lib/network-protocol/networkStatus.h lib/network-protocol/status_error_codes.h
     lib/network-protocol/Protocol.h lib/network-protocol/Protocol.cpp
-    lib/network-protocol/ProtocolParser.h lib/network-protocol/ProtocolParser.cpp
     lib/network-protocol/CLIPBOARD.h lib/network-protocol/CLIPBOARD.cpp
     lib/network-protocol/CPM.h lib/network-protocol/CPM.cpp
     lib/network-protocol/GDRIVE.h lib/network-protocol/GDRIVE.cpp
@@ -307,7 +307,6 @@ set(SOURCES src/main.cpp
     lib/device/fujiDevice/HashMixin.h lib/device/fujiDevice/HashMixin.cpp
     lib/device/fujiDevice/QRMixin.h lib/device/fujiDevice/QRMixin.cpp
     lib/device/fujiDevice/AppKeyMixin.h lib/device/fujiDevice/AppKeyMixin.cpp
-    lib/device/network.h
     lib/device/netstream.h
     lib/device/siocpm.h
     lib/modem-sniffer/modem-sniffer.h lib/modem-sniffer/modem-sniffer.cpp
