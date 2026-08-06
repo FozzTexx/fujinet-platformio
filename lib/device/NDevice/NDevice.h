@@ -80,17 +80,20 @@ protected:
     /** Bytes remaining of current SGML query result. */
     unsigned short sgml_bytes_remaining = 0;
 
+#ifdef OBSOLETE
     // ---- hooks: override only where the hardware genuinely differs -------
     /** Pull+fix up a devicespec off the bus. SIO/RS232 override to
         also strip embedded ATASCII EOL bytes. */
     virtual std::string create_devicespec(bool is_dir);
+#endif /* OBSOLETE */
 
     /** Column width for LONG-format directory listings, or 0 to skip
         calling protocol->setDirLongWidth() at all. */
     virtual int dir_long_width() const { return 0; }
 
     /** Line-ending byte the fnJSON wrapper null/line-terminates values with. */
-    virtual std::string json_line_ending() const { return std::string(1, '\x00'); }
+    virtual std::string json_line_ending() const { return std::string(1, '\x0a'); }
+    virtual std::string sgml_line_ending() const { return std::string(1, '\x0a'); }
 
     /**
      * Populate a STATUS reply when no protocol is bound. Default just
@@ -117,7 +120,8 @@ protected:
      * On failure, `protocol` is left null, lastError/the bus error have
      * already been signaled, and false is returned.
      */
-    bool parse_and_instantiate_protocol(bool is_dir, std::unique_ptr<PeoplesUrlParser> &url_out);
+    bool parse_and_instantiate_protocol(std::string &deviceSpec, bool is_dir,
+                                        std::unique_ptr<PeoplesUrlParser> &url_out);
 
     void set_login(const FUJI_COMMAND_PACKET &packet);
     void set_password(const FUJI_COMMAND_PACKET &packet);

@@ -12,6 +12,7 @@
 #include "NDevice.h"
 #include "NetworkProtocolFactory.h"
 #include "fnjson.h"
+#include "fnsgml.h"
 #include "debug.h"
 
 #define lastError _errorCode
@@ -111,6 +112,7 @@ std::string NDevice::native_eol() const
 }
 #endif /* UNUSED */
 
+#ifdef UNUSED
 std::string NDevice::create_devicespec(bool is_dir)
 {
     uint8_t buf[256];
@@ -120,6 +122,7 @@ std::string NDevice::create_devicespec(bool is_dir)
     std::string spec((char *)buf);
     return util_devicespec_fix_for_parsing(spec, prefix, is_dir, true);
 }
+#endif /* UNUSED */
 
 void NDevice::status_local(uint8_t mode, NDeviceStatus &out)
 {
@@ -133,10 +136,20 @@ void NDevice::status_local(uint8_t mode, NDeviceStatus &out)
 
 void NDevice::open(const FUJI_COMMAND_PACKET &packet)
 {
-    uint8_t access = packet.param(0);
-    uint8_t trans = packet.param(1);
+    fileAccessMode_t access = static_cast<fileAccessMode_t>
+        (static_cast<uint8_t>(packet.param(0)));
+    netProtoTranslation_t trans_mode = static_cast<netProtoTranslation_t>
+        (static_cast<uint8_t>(packet.param(1)));
 
+    std::string spec(256, 0);
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
+    if (SYSTEM_BUS.transaction_get(spec).is_error())
+    {
+        Debug_printf("Failed to get device spec.");
+        SYSTEM_BUS.transaction_error();
+        return;
+    }
+    spec.resize(strlen(spec.c_str()));
 
     parserMode = PARSER::NONE;
 
@@ -151,19 +164,19 @@ void NDevice::open(const FUJI_COMMAND_PACKET &packet)
         json = nullptr;
     }
 
-    bool is_dir = static_cast<fileAccessMode_t>(access) == ACCESS_MODE::DIRECTORY;
+    bool is_dir = access == ACCESS_MODE::DIRECTORY;
 
     std::unique_ptr<PeoplesUrlParser> url;
-    if (!parse_and_instantiate_protocol(is_dir, url))
+    if (!parse_and_instantiate_protocol(spec, is_dir, url))
     {
         SYSTEM_BUS.transaction_error();
-        return; // lastError already set
+        return;
     }
 
     if (dir_long_width() > 0)
         protocol->setDirLongWidth(dir_long_width());
 
-    if (protocol->open(url.get(), (fileAccessMode_t)access, (netProtoTranslation_t)trans) != FUJI_ERROR::NONE)
+    if (protocol->open(url.get(), access, trans_mode) != FUJI_ERROR::NONE)
     {
         lastError = protocol->error;
         Debug_printf("Protocol unable to make connection. Error: %d\n", lastError);
@@ -175,6 +188,13 @@ void NDevice::open(const FUJI_COMMAND_PACKET &packet)
     json = new FNJSON();
     json->setLineEnding(json_line_ending());
     json->setProtocol(protocol.get());
+    json_bytes_remaining = 0; // reset per-open so a prior session's count doesn't leak
+
+    sgml = new FNSGML();
+    json->setLineEnding(sgml_line_ending());
+    sgml->setProtocol(protocol.get());
+    sgml_bytes_remaining = 0; // reset per-open so a prior session's count doesn't leak
+
     parserMode = PARSER::NONE;
 
     SYSTEM_BUS.transaction_success();
@@ -390,7 +410,7 @@ void NDevice::json_query(const FUJI_COMMAND_PACKET &packet)
 {
     uint8_t query_param = packet.param(1);
 
-    std::string in(256, '\0');
+    std::string in(256, 0);
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     SYSTEM_BUS.transaction_get(in);
@@ -409,9 +429,10 @@ void NDevice::json_query(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-bool NDevice::parse_and_instantiate_protocol(bool is_dir, std::unique_ptr<PeoplesUrlParser> &url_out)
+bool NDevice::parse_and_instantiate_protocol(std::string &deviceSpec, bool is_dir,
+                                             std::unique_ptr<PeoplesUrlParser> &url_out)
 {
-    std::string deviceSpec = create_devicespec(is_dir);
+    deviceSpec = util_devicespec_fix_for_parsing(deviceSpec, prefix, is_dir, true);
     std::string url_str = deviceSpec.substr(deviceSpec.find(":") + 1);
     url_out = PeoplesUrlParser::parseURL(url_str);
 
@@ -443,23 +464,19 @@ bool NDevice::parse_and_instantiate_protocol(bool is_dir, std::unique_ptr<People
 
 void NDevice::set_login(const FUJI_COMMAND_PACKET &packet)
 {
-    uint8_t loginSpec[256];
-
+    login.resize(256, 0);
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
-    SYSTEM_BUS.transaction_get(loginSpec, sizeof(loginSpec));
-
-    login = string((char *)loginSpec);
+    SYSTEM_BUS.transaction_get(login);
+    login.resize(strlen(login.c_str()));
     SYSTEM_BUS.transaction_success();
 }
 
 void NDevice::set_password(const FUJI_COMMAND_PACKET &packet)
 {
-    uint8_t passwordSpec[256];
-
+    password.resize(256);
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
-    SYSTEM_BUS.transaction_get(passwordSpec, sizeof(passwordSpec));
-
-    password = string((char *)passwordSpec);
+    SYSTEM_BUS.transaction_get(password);
+    password.resize(strlen(password.c_str()));
     SYSTEM_BUS.transaction_success();
 }
 
@@ -616,13 +633,16 @@ fujiError_t NDevice::write_channel(unsigned short num_bytes)
 
 void NDevice::fs_op(const FUJI_COMMAND_PACKET &packet, fujiError_t (NetworkProtocolFS::*op)(PeoplesUrlParser *))
 {
+    std::string spec(256, 0);
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
+    SYSTEM_BUS.transaction_get(spec);
+    spec.resize(strlen(spec.c_str()));
 
     uint8_t mode = packet.param(0);
     bool is_dir = static_cast<fileAccessMode_t>(mode) == ACCESS_MODE::DIRECTORY;
 
     std::unique_ptr<PeoplesUrlParser> url;
-    if (!parse_and_instantiate_protocol(is_dir, url))
+    if (!parse_and_instantiate_protocol(spec, is_dir, url))
     {
         SYSTEM_BUS.transaction_error();
         return;
