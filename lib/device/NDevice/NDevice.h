@@ -125,7 +125,7 @@ protected:
 
     void set_login(const FUJI_COMMAND_PACKET &packet);
     void set_password(const FUJI_COMMAND_PACKET &packet);
-    void set_channel_mode(const FUJI_COMMAND_PACKET &packet);
+    void set_parser(const FUJI_COMMAND_PACKET &packet);
     void json_parse(const FUJI_COMMAND_PACKET &packet);
     void set_eol(const FUJI_COMMAND_PACKET &packet);
     void seek(const FUJI_COMMAND_PACKET &packet);

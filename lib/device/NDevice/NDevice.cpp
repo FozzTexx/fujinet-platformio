@@ -26,7 +26,7 @@ const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table
 
     { NETCMD_PARSE,            {&NDevice::json_parse}             },
     { NETCMD_QUERY,            {&NDevice::json_query}             },
-    { NETCMD_CHANNEL_MODE,     {&NDevice::set_channel_mode}       },
+    { NETCMD_CHANNEL_MODE,     {&NDevice::set_parser}             },
     { NETCMD_TRANSLATION,      {&NDevice::set_translation}        },
     { NETCMD_SET_EOL,          {&NDevice::set_eol}                },
 #ifdef UNUSED
@@ -284,12 +284,12 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
         return;
     }
 
-    std::vector<uint8_t> buf(num_bytes);
-    SYSTEM_BUS.transaction_get(buf.data(), num_bytes);
+    std::string buf(num_bytes, 0);
+    SYSTEM_BUS.transaction_get(buf.data(), buf.size());
 
-    *transmitBuffer += std::string((char *)buf.data(), num_bytes);
+    *transmitBuffer += buf;
 
-    if (write_channel(num_bytes) == FUJI_ERROR::NONE)
+    if (write_channel(buf.size()) == FUJI_ERROR::NONE)
         SYSTEM_BUS.transaction_success();
     else
         SYSTEM_BUS.transaction_error();
@@ -480,7 +480,7 @@ void NDevice::set_password(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::set_channel_mode(const FUJI_COMMAND_PACKET &packet)
+void NDevice::set_parser(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
