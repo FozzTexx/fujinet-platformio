@@ -14,11 +14,11 @@ class FNJSON;
 class FNSGML;
 class PeoplesUrlParser;
 
-typedef enum class CHANNEL_MODE {
-    PROTOCOL = 0,
-    JSON     = 1,
-    SGML     = 2,
-} channelMode_t;
+typedef enum class PARSER {
+    NONE = 0,
+    JSON = 1,
+    SGML = 2,
+} parserMode_t;
 
 struct NetworkData {
     std::unique_ptr<NetworkProtocol> protocol;
@@ -30,7 +30,7 @@ struct NetworkData {
     std::string deviceSpec;
     std::unique_ptr<PeoplesUrlParser> urlParser;
     std::string prefix;
-    channelMode_t channelMode = CHANNEL_MODE::PROTOCOL;
+    parserMode_t parserMode = PARSER::NONE;
     uint8_t translationMode = 0;
     std::string login;
     std::string password;
