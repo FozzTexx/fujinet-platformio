@@ -72,7 +72,7 @@
 class drivewireModem;     // declare here so can reference it, but define in modem.h
 class drivewireFuji;      // declare here so can reference it, but define in fuji.h
 class systemBus;          // declare early so can be friend
-class drivewireNetwork;   // declare here so can reference it, but define in network.h
+class NDevice;            // declare here so can reference it, but define in network.h
 class drivewireNetStream; // declare here so can reference it, but define in netstream.h
 class drivewireCassette;  // Cassette forward-declaration.
 class drivewireCPM;       // CPM device.
@@ -269,7 +269,7 @@ public:
     drivewirePrinter *getPrinter() { return _printerdev; }
     void setPrinter(drivewirePrinter *_p) { _printerdev = _p; }
     drivewireCPM *getCPM() { return _cpmDev; }
-    std::map<uint8_t,drivewireNetwork *> _netDev;
+    std::map<uint8_t,NDevice *> _netDev;
 
     // I wish this codebase would make up its mind to use camel or snake casing.
     drivewireModem *get_modem() { return _modemDev; }

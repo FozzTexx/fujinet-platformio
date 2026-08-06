@@ -289,10 +289,13 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
 
     *transmitBuffer += buf;
 
-    if (write_channel(buf.size()) == FUJI_ERROR::NONE)
-        SYSTEM_BUS.transaction_success();
-    else
+    if (write_channel(buf.size()) != FUJI_ERROR::NONE)
+    {
         SYSTEM_BUS.transaction_error();
+        return;
+    }
+
+    SYSTEM_BUS.transaction_success();
 }
 
 void NDevice::status(const FUJI_COMMAND_PACKET &packet)
@@ -780,6 +783,20 @@ void NDevice::udp_set_destination(const FUJI_COMMAND_PACKET &packet)
         SYSTEM_BUS.transaction_error();
     else
         SYSTEM_BUS.transaction_success();
+}
+
+/**
+ * Check to see if PROCEED needs to be asserted, and assert if needed
+ * (continue toggling PROCEED).
+ */
+bool NDevice::poll_interrupt()
+{
+    if (!protocol)
+        return false;
+    uint32_t now = GET_TIMESTAMP();
+    if (now - readAck < 5000)
+        return false;
+    return protocol->available() > 0;
 }
 
 #ifdef UNUSED

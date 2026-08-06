@@ -1,14 +1,16 @@
 #ifdef BUILD_COCO
 
 #include "drivewireFuji.h"
+#include "NDevice.h"
+#include "compat_string.h"
+#ifdef OBSOLETE
 #include "fujiCommandID.h"
-#include "network.h"
 #include "fnWiFi.h"
 #include "utils.h"
-#include "compat_string.h"
 #include "endianness.h"
 #include "fuji_endian.h"
 #include "../../bus/drivewire/drivewire.h"
+#endif /* OBSOLETE */
 
 #define IMAGE_EXTENSION ".dsk"
 #define LOBBY_URL       "tnfs://tnfs.fujinet.online/COCO/lobby.dsk"
@@ -17,7 +19,7 @@ drivewireFuji platformFuji;
 fujiDevice *theFuji = &platformFuji; // Global fuji object.
 
 // drivewireDisk drivewireDiskDevs[MAX_HOSTS];
-drivewireNetwork drivewireNetDevs[MAX_NETWORK_DEVICES];
+NDevice drivewireNetDevs[MAX_NETWORK_DEVICES];
 
 /**
  * Say the numbers 1-8 using phonetic tweaks.
