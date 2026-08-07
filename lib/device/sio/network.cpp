@@ -1,5 +1,6 @@
 #ifdef BUILD_ATARI
 
+#ifdef OBSOLETE
 /**
  * N: Firmware
  */
@@ -1519,5 +1520,6 @@ void sioNetwork::process_udp(const FujiSIOPacket &packet)
         return;
     }
 }
+#endif /* OBSOLETE */
 
 #endif /* BUILD_ATARI */

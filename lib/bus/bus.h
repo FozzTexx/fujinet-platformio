@@ -107,9 +107,7 @@ public:
     virtual std::string unicodeTextToNative(const std::string &unicode) {
         return unicode;
     }
-    virtual std::string nativeEOL() {
-        return "\r";
-    }
+    virtual std::string nativeEOL() { return "\r"; }
 };
 
 #ifdef BUILD_ATARI
