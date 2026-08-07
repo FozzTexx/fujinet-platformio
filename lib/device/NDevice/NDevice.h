@@ -49,13 +49,11 @@ protected:
 
     uint64_t readAck = 0;
 
-#ifdef UNUSED
     /**
      * The last operation's error code, remembered so a later bare STATUS
      * command (no open protocol) can report it.
      */
     nDevStatus_t lastError = NDEV_STATUS::SUCCESS;
-#endif /* UNUSED */
 
     /** Currently set prefix (CWD) for this N: device. */
     std::string prefix;
@@ -69,7 +67,7 @@ protected:
      * translates to/from (NETCMD_SET_EOL). Empty means "use this platform's
      * default."
      */
-    std::string native_eol_override;
+    std::string network_eol_override;
 
     /** fnJSON wrapper, lazily created in open(), destroyed in close(). */
     FNJSON *json = nullptr;
@@ -83,8 +81,11 @@ protected:
     /** Bytes remaining of current SGML query result. */
     unsigned short sgml_bytes_remaining = 0;
 
-#ifdef OBSOLETE
     // ---- hooks: override only where the hardware genuinely differs -------
+    /** The line ending network_eol_override resolves to when unset. */
+    std::string network_eol() const;
+
+#ifdef OBSOLETE
     /** Pull+fix up a devicespec off the bus. SIO/RS232 override to
         also strip embedded ATASCII EOL bytes. */
     virtual std::string create_devicespec(bool is_dir);

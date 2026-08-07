@@ -1,6 +1,17 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "NDevice.h"
+
+class sioNetwork : public NDevice
+{
+public:
+    void sio_status(const FujiSIOPacket &packet) override { return status(packet); }
+    void sio_process(const FujiSIOPacket &packet) override { processCommand(packet); }
+};
+
+#ifdef OBSOLETE
+
 #ifdef ESP_PLATFORM
 #include <esp_timer.h>
 #endif
@@ -441,5 +452,6 @@ private:
      */
     void parse_and_instantiate_protocol(bool is_dir);
 };
+#endif /* OBSOLETE */
 
 #endif /* NETWORK_H */

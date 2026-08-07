@@ -15,8 +15,6 @@
 #include "fnsgml.h"
 #include "debug.h"
 
-#define lastError _errorCode
-
 const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table = {
     { NETCMD_OPEN,             {&NDevice::open}                   },
     { NETCMD_CLOSE,            {&NDevice::close}                  },
@@ -105,12 +103,10 @@ bool NDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
 
 // ============================= hook defaults ===============================
 
-#ifdef UNUSED
-std::string NDevice::native_eol() const
+std::string NDevice::network_eol() const
 {
-    return native_eol_override.empty() ? platform_default_eol() : native_eol_override;
+    return network_eol_override.empty() ? SYSTEM_BUS.nativeEOL() : network_eol_override;
 }
-#endif /* UNUSED */
 
 #ifdef UNUSED
 std::string NDevice::create_devicespec(bool is_dir)
@@ -285,7 +281,13 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
     }
 
     std::string buf(num_bytes, 0);
-    SYSTEM_BUS.transaction_get(buf.data(), buf.size());
+    if (SYSTEM_BUS.transaction_get(buf).is_error())
+    {
+        SYSTEM_BUS.transaction_error();
+        return;
+    }
+
+    Debug_printf("writing\n%s", util_hexdump(buf.data(), buf.size()).c_str());
 
     *transmitBuffer += buf;
 
@@ -460,7 +462,8 @@ bool NDevice::parse_and_instantiate_protocol(std::string &deviceSpec, bool is_di
         return false;
     }
 
-    protocol->native_eol = SYSTEM_BUS.nativeEOL();
+    protocol->native_eol = network_eol();
+
     Debug_printf("NDevice::parse_and_instantiate_protocol() - Protocol %s created.\n", url_out->scheme.c_str());
     return true;
 }
@@ -519,16 +522,16 @@ void NDevice::set_eol(const FUJI_COMMAND_PACKET &packet)
     uint8_t eol0 = packet.param(0);
     uint8_t eol1 = packet.param(1);
 
-    native_eol_override.clear();
+    network_eol_override.clear();
     if (eol0 != 0x00)
     {
-        native_eol_override.push_back((char)eol0);
+        network_eol_override.push_back((char)eol0);
         if (eol1 != 0x00)
-            native_eol_override.push_back((char)eol1);
+            network_eol_override.push_back((char)eol1);
     }
 
     if (protocol != nullptr)
-        protocol->native_eol = SYSTEM_BUS.nativeEOL();
+        protocol->native_eol = network_eol();
 
     SYSTEM_BUS.transaction_success();
 }
