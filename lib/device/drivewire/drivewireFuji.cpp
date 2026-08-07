@@ -1,7 +1,7 @@
 #ifdef BUILD_COCO
 
 #include "drivewireFuji.h"
-#include "NDevice.h"
+#include "drivewireNetwork.h"
 #include "compat_string.h"
 #ifdef OBSOLETE
 #include "fujiCommandID.h"
@@ -19,7 +19,7 @@ drivewireFuji platformFuji;
 fujiDevice *theFuji = &platformFuji; // Global fuji object.
 
 // drivewireDisk drivewireDiskDevs[MAX_HOSTS];
-NDevice drivewireNetDevs[MAX_NETWORK_DEVICES];
+drivewireNetwork drivewireNetDevs[MAX_NETWORK_DEVICES];
 
 /**
  * Say the numbers 1-8 using phonetic tweaks.

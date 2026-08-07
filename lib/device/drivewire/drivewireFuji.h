@@ -24,7 +24,7 @@ protected:
     void shutdown() override;
 
 public:
-    NDevice *network();
+    drivewireNetwork *network();
 
 #ifdef ESP_PLATFORM
     drivewireCassette *cassette() { return &_cassetteDev; };

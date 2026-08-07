@@ -375,9 +375,10 @@ bool systemBus::_transaction_handle_command(const FujiDWPacket &packet, virtualD
 
     case FUJICMD_SEND_ERROR:
         Debug_printf("drivewire device error = %s\n",
-                     device._errorCode == NDEV_STATUS::SUCCESS
-                     ? "NONE" : std::to_string(static_cast<int>(device._errorCode)).c_str());
-        write(static_cast<uint8_t>(device._errorCode));
+                     device.getErrorCode() == NDEV_STATUS::SUCCESS
+                     ? "NONE"
+                     : std::to_string(static_cast<int>(device.getErrorCode())).c_str());
+        write(static_cast<uint8_t>(device.getErrorCode()));
         return true;
 
     case FUJICMD_SEND_RESPONSE:
@@ -439,7 +440,7 @@ void systemBus::op_net(dwOpcode_t opcode)
     if (!_netDev.contains(packet.unit()))
     {
         Debug_printf("Opening new network device %u\n", packet.unit());
-        _netDev[packet.unit()] = new NDevice();
+        _netDev[packet.unit()] = new drivewireNetwork();
     }
 
     if (_transaction_handle_command(packet, platformFuji))
@@ -970,7 +971,7 @@ void systemBus::shutdown()
 
     // TODO: implement device shutdown for all sub-busses
 
-    for (std::map<uint8_t, NDevice *>::iterator it = _netDev.begin();
+    for (std::map<uint8_t, drivewireNetwork *>::iterator it = _netDev.begin();
          it != _netDev.end();
          ++it)
     {
