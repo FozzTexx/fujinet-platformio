@@ -6,6 +6,7 @@
 #include "networkStatus.h"
 #include "peoples_url_parser.h"
 #include "global_types.h"
+#include "global_defines.h"
 
 #include <string>
 

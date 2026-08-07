@@ -72,7 +72,7 @@
 class drivewireModem;     // declare here so can reference it, but define in modem.h
 class drivewireFuji;      // declare here so can reference it, but define in fuji.h
 class systemBus;          // declare early so can be friend
-class NDevice;            // declare here so can reference it, but define in network.h
+class drivewireNetwork;   // declare here so can reference it, but define in network.h
 class drivewireNetStream; // declare here so can reference it, but define in netstream.h
 class drivewireCassette;  // Cassette forward-declaration.
 class drivewireCPM;       // CPM device.
@@ -82,11 +82,12 @@ class fujiDevice;
 
 class drivewireDevice
 {
+#ifdef OBSOLETE
     friend systemBus;
+#endif /* OBSOLETE */
     friend fujiDevice;
 
 protected:
-    nDevStatus_t _errorCode;
     fujiDeviceID_t _devnum;
 
     // Optional shutdown/reboot cleanup routine
@@ -103,8 +104,13 @@ public:
 
 class virtualDevice : public drivewireDevice
 {
+protected:
+    nDevStatus_t _errorCode = NDEV_STATUS::SUCCESS;
+
 public:
     virtual bool processCommand(const FujiDWPacket &packet) = 0;
+    virtual nDevStatus_t getErrorCode() { return _errorCode; }
+    virtual void setErrorCode(nDevStatus_t err) { _errorCode = err; }
 };
 
 enum drivewire_message : uint16_t
@@ -269,7 +275,7 @@ public:
     drivewirePrinter *getPrinter() { return _printerdev; }
     void setPrinter(drivewirePrinter *_p) { _printerdev = _p; }
     drivewireCPM *getCPM() { return _cpmDev; }
-    std::map<uint8_t,NDevice *> _netDev;
+    std::map<uint8_t,drivewireNetwork *> _netDev;
 
     // I wish this codebase would make up its mind to use camel or snake casing.
     drivewireModem *get_modem() { return _modemDev; }
