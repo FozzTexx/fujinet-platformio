@@ -1,5 +1,6 @@
 #ifdef BUILD_ADAM
 
+#ifdef OBSOLETE
 /**
  * N: Firmware
  */
@@ -837,5 +838,6 @@ void adamNetwork::process_udp(const FujiAdamPacket &packet)
         break;
     }
 }
+#endif /* OBSOLETE */
 
 #endif /* BUILD_ADAM */

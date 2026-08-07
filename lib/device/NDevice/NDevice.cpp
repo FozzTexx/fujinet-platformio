@@ -89,6 +89,7 @@ NDevice::~NDevice()
 
 bool NDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
 {
+    Debug_printf("NDevice processCommand: 0x%02x\n", packet.command());
     auto it = dispatch_table.find(packet.command());
     if (it == dispatch_table.end())
     {

@@ -1,6 +1,11 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "NDevice.h"
+
+using adamNetwork = NDevice;
+
+#ifdef OBSOLETE
 #include <memory>
 #include <string>
 
@@ -313,5 +318,6 @@ private:
      */
     void parse_and_instantiate_protocol(std::string d, bool is_dir);
 };
+#endif /* OBSOLETE */
 
 #endif /* NETWORK_H */
