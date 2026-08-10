@@ -67,8 +67,8 @@ private:
 public:
     FujiLynxPacket() = default;
     template<typename... Args>
-    FujiLynxPacket(fujiDeviceID_t source, Args&&... args)
-        : _device(source)
+    FujiLynxPacket(fujiCommandID_t command, Args&&... args)
+        : _command(command)
     {
         (processArg(std::forward<Args>(args)), ...);  // fold expression
     }

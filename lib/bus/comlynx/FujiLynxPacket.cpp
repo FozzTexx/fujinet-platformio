@@ -107,18 +107,23 @@ ByteBuffer FujiLynxPacket::serialize() const
 {
     ByteBuffer output;
 
-    for (const auto& p : _params)
-        write_le(output, p.value, p.size);
+    if (_command == FUJICMD_SEND_RESPONSE)
+    {
+        for (const auto& p : _params)
+            write_le(output, p.value, p.size);
 
-    if (_data)
-        output.insert(output.end(), _data->begin(), _data->end());
+        if (_data)
+            output.insert(output.end(), _data->begin(), _data->end());
 
-    uint8_t ck = calcChecksum(output);
-    u16be_t len;
-    len = static_cast<uint16_t>(output.size());
-    const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&len);
-    output.insert(output.begin(), ptr, ptr + sizeof(len));
-    output.push_back(ck);
+        uint8_t ck = calcChecksum(output);
+        u16be_t len;
+        len = static_cast<uint16_t>(output.size());
+        const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&len);
+        output.insert(output.begin(), ptr, ptr + sizeof(len));
+        output.push_back(ck);
+    }
+    else
+        output.push_back(static_cast<uint8_t>(*_command));
 
     return output;
 }

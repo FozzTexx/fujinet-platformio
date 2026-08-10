@@ -196,7 +196,7 @@ bool systemBus::wait_for_idle()
         dur = current - start;
 
         // Did we get any data in the FIFO while waiting?
-        if (available() > 0)
+        if (_port->available() > 0)
             return false;
 
     } while (dur < COMLYNX_IDLE_TIME);
@@ -226,7 +226,7 @@ void systemBus::_comlynx_process_cmd()
     size_t rlen;
 
     buffer.resize(3, 0);
-    rlen = read(buffer.data(), buffer.size());
+    rlen = _port->read(buffer.data(), buffer.size());
     if (rlen != buffer.size())
     {
         Debug_printf("failed to read packet header\n");
@@ -236,11 +236,11 @@ void systemBus::_comlynx_process_cmd()
 
     memcpy(&len, buffer.data() + 1, sizeof(len));
     payload.resize(len, 0);
-    rlen = read(payload.data(), payload.size());
+    rlen = _port->read(payload.data(), payload.size());
     if (rlen != payload.size())
         payload.resize(rlen);
     buffer.insert(buffer.end(), payload.begin(), payload.end());
-    buffer.push_back(read());
+    buffer.push_back(_port->read());
 
     Debug_printf("Received packet\n%s", util_hexdump(buffer.data(), buffer.size()).c_str());
 
@@ -294,7 +294,7 @@ void systemBus::_comlynx_process_cmd()
     }*/
 
  done:
-    flush();
+    _port->flushOutput();
 }
 
 void systemBus::_comlynx_process_queue()
@@ -311,7 +311,7 @@ void systemBus::service()
             _streamDev->comlynx_handle_netstream();
     }
     // Process anything waiting
-    else if (available() > 0)
+    else if (_port->available() > 0)
         _comlynx_process_cmd();
 }
 
@@ -336,6 +336,7 @@ void systemBus::setup()
         _serial.begin(ChannelConfig()
                       .deviceID(SERIAL_DEVICE)
                       .baud(COMLYNX_BAUDRATE)
+                      .discardTimeout(5)
 #ifdef ESP_PLATFORM
                       .parity(UART_PARITY_ODD)
                       .halfDuplex(true)
@@ -561,32 +562,41 @@ void systemBus::transaction_send(const void *data, size_t len, bool err)
     assert(_transaction_state == TRANS_STATE::NO_GET);
 
     // send all data back to Lynx
-    FujiLynxPacket packet(_activeDev->_devnum, ByteBuffer(ptr, ptr + len));
+    FujiLynxPacket packet(FUJICMD_SEND_RESPONSE, ByteBuffer(ptr, ptr + len));
+    writeBusPacket(packet);
+    _transaction_state = TRANS_STATE::INVALID;
+    return;
+}
+
+void systemBus::writeBusPacket(const FujiLynxPacket &packet)
+{
     auto encoded = packet.serialize();
     Debug_printf("Sending reply\n%s", util_hexdump(encoded.data(), encoded.size()).c_str());
     _port->write(encoded.data(), encoded.size());
 
-    // get ACK or NACK from Lynx, we're ignoring currently
-    uint8_t r = _port->read();
+    if (packet.command() == FUJICMD_SEND_RESPONSE)
+    {
+        // get ACK or NACK from Lynx, we're ignoring currently
+        uint8_t r = _port->read();
 #ifdef DEBUG
-    if (r == FUJICMD_ACK)
-        Debug_println("transaction_put - Lynx ACKed");
-    else
-        Debug_println("transaction put - Lynx NAKed");
+        if (r == FUJICMD_ACK)
+            Debug_println("writeBusPacket - Lynx ACKed");
+        else
+            Debug_printf("writeBusPacket - Lynx NAKed 0x%02x\n", r);
 #endif
+    }
 
-    _transaction_state = TRANS_STATE::INVALID;
     return;
 }
 
 void systemBus::sendAckPacket()
 {
-    _port->write(FUJICMD_ACK);
+    writeBusPacket(FujiLynxPacket(FUJICMD_ACK));
 }
 
 void systemBus::sendNakPacket()
 {
-    _port->write(FUJICMD_NAK);
+    writeBusPacket(FujiLynxPacket(FUJICMD_NAK));
 }
 
 void systemBus::change_baud(int32_t baud)

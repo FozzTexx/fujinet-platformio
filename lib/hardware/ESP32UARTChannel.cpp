@@ -201,7 +201,7 @@ size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
     if (_halfDuplex)
     {
         //flushOutput();
-        updateFIFO();
+        discardInput();
         _discardRX = false;
     }
     return count;
