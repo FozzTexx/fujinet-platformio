@@ -272,26 +272,9 @@ void systemBus::_comlynx_process_cmd()
             devicep->comlynx_process(*tmpPacket);
             // turn off Comlynx Indicator LED
             fnLedManager.set(eLed::LED_BUS, false);
+            assert(_transaction_state == TRANS_STATE::INVALID);
         }
     }
-
-    // Find device ID and pass control to it
-    /*if (_daisyChain.count(d) < 1)
-    {
-    }
-    else if (_daisyChain[d]->device_active == true)
-    {
-     #ifdef DEBUG
-        Debug_println("---");
-        Debug_printf("comlynx_process_cmd - dev:%X\n", d);
-    #endif
-
-        // turn on Comlynx Indicator LED
-        fnLedManager.set(eLed::LED_BUS, true);
-        _daisyChain[d]->comlynx_process();
-        // turn off Comlynx Indicator LED
-        fnLedManager.set(eLed::LED_BUS, false);
-    }*/
 
  done:
     _port->flushOutput();
@@ -542,6 +525,7 @@ void systemBus::transaction_error()
 
     // throw away any waiting bytes
     _port->discardInput();
+    _transaction_state = TRANS_STATE::INVALID;
 }
 
 success_is_true systemBus::transaction_get(void *data, size_t len)
@@ -570,7 +554,9 @@ void systemBus::transaction_send(const void *data, size_t len, bool err)
 void systemBus::writeBusPacket(const FujiLynxPacket &packet)
 {
     auto encoded = packet.serialize();
+#ifdef DEBUG_RAW_PACKET
     Debug_printf("Sending reply\n%s", util_hexdump(encoded.data(), encoded.size()).c_str());
+#endif // DEBUG_RAW_PACKET
     _port->write(encoded.data(), encoded.size());
 
     if (packet.command() == FUJICMD_SEND_RESPONSE)

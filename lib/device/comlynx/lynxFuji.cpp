@@ -106,43 +106,6 @@ lynxFuji::lynxFuji() : fujiDevice(MAX_DISK_DEVICES, IMAGE_EXTENSION, std::nullop
     #endif
 }
 
-/*
- Write an "app key" to SD (ONLY!) storage.
-*/
-/*void lynxFuji::comlynx_write_app_key()
-{
-    uint16_t creator = comlynx_recv_length();
-    uint8_t app = comlynx_recv();
-    uint8_t key = comlynx_recv();
-    uint8_t data[64];
-    char appkeyfilename[30];
-    FILE *fp;
-
-    Debug_printf("Fuji Cmd: WRITE APPKEY %s\n", appkeyfilename);
-
-    snprintf(appkeyfilename, sizeof(appkeyfilename), "/FujiNet/%04hx%02hhx%02hhx.key", creator, app, key);
-
-    comlynx_recv_buffer(data, 64);
-
-    // Get packet checksum
-    if (!comlynx_recv_ck()) {
-        comlynx_response_nack();
-        return;
-    }
-
-    fp = fnSDFAT.file_open(appkeyfilename, "w");
-    if (fp == nullptr)
-    {
-        Debug_printf("Could not open.\n");
-        return;
-    }
-
-    fwrite(data, sizeof(uint8_t), sizeof(data), fp);
-    fclose(fp);
-
-    comlynx_response_ack();
-}*/
-
 // This gets called when we're about to shutdown/reboot
 void lynxFuji::shutdown()
 {
