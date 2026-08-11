@@ -154,7 +154,6 @@ private:
     QueueHandle_t _uart_q;
     RS232ControlPins controlPins;
     bool _halfDuplex;
-    bool _discardRX = false;
 
 protected:
     bool getPin(int pin);

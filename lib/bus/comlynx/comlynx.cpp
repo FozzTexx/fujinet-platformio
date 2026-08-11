@@ -336,7 +336,6 @@ void systemBus::setup()
         _serial.begin(ChannelConfig()
                       .deviceID(SERIAL_DEVICE)
                       .baud(COMLYNX_BAUDRATE)
-                      .discardTimeout(5)
 #ifdef ESP_PLATFORM
                       .parity(UART_PARITY_ODD)
                       .halfDuplex(true)

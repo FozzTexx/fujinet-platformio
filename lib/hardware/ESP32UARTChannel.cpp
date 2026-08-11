@@ -4,8 +4,9 @@
 #include "../../include/debug.h"
 
 #include <soc/uart_reg.h>
+#include <soc/gpio_sig_map.h>
 #include <hal/gpio_types.h>
-#include <hal/uart_ll.h>
+#include <esp_rom_gpio.h>
 
 #define MAX_FLUSH_WAIT_TICKS 200
 
@@ -23,27 +24,28 @@ void ESP32UARTChannel::begin(const ChannelConfig& conf)
     Debug_printv("speed: %i", conf.uart_config.baud_rate);
     uart_param_config(_uart_num, &conf.uart_config);
 
-    int tx, rx;
+    controlPins = conf.pins;
+
     switch (_uart_num)
     {
 #ifdef PIN_UART0_RX
     case 0:
-        rx = PIN_UART0_RX;
-        tx = PIN_UART0_TX;
+        controlPins.rx = PIN_UART0_RX;
+        controlPins.tx = PIN_UART0_TX;
         break;
 #endif /* PIN_UART0_RX */
 
 #ifdef PIN_UART1_RX
     case 1:
-        rx = PIN_UART1_RX;
-        tx = PIN_UART1_TX;
+        controlPins.rx = PIN_UART1_RX;
+        controlPins.tx = PIN_UART1_TX;
         break;
 #endif /* PIN_UART1_RX */
 
 #ifdef PIN_UART2_RX
     case 2:
-        rx = PIN_UART2_RX;
-        tx = PIN_UART2_TX;
+        controlPins.rx = PIN_UART2_RX;
+        controlPins.tx = PIN_UART2_TX;
         break;
 #endif /* PIN_UART2_RX */
 
@@ -51,7 +53,8 @@ void ESP32UARTChannel::begin(const ChannelConfig& conf)
         return;
     }
 
-    uart_set_pin(_uart_num, tx, rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_set_pin(_uart_num, controlPins.tx, controlPins.rx,
+                 UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
     uint32_t inv_mask = 0;
     if (conf.isTxInverted)
@@ -69,7 +72,6 @@ void ESP32UARTChannel::begin(const ChannelConfig& conf)
                         intr_alloc_flags);
 
     _halfDuplex = conf.isHalfDuplex;
-    controlPins = conf.pins;
 
     if (controlPins.rts >= 0)
         fnSystem.set_pin_mode(controlPins.rts, gpio_mode_t::GPIO_MODE_INPUT);
@@ -125,7 +127,7 @@ void ESP32UARTChannel::updateFIFO()
             size_t old_len = _fifo.size();
             _fifo.resize(old_len + event.size);
             int result = uart_read_bytes(_uart_num, &_fifo[old_len], event.size, 0);
-            if (result < 0 || _discardRX)
+            if (result < 0)
                 result = 0;
             _fifo.resize(old_len + result);
         }
@@ -143,7 +145,7 @@ void ESP32UARTChannel::updateFIFO()
     size_t old_len = _fifo.size();
     _fifo.resize(old_len + avail);
     int result = uart_read_bytes(_uart_num, &_fifo[old_len], avail, 0);
-    if (result < 0 || _discardRX)
+    if (result < 0)
         result = 0;
     _fifo.resize(old_len + result);
 
@@ -175,37 +177,71 @@ void ESP32UARTChannel::setBaudrate(uint32_t baud)
 #endif
 }
 
+#ifdef ALT_HALF_DUPLEX
 size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
 {
-    if (_uart_num == FN_UART_DEBUG)
-        return uart_write_bytes(_uart_num, (const char *)buffer, size);
-
-    if (_halfDuplex)
-        _discardRX = true;
-
-    uart_dev_t *uart = UART_LL_GET_HW(_uart_num);
-    size_t count = 0;
-    uint8_t *data = (uint8_t *) buffer;
-    while (count < size) {
-        // How many bytes can we write now without overflowing FIFO?
-        size_t space = uart_ll_get_txfifo_len(uart);
-
-        if (space > 0) {
-            size_t chunk = std::min(size - count, space);
-            uart_ll_write_txfifo(uart, &data[count], chunk);
-            count += chunk;
-            flushOutput();
-        }
-    }
+    size_t wlen, begin = 0;
 
     if (_halfDuplex)
     {
-        //flushOutput();
-        discardInput();
-        _discardRX = false;
+        updateFIFO();
+        begin = _fifo.size();
     }
-    return count;
+
+    wlen = uart_write_bytes(_uart_num, (const char *)buffer, size);
+
+    if (_halfDuplex)
+    {
+        while (_fifo.size() < begin + wlen)
+            updateFIFO();
+        _fifo.resize(begin);
+    }
+    return wlen;
 }
+#elif ALT_HALF_DUPLEX == 2
+size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
+{
+    return uart_write_bytes(_uart_num, (const char *)buffer, size);
+}
+#else
+size_t ESP32UARTChannel::dataOut(const void *buffer, size_t size)
+{
+    size_t wlen;
+    unsigned uart_rx_idx = 0;
+
+
+    if (_halfDuplex)
+    {
+        switch (_uart_num)
+        {
+        case 0:
+            uart_rx_idx = U0RXD_IN_IDX;
+            break;
+        case 1:
+            uart_rx_idx = U1RXD_IN_IDX;
+            break;
+        case 2:
+            uart_rx_idx = U2RXD_IN_IDX;
+            break;
+        default:
+            return 0;
+        }
+
+        //esp_rom_gpio_connect_in_signal(GPIO_NUM_NC, uart_rx_idx, false);
+        esp_rom_gpio_connect_in_signal(GPIO_MATRIX_CONST_ONE_INPUT, uart_rx_idx, false);
+    }
+
+    wlen = uart_write_bytes(_uart_num, (const char *) buffer, size);
+
+    if (_halfDuplex)
+    {
+        flushOutput();
+        esp_rom_gpio_connect_in_signal(controlPins.rx, uart_rx_idx, false);
+    }
+
+    return wlen;
+}
+#endif /* OBSOLETE */
 
 bool ESP32UARTChannel::getPin(int pin)
 {
