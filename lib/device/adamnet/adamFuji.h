@@ -25,7 +25,6 @@ protected:
     void adamnet_set_boot_config(const FujiAdamPacket &packet);        // 0xD9
     void adamnet_enable_device(const FujiAdamPacket &packet);          // 0xD5
     void adamnet_disable_device(const FujiAdamPacket &packet);         // 0xD4
-    void adamnet_random_number();          // 0xD3
     void adamnet_get_time();               // 0xD2
     void adamnet_device_enable_status(const FujiAdamPacket &packet);   // 0xD1
 

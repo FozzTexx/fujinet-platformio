@@ -101,21 +101,23 @@ fujiDevice::fujiDevice(unsigned int numDisk, std::string extension,
             fujicmd_close_directory();
         } },
         { FUJICMD_READ_DIR_ENTRY, [this](const FUJI_COMMAND_PACKET &packet) {
-            fujicmd_read_directory_entry(packet.param(0), packet.param(1));
+            fujicmd_read_directory_entry((uint8_t) packet.param(0), packet.param(1));
         } },
         { FUJICMD_SET_DIRECTORY_POSITION, [this](const FUJI_COMMAND_PACKET &packet) {
             fujicmd_set_directory_position(packet.param(0));
         } },
         { FUJICMD_SET_DEVICE_FULLPATH, [this](const FUJI_COMMAND_PACKET &packet) {
             fujicmd_set_device_filename_success(packet.param(0), packet.param(1),
-                                                (disk_access_flags_t) packet.param(2));
+                                                (disk_access_flags_t) ((uint8_t)
+                                                                       packet.param(2)));
         } },
         { FUJICMD_GET_DEVICE_FULLPATH, [this](const FUJI_COMMAND_PACKET &packet) {
             fujicmd_get_device_filename(packet.param(0));
         } },
         { FUJICMD_MOUNT_IMAGE, [this](const FUJI_COMMAND_PACKET &packet) {
             fujicmd_mount_disk_image_success(packet.param(0),
-                                             (disk_access_flags_t) packet.param(1));
+                                             (disk_access_flags_t) ((uint8_t)
+                                                                    packet.param(1)));
         } },
         { FUJICMD_UNMOUNT_HOST, [this](const FUJI_COMMAND_PACKET &packet) {
             fujicmd_unmount_host_success(packet.param(0));
