@@ -17,7 +17,7 @@ uint32_t FujiAdamPacket::getParam(size_t index, size_t psize) const
     size_t count;
 
     assert(psize == 1 || psize == 2 || psize == 4);
-    assert(_params.size() == 0 || _paramSize == psize);
+    assert(index < _params.size() || _params.size() == 0 || _paramSize == psize);
     if (index >= _params.size()) {
         assert(_payload.has_value());
         assert(!_data.has_value());
@@ -106,12 +106,14 @@ ByteBuffer FujiAdamPacket::serialize() const
 
     size_t dataSize = _data ? _data->size() : 0;
     size_t payloadSize = paramsSize + dataSize;
+    if (_command.has_value())
+        payloadSize++;
     bool hasPayload = payloadSize > 0;
     bool hasLen = hasPayload && (_type != APT::NM_STATUS);
 
     size_t totalSize = 1 /*dest*/
         + (hasLen ? 2 : 0)
-                + payloadSize
+        + payloadSize
         + (hasPayload ? 1 : 0 /*checksum*/);
 
     ByteBuffer output;
@@ -125,6 +127,9 @@ ByteBuffer FujiAdamPacket::serialize() const
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&len);
         output.insert(output.end(), ptr, ptr + sizeof(len));
     }
+
+    if (_command.has_value())
+        output.push_back(static_cast<uint8_t>(*_command));
 
     size_t payloadStart = output.size();
 

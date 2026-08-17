@@ -359,36 +359,39 @@ void adamFuji::adamnet_control_send(const FujiAdamPacket &packet)
      * wrong and shouldn't have happened in the first place!
      *****************************************************************/
     const FujiAdamPacket *backPacket = &packet;
+    std::optional<FujiAdamPacket> compatPacket;
+
     if (backPacket->command() == FUJICMD_SET_DEVICE_FULLPATH)
     {
         uint8_t deviceSlot = backPacket->param(0);
         const ByteBuffer &data = backPacket->data().value();
 
-        backPacket = FujiAdamPacket(backPacket->device(), backPacket->type(),
-                                    deviceSlot, _fnDisks[deviceSlot].host_slot,
-                                    (uint8_t) _fnDisks[deviceSlot].access_mode, data);
+        compatPacket.emplace(backPacket->device(), backPacket->type(), backPacket->command(),
+                             deviceSlot, _fnDisks[deviceSlot].host_slot,
+                             (uint8_t) _fnDisks[deviceSlot].access_mode, data);
+        backPacket = &*compatPacket;
     }
 
     // Let the base class handle standard commands
-    if (fujiDevice::processCommand(backPacket))
+    if (fujiDevice::processCommand(*backPacket))
         return;
 
     switch (backPacket->command())
     {
     case FUJICMD_NEW_DISK:
-        adamnet_new_disk(backPacket);
+        adamnet_new_disk(*backPacket);
         break;
     case FUJICMD_ENABLE_DEVICE:
-        adamnet_enable_device(backPacket);
+        adamnet_enable_device(*backPacket);
         break;
     case FUJICMD_DISABLE_DEVICE:
-        adamnet_disable_device(backPacket);
+        adamnet_disable_device(*backPacket);
         break;
     case FUJICMD_GET_TIME:
         adamnet_get_time();
         break;
     case FUJICMD_DEVICE_ENABLE_STATUS:
-        adamnet_device_enable_status(backPacket);
+        adamnet_device_enable_status(*backPacket);
         break;
     default:
         Debug_printv("Unknown command: %02x\n", backPacket->command());

@@ -81,6 +81,7 @@ private:
     // Payload helpers
     void processArg(const ByteBuffer& buf) { _data = buf; }
     void processArg(ByteBuffer&& buf)      { _data = std::move(buf); }
+    void processArg(fujiCommandID_t cmd)   { _command = cmd; }
 
     // Convenience: allow passing a std::string payload; it’s treated as raw bytes
     void processArg(const std::string& s) {
