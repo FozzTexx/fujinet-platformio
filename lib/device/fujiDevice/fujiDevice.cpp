@@ -1342,7 +1342,7 @@ success_is_true fujiDevice::fujicmd_set_device_filename_success(uint8_t deviceSl
     tmp.resize(strlen(tmp.c_str()));
 
     Debug_printf("Fuji cmd: SET DEVICE SLOT 0x%02X/%02X/%02X FILENAME: %s\n",
-                 deviceSlot, host, mode, tmp);
+                 deviceSlot, host, mode, tmp.c_str());
 
     if (fujicore_set_device_filename_success(deviceSlot, host, mode, tmp).is_error())
     {
