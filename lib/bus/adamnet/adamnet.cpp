@@ -113,9 +113,8 @@ success_is_true systemBus::transaction_get(void *data, size_t len)
 {
     assert(_transaction_state == TRANS_STATE::WILL_GET);
     _transaction_state = TRANS_STATE::DID_GET;
-    if (_activePacket->data()->size() != len)
-        RETURN_ERROR_AS_FALSE();
-    std::copy(_activePacket->data()->begin(), _activePacket->data()->end(),
+    len = std::min(_activePacket->data()->size(), len);
+    std::copy(_activePacket->data()->begin(), _activePacket->data()->begin() + len,
               static_cast<uint8_t *>(data));
     RETURN_SUCCESS_AS_TRUE();
 }

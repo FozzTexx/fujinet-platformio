@@ -1331,20 +1331,20 @@ success_is_true fujiDevice::fujicmd_set_device_filename_success(uint8_t deviceSl
                                                                 uint8_t host,
                                                                 disk_access_flags_t mode)
 {
-    char tmp[MAX_FILENAME_LEN];
+    std::string tmp(MAX_FILENAME_LEN, 0);
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
-    if (!SYSTEM_BUS.transaction_get(tmp, sizeof(tmp)))
+    if (SYSTEM_BUS.transaction_get(tmp.data(), tmp.size()).is_error())
     {
         SYSTEM_BUS.transaction_error();
         RETURN_ERROR_AS_FALSE();
     }
+    tmp.resize(strlen(tmp.c_str()));
 
     Debug_printf("Fuji cmd: SET DEVICE SLOT 0x%02X/%02X/%02X FILENAME: %s\n",
                  deviceSlot, host, mode, tmp);
 
-    if (!fujicore_set_device_filename_success(deviceSlot, host, mode,
-                                              std::string(tmp, strnlen(tmp, sizeof(tmp)))))
+    if (fujicore_set_device_filename_success(deviceSlot, host, mode, tmp).is_error())
     {
         SYSTEM_BUS.transaction_error();
         RETURN_ERROR_AS_FALSE();

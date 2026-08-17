@@ -352,29 +352,46 @@ void adamFuji::adamnet_device_enable_status(const FujiAdamPacket &packet)
 
 void adamFuji::adamnet_control_send(const FujiAdamPacket &packet)
 {
+    /*****************************************************************
+     * TERRIBLE TERRIBLE backwards compatibility hack! Someone decided
+     * on Adam that FUJICMD_SET_DEVICE_FULLPATH only needed one arg
+     * instead of three! Do not ever add anything else here. It is
+     * wrong and shouldn't have happened in the first place!
+     *****************************************************************/
+    const FujiAdamPacket *backPacket = &packet;
+    if (backPacket->command() == FUJICMD_SET_DEVICE_FULLPATH)
+    {
+        uint8_t deviceSlot = backPacket->param(0);
+        const ByteBuffer &data = backPacket->data().value();
+
+        backPacket = FujiAdamPacket(backPacket->device(), backPacket->type(),
+                                    deviceSlot, _fnDisks[deviceSlot].host_slot,
+                                    (uint8_t) _fnDisks[deviceSlot].access_mode, data);
+    }
+
     // Let the base class handle standard commands
-    if (fujiDevice::processCommand(packet))
+    if (fujiDevice::processCommand(backPacket))
         return;
 
-    switch (packet.command())
+    switch (backPacket->command())
     {
     case FUJICMD_NEW_DISK:
-        adamnet_new_disk(packet);
+        adamnet_new_disk(backPacket);
         break;
     case FUJICMD_ENABLE_DEVICE:
-        adamnet_enable_device(packet);
+        adamnet_enable_device(backPacket);
         break;
     case FUJICMD_DISABLE_DEVICE:
-        adamnet_disable_device(packet);
+        adamnet_disable_device(backPacket);
         break;
     case FUJICMD_GET_TIME:
         adamnet_get_time();
         break;
     case FUJICMD_DEVICE_ENABLE_STATUS:
-        adamnet_device_enable_status(packet);
+        adamnet_device_enable_status(backPacket);
         break;
     default:
-        Debug_printv("Unknown command: %02x\n", packet.command());
+        Debug_printv("Unknown command: %02x\n", backPacket->command());
         break;
     }
 }
