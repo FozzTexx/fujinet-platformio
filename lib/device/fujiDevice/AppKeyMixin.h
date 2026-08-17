@@ -22,23 +22,6 @@ struct appkey
     uint8_t reserved;
 } __attribute__((packed));
 
-enum appkey_mode : int8_t
-{
-    APPKEYMODE_INVALID = -1,
-    APPKEYMODE_READ = 0,
-    APPKEYMODE_WRITE,
-    APPKEYMODE_READ_256
-};
-
-struct appkey
-{
-    u16ne_t creator;
-    uint8_t app;
-    uint8_t key;
-    appkey_mode mode;
-    uint8_t reserved;
-} __attribute__((packed));
-
 class AppKeyMixin : public FujiDeviceMixin
 {
 private:
