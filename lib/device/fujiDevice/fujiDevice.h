@@ -199,7 +199,7 @@ public:
     void shutdown() override;
 
     // Return true if command was handled here
-    bool processCommand(const FUJI_COMMAND_PACKET &packet);
+    bool processCommand(const FUJI_COMMAND_PACKET &packet) override;
     // Return true if command is one that can be handled
     bool recognizesCommand(const FUJI_COMMAND_PACKET &packet);
 
@@ -255,6 +255,7 @@ public:
     void fujicmd_status();
 
     void fujicmd_generate_guid();
+    void fujicmd_random();
 
     // ============ Implementations by fujicmd_ methods ============
     // These are safe to call directly if the bus abstraction

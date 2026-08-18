@@ -126,7 +126,7 @@ fujiDevice::fujiDevice(unsigned int numDisk, std::string extension,
             fujicmd_unmount_disk_image_success(packet.param(0));
         } },
         { FUJICMD_RANDOM_NUMBER, [this](const FUJI_COMMAND_PACKET &packet) {
-            random();
+            fujicmd_random();
         } },
         { FUJICMD_SET_BOOT_MODE, [this](const FUJI_COMMAND_PACKET &packet) {
             fujicmd_set_boot_mode(packet.param(0), MEDIATYPE_UNKNOWN, &bootdisk);
@@ -1685,6 +1685,14 @@ void fujiDevice::fujicmd_generate_guid()
     Debug_printf("GUID: %s\n", uuid_str);
 
     SYSTEM_BUS.transaction_send(uuid_str, sizeof(uuid_str));
+}
+
+void fujiDevice::fujicmd_random()
+{
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    uint32_t r = fnSystem.random();
+    Debug_printf("drivewireFuji::random(%lu)\n",r);
+    SYSTEM_BUS.transaction_send(&r, sizeof(r));
 }
 
 bool fujiDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
