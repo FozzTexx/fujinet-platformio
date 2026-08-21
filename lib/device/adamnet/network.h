@@ -343,6 +343,7 @@ protected:
 
     void write(const FUJI_COMMAND_PACKET &packet) override;
     void status(const FUJI_COMMAND_PACKET &packet) override;
+    void json_query(const FUJI_COMMAND_PACKET &packet) override;
 };
 
 #endif /* OBSOLETE */

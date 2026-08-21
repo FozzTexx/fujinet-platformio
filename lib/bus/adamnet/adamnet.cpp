@@ -1,5 +1,7 @@
 #ifdef BUILD_ADAM
 
+#define DEBUG_RAW_PACKET
+
 /**
  * AdamNet Functions
  */
