@@ -71,7 +71,6 @@ public:
     void setDataLength(const size_t len) const;
 
     const std::optional<ByteBuffer>& data() const {
-        assert(_data.has_value());
         return _data;
     }
 

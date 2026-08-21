@@ -38,12 +38,13 @@ public:
     error_is_true setDataLength(const size_t len) const;
 
     const std::optional<ByteBuffer>& data() const {
-        assert(_data.has_value());
         return _data;
     }
     const std::optional<const std::string> dataAsString() const {
         auto d = data();
-        return std::string(reinterpret_cast<const char *>(d->data()), d->size());
+        return d.hasValue()
+            ? std::string(reinterpret_cast<const char *>(d->data()), d->size())
+            : std::nullopt;
     }
 
     // Explicit alternatives to the implicit ParamProxy conversions.

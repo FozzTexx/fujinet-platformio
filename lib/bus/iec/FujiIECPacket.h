@@ -44,7 +44,9 @@ public:
     const std::optional<ByteBuffer>& data() const;
     const std::optional<const std::string> dataAsString() const {
         auto d = data();
-        return std::string(reinterpret_cast<const char *>(d->data()), d->size());
+        return d.hasValue()
+            ? std::string(reinterpret_cast<const char *>(d->data()), d->size())
+            : std::nullopt;
     }
 
     // Explicit alternatives to the implicit PacketParamProxy conversions.
