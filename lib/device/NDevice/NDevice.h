@@ -99,12 +99,14 @@ protected:
     virtual std::string json_line_ending() const { return std::string(1, '\x0a'); }
     virtual std::string sgml_line_ending() const { return std::string(1, '\x0a'); }
 
+#ifdef UNUSED
     /**
      * Populate a STATUS reply when no protocol is bound. Default just
      * reports lastError. SIO/RS232/DriveWire override to also serve
      * IP/netmask/gateway/DNS queries via the mode byte.
      */
     virtual NDeviceStatus status_local(uint8_t mode);
+#endif /* UNUSED */
 
     void open(const FUJI_COMMAND_PACKET &packet);
     void close(const FUJI_COMMAND_PACKET &packet);

@@ -206,6 +206,11 @@ void systemBus::sendResponsePacket(void)
     _port->write(_transaction_reply_encoded->data(), _transaction_reply_encoded->size());
     _port->flushOutput();
     busPhase.sentData();
+#ifdef DEBUG_RAW_PACKET
+    Debug_printv("Sent %d:\n%s", _transaction_reply_encoded->size(),
+                 util_hexdump(_transaction_reply_encoded->data(),
+                              _transaction_reply_encoded->size()).c_str());
+#endif // DEBUG_RAW_PACKET
     _transaction_reply_encoded.reset();
 }
 

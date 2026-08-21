@@ -121,6 +121,7 @@ std::string NDevice::create_devicespec(bool is_dir)
 }
 #endif /* UNUSED */
 
+#ifdef UNUSED
 NDeviceStatus NDevice::status_local(uint8_t mode)
 {
     NDeviceStatus status;
@@ -131,6 +132,7 @@ NDeviceStatus NDevice::status_local(uint8_t mode)
     status.avail = 0;
     return status;
 }
+#endif /* UNUSED */
 
 // ============================ shared operations =============================
 
@@ -338,15 +340,25 @@ size_t NDevice::available()
         break;
     }
 
+    Debug_printf("NDevice::available=%d\n", avail);
     return avail;
 }
 
 NDeviceStatus NDevice::status(uint8_t mode)
 {
-    NDeviceStatus nstatus {};
+    NDeviceStatus nstatus;
 
     if (protocol == nullptr)
+    {
+#ifdef UNUSED
         return status_local(mode);
+#else
+        nstatus.avail = 0;
+        nstatus.conn = 0;
+        nstatus.err = NDEV_STATUS::NOT_CONNECTED;
+        return nstatus;
+#endif /* UNUSED */
+    }
 
     NetworkStatus ns;
     size_t avail = available();
@@ -371,6 +383,8 @@ NDeviceStatus NDevice::status(uint8_t mode)
     nstatus.avail = avail;
     nstatus.conn = ns.connected;
     nstatus.err = ns.error;
+    Debug_printf("NDevice::status avail=%d conn=%d err=%d\n",
+                 nstatus.avail, nstatus.conn, nstatus.err);
     return nstatus;
 }
 
