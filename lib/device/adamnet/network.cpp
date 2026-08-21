@@ -1,6 +1,7 @@
 #ifdef BUILD_ADAM
 
 #include "network.h"
+#include "debug.h"
 
 #define MAX_ADAM_PACKET_LEN 1024
 
@@ -899,12 +900,15 @@ void adamNetwork::adamnet_control_receive()
         return;
     }
 
+    Debug_printf("adamnetNetwork::read len=%d\n", buf.size());
     SYSTEM_BUS.transaction_send(buf);
 }
 
 void adamNetwork::status(const FUJI_COMMAND_PACKET &packet)
 {
     auto nstatus = NDevice::status(0);
+    Debug_printf("adamNetwork::status avail=%d conn=%d err=%d\n",
+                 nstatus.avail, nstatus.conn, nstatus.err);
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_send(&nstatus, sizeof(nstatus), false);
 }
