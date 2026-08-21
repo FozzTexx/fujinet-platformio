@@ -104,18 +104,21 @@ protected:
      * reports lastError. SIO/RS232/DriveWire override to also serve
      * IP/netmask/gateway/DNS queries via the mode byte.
      */
-    virtual void status_local(uint8_t mode, NDeviceStatus &out);
-
-    // ---- shared logic: concrete for everyone -------------------------------
+    virtual NDeviceStatus status_local(uint8_t mode);
 
     void open(const FUJI_COMMAND_PACKET &packet);
     void close(const FUJI_COMMAND_PACKET &packet);
     void read(const FUJI_COMMAND_PACKET &packet);
-    void write(const FUJI_COMMAND_PACKET &packet);
-    void status(const FUJI_COMMAND_PACKET &packet);
+    virtual void write(const FUJI_COMMAND_PACKET &packet);
+    virtual void status(const FUJI_COMMAND_PACKET &packet);
     void set_prefix(const FUJI_COMMAND_PACKET &packet);
     void get_prefix(const FUJI_COMMAND_PACKET &packet);
     void json_query(const FUJI_COMMAND_PACKET &packet);
+
+    error_is_true write(const ByteBuffer &buf);
+    error_is_true read(ByteBuffer &buf, size_t len);
+    size_t available();
+    NDeviceStatus status(uint8_t mode);
 
     /**
      * Parse a devicespec into a URL and instantiate the matching protocol.

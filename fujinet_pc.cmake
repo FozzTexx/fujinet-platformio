@@ -316,6 +316,7 @@ set(SOURCES src/main.cpp
     lib/device/fujiDevice/HashMixin.h lib/device/fujiDevice/HashMixin.cpp
     lib/device/fujiDevice/QRMixin.h lib/device/fujiDevice/QRMixin.cpp
     lib/device/fujiDevice/AppKeyMixin.h lib/device/fujiDevice/AppKeyMixin.cpp
+    lib/device/NDevice/NDevice.h lib/device/NDevice/NDevice.cpp
     lib/device/netstream.h
     lib/device/siocpm.h
     lib/modem-sniffer/modem-sniffer.h lib/modem-sniffer/modem-sniffer.cpp

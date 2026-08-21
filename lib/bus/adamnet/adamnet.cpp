@@ -189,7 +189,10 @@ bool systemBus::sendReplyPacket(bool ack, const void *data, size_t length)
 void systemBus::sendResponsePacket(void)
 {
     if (!_transaction_reply_encoded.has_value())
+    {
+        Debug_printf("Nothing to send\n");
         return;
+    }
 
 #ifdef ESP_PLATFORM
     // Real bus only: answer only inside the window of opportunity
