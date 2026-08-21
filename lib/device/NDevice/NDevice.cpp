@@ -121,12 +121,15 @@ std::string NDevice::create_devicespec(bool is_dir)
 }
 #endif /* UNUSED */
 
-void NDevice::status_local(uint8_t mode, NDeviceStatus &out)
+NDeviceStatus NDevice::status_local(uint8_t mode)
 {
+    NDeviceStatus status;
+
     (void)mode;
-    out.conn = false;
-    out.err = lastError;
-    out.avail = 0;
+    status.conn = false;
+    status.err = lastError;
+    status.avail = 0;
+    return status;
 }
 
 // ============================ shared operations =============================
@@ -223,6 +226,19 @@ void NDevice::close(const FUJI_COMMAND_PACKET &packet)
     }
 }
 
+error_is_true NDevice::read(ByteBuffer &buf, size_t len)
+{
+    if (receiveBuffer == nullptr
+        || protocol == nullptr
+        || read_channel(len) != FUJI_ERROR::NONE)
+        RETURN_ERROR_AS_TRUE();
+    buf.resize(len);
+    std::copy(receiveBuffer->begin(), receiveBuffer->begin() + len, buf.begin());
+    receiveBuffer->erase(0, len);
+    receiveBuffer->shrink_to_fit();
+    RETURN_SUCCESS_AS_FALSE();
+}
+
 void NDevice::read(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
@@ -251,15 +267,23 @@ void NDevice::read(const FUJI_COMMAND_PACKET &packet)
         return;
     }
 
-    if (read_channel(num_bytes) != FUJI_ERROR::NONE)
+    ByteBuffer buf;
+    if (read(buf, num_bytes).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
     }
 
-    SYSTEM_BUS.transaction_send((uint8_t *)receiveBuffer->data(), num_bytes, false);
-    receiveBuffer->erase(0, num_bytes);
-    receiveBuffer->shrink_to_fit();
+    SYSTEM_BUS.transaction_send(buf);
+}
+
+error_is_true NDevice::write(const ByteBuffer &buf)
+{
+    Debug_printf("writing\n%s", util_hexdump(buf.data(), buf.size()).c_str());
+
+    std::string_view view(reinterpret_cast<const char*>(buf.data()), buf.size());
+    *transmitBuffer += view;
+    RETURN_ERROR_IF(write_channel(view.size()) != FUJI_ERROR::NONE);
 }
 
 void NDevice::write(const FUJI_COMMAND_PACKET &packet)
@@ -281,18 +305,14 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
         return;
     }
 
-    std::string buf(num_bytes, 0);
+    ByteBuffer buf(num_bytes);
     if (SYSTEM_BUS.transaction_get(buf).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
     }
 
-    Debug_printf("writing\n%s", util_hexdump(buf.data(), buf.size()).c_str());
-
-    *transmitBuffer += buf;
-
-    if (write_channel(buf.size()) != FUJI_ERROR::NONE)
+    if (write(buf).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
@@ -301,50 +321,66 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::status(const FUJI_COMMAND_PACKET &packet)
+size_t NDevice::available()
 {
-    uint8_t mode = packet.param(1);
-
-    if (protocol == nullptr)
-    {
-        NDeviceStatus nstatus{};
-        status_local(mode, nstatus);
-        SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-        SYSTEM_BUS.transaction_send((uint8_t *)&nstatus, sizeof(nstatus), false);
-        return;
-    }
-
-    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-
-    NetworkStatus ns;
     size_t avail = 0;
 
     switch (parserMode)
     {
     case PARSER::NONE:
-        protocol->status(&ns);
         avail = protocol->available();
+        break;
+    case PARSER::JSON:
+        avail = json_bytes_remaining;
+        break;
+    case PARSER::SGML:
+        avail = sgml_bytes_remaining;
+        break;
+    }
+
+    return avail;
+}
+
+NDeviceStatus NDevice::status(uint8_t mode)
+{
+    NDeviceStatus nstatus {};
+
+    if (protocol == nullptr)
+        return status_local(mode);
+
+    NetworkStatus ns;
+    size_t avail = available();
+
+    switch (parserMode)
+    {
+    case PARSER::NONE:
+        protocol->status(&ns);
         break;
     case PARSER::JSON:
         ns.connected = json_bytes_remaining > 0;
         ns.error = json_bytes_remaining > 0 ? NDEV_STATUS::SUCCESS : NDEV_STATUS::END_OF_FILE;
-        avail = json_bytes_remaining;
         break;
     case PARSER::SGML:
         ns.connected = sgml_bytes_remaining > 0;
         ns.error = sgml_bytes_remaining > 0 ? NDEV_STATUS::SUCCESS : NDEV_STATUS::END_OF_FILE;
-        avail = sgml_bytes_remaining;
         break;
     }
 
     avail = std::min<size_t>(avail, 65535);
 
-    NDeviceStatus nstatus{};
     nstatus.avail = avail;
     nstatus.conn = ns.connected;
     nstatus.err = ns.error;
+    return nstatus;
+}
 
-    SYSTEM_BUS.transaction_send((uint8_t *)&nstatus, sizeof(nstatus), false);
+void NDevice::status(const FUJI_COMMAND_PACKET &packet)
+{
+    uint8_t mode = packet.param(1);
+
+    auto nstatus = status(mode);
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    SYSTEM_BUS.transaction_send(&nstatus, sizeof(nstatus), false);
 }
 
 void NDevice::get_prefix(const FUJI_COMMAND_PACKET &packet)

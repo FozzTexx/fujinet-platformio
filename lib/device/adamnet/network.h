@@ -2,14 +2,12 @@
 #define NETWORK_H
 
 #include "NDevice.h"
-
-using adamNetwork = NDevice;
+#include "bus.h"
 
 #ifdef OBSOLETE
 #include <memory>
 #include <string>
 
-#include "bus.h"
 
 #include "peoples_url_parser.h"
 
@@ -318,6 +316,35 @@ private:
      */
     void parse_and_instantiate_protocol(std::string d, bool is_dir);
 };
+
+#else /********************** NOT OBSOLETE *****************/
+
+class adamNetwork : public NDevice
+{
+protected:
+    union _status
+    {
+        struct _statusbits
+        {
+            bool client_data_available : 1;
+            bool client_connected : 1;
+            bool client_error : 1;
+            bool server_connection_available : 1;
+            bool server_error : 1;
+        } bits;
+        unsigned char byte;
+    } statusByte;
+
+    AdamNetStatus deviceStatus() override;
+    void adamnet_control_send(const FujiAdamPacket &packet) override {
+        NDevice::processCommand(packet);
+    }
+    void adamnet_control_receive() override;
+
+    void write(const FUJI_COMMAND_PACKET &packet) override;
+    void status(const FUJI_COMMAND_PACKET &packet) override;
+};
+
 #endif /* OBSOLETE */
 
 #endif /* NETWORK_H */
