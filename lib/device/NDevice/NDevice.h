@@ -115,12 +115,13 @@ protected:
     virtual void status(const FUJI_COMMAND_PACKET &packet);
     void set_prefix(const FUJI_COMMAND_PACKET &packet);
     void get_prefix(const FUJI_COMMAND_PACKET &packet);
-    void json_query(const FUJI_COMMAND_PACKET &packet);
+    virtual void json_query(const FUJI_COMMAND_PACKET &packet);
 
     error_is_true write(const ByteBuffer &buf);
     error_is_true read(ByteBuffer &buf, size_t len);
     size_t available();
     NDeviceStatus status(uint8_t mode);
+    void json_query(const std::string &query, uint8_t parseFlags);
 
     /**
      * Parse a devicespec into a URL and instantiate the matching protocol.

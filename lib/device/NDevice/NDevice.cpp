@@ -462,6 +462,21 @@ void NDevice::set_prefix(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
+void NDevice::json_query(const std::string &query, uint8_t parseFlags)
+{
+    json->setReadQuery(query, parseFlags);
+    json_bytes_remaining = json->available();
+
+    std::string tmp(json_bytes_remaining, 0);
+    json->readValue(reinterpret_cast<uint8_t *>(tmp.data()), json_bytes_remaining);
+
+    // don't copy past first nul char in tmp
+    tmp.resize(strlen(tmp.c_str()));
+    *receiveBuffer += tmp;
+
+    Debug_printf("Query set to >%s<\r\n", query.c_str());
+}
+
 void NDevice::json_query(const FUJI_COMMAND_PACKET &packet)
 {
     uint8_t query_param = packet.param(1);
@@ -471,17 +486,7 @@ void NDevice::json_query(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     SYSTEM_BUS.transaction_get(in);
 
-    json->setReadQuery(in, query_param);
-    json_bytes_remaining = json->available();
-
-    ByteBuffer tmp(json_bytes_remaining);
-    json->readValue(tmp.data(), json_bytes_remaining);
-
-    // don't copy past first nul char in tmp
-    auto null_pos = std::find(tmp.begin(), tmp.end(), 0);
-    *receiveBuffer += std::string(tmp.begin(), null_pos);
-
-    Debug_printf("Query set to >%s<\r\n", in.c_str());
+    json_query(in, query_param);
     SYSTEM_BUS.transaction_success();
 }
 
