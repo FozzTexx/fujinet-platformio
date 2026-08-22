@@ -1,6 +1,9 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "NDevice.h"
+
+#ifdef OBSOLETE
 #ifdef ESP_PLATFORM
 #include <esp_timer.h>
 #endif
@@ -287,5 +290,25 @@ private:
      */
     error_is_true parse_and_instantiate_protocol(std::string d, bool is_dir);
 };
+
+#else /********************* NOT OBSOLETE *********************/
+
+class iwmNetwork : public NDevice
+{
+protected:
+    void status(const FUJI_COMMAND_PACKET &packet) override;
+    void do_query(const iwm_decoded_cmd_t &cmd) override;
+
+public:
+    iwm_device_info_block_t create_dib_reply_packet() override;
+    iwm_device_status_block_t create_status_reply_packet() override;
+
+    void iwm_ctrl(const iwm_decoded_cmd_t &cmd) override;
+    void iwm_status(const iwm_decoded_cmd_t &cmd) override;
+    void iwm_read(const iwm_decoded_cmd_t &cmd) override;
+    void iwm_write(const iwm_decoded_cmd_t &cmd) override;
+};
+
+#endif /* OBSOLETE */
 
 #endif /* NETWORK_H */

@@ -28,7 +28,9 @@ protected:
     void iwm_writeblock(const iwm_decoded_cmd_t &cmd) override;
     void iwm_format(const iwm_decoded_cmd_t &cmd) override;
 
+#ifdef OBSOLETE
     void shutdown() override; //todo change back
+#endif /* OBSOLETE */
 
     char disk_num;
 
