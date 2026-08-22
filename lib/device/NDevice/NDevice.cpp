@@ -14,6 +14,7 @@
 #include "fnjson.h"
 #include "fnsgml.h"
 #include "IOChannel.h" // For GET_TIMESTAMP()
+#include "utils.h"
 #include "debug.h"
 
 const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table = {
@@ -24,7 +25,7 @@ const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table
     { NETCMD_STATUS,           {&NDevice::status}                 },
 
     { NETCMD_PARSE,            {&NDevice::do_parse}               },
-    { NETCMD_QUERY,            {&NDevice::do_query}               },
+    { NETCMD_QUERY,            {&NDevice::set_query}              },
     { NETCMD_CHANNEL_MODE,     {&NDevice::set_parser}             },
     { NETCMD_TRANSLATION,      {&NDevice::set_translation}        },
     { NETCMD_SET_EOL,          {&NDevice::set_eol}                },
@@ -282,7 +283,9 @@ void NDevice::read(const FUJI_COMMAND_PACKET &packet)
 
 error_is_true NDevice::write(const ByteBuffer &buf)
 {
+#ifdef DEBUG_RAW_WRITE
     Debug_printf("writing\n%s", util_hexdump(buf.data(), buf.size()).c_str());
+#endif // DEBUG_RAW_WRITE
 
     std::string_view view(reinterpret_cast<const char*>(buf.data()), buf.size());
     *transmitBuffer += view;
@@ -341,7 +344,7 @@ size_t NDevice::available()
         break;
     }
 
-    Debug_printf("NDevice::available=%d\n", avail);
+    //Debug_printf("NDevice::available=%d\n", avail);
     return avail;
 }
 
@@ -384,8 +387,10 @@ NDeviceStatus NDevice::status(uint8_t mode)
     nstatus.avail = avail;
     nstatus.conn = ns.connected;
     nstatus.err = ns.error;
+#if 0
     Debug_printf("NDevice::status avail=%d conn=%d err=%d\n",
                  nstatus.avail, nstatus.conn, nstatus.err);
+#endif
     return nstatus;
 }
 
@@ -463,7 +468,7 @@ void NDevice::set_prefix(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::do_query(const std::string &query, uint8_t parseFlags)
+void NDevice::set_query(const std::string &query, uint8_t parseFlags)
 {
     std::string buffer;
 
@@ -492,7 +497,7 @@ void NDevice::do_query(const std::string &query, uint8_t parseFlags)
     Debug_printf("Query set to >%s<\r\n", query.c_str());
 }
 
-void NDevice::do_query(const FUJI_COMMAND_PACKET &packet)
+void NDevice::set_query(const FUJI_COMMAND_PACKET &packet)
 {
     uint8_t query_param = packet.param(1);
 
@@ -501,7 +506,7 @@ void NDevice::do_query(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     SYSTEM_BUS.transaction_get(in);
 
-    do_query(in, query_param);
+    set_query(in, query_param);
     SYSTEM_BUS.transaction_success();
 }
 

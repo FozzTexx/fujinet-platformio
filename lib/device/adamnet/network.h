@@ -33,7 +33,7 @@ protected:
     void status(const FUJI_COMMAND_PACKET &packet) override;
 
     // Adam does not send parser transform flags
-    void json_query(const FUJI_COMMAND_PACKET &packet) override;
+    void set_query(const FUJI_COMMAND_PACKET &packet) override;
 };
 
 #endif /* NETWORK_H */
