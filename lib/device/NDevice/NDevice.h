@@ -190,7 +190,7 @@ private:
 #endif /* UNUSED */
     };
 
-    static const std::unordered_map<uint8_t, CommandEntry> dispatch_table;
+    static const std::unordered_map<fujiCommandID_t, CommandEntry> dispatch_table;
 
     /**
      * Shared plumbing for the six fs ops: WILL_GET-accept, parse the

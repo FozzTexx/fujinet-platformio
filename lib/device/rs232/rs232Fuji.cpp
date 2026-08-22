@@ -23,7 +23,9 @@
 
 rs232Fuji platformFuji;
 fujiDevice *theFuji = &platformFuji;
+#ifdef OBSOLETE
 rs232Network rs232NetDevs[MAX_NETWORK_DEVICES];
+#endif /* OBSOLETE */
 
 rs232Fuji::rs232Fuji() : fujiDevice(MAX_DISK_DEVICES, IMAGE_EXTENSION, LOBBY_URL)
 {}
@@ -51,9 +53,11 @@ void rs232Fuji::setup()
             SYSTEM_BUS.addDevice(&_fnDisks[i].disk_dev,
                                  static_cast<fujiDeviceID_t>(FUJI_DEVICEID::DISK + i));
 
+#ifdef OBSOLETE
         for (int i = 0; i < MAX_NETWORK_DEVICES; i++)
             SYSTEM_BUS.addDevice(&rs232NetDevs[i],
                                  static_cast<fujiDeviceID_t>(FUJI_DEVICEID::NETWORK + i));
+#endif /* OBSOLETE */
     }
 }
 
@@ -63,7 +67,7 @@ void rs232Fuji::rs232_status(FujiStatusReq reqType)
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     Debug_println("Fuji cmd: STATUS");
 
-    if (reqType == STATUS_MOUNT_TIME)
+    if (reqType == STATREQ::MOUNT_TIME)
     {
         // Return drive slot mount status: 0 if unmounted, otherwise time when mounted
         time_t mount_status[MAX_DISK_DEVICES];

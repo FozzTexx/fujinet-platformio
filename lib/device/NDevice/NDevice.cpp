@@ -17,45 +17,45 @@
 #include "utils.h"
 #include "debug.h"
 
-const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table = {
-    { NETCMD_OPEN,             {&NDevice::open}                   },
-    { NETCMD_CLOSE,            {&NDevice::close}                  },
-    { NETCMD_READ,             {&NDevice::read}                   },
-    { NETCMD_WRITE,            {&NDevice::write}                  },
-    { NETCMD_STATUS,           {&NDevice::status}                 },
+const std::unordered_map<fujiCommandID_t, NDevice::CommandEntry> NDevice::dispatch_table = {
+    { CMD::NET_OPEN,             {&NDevice::open}                   },
+    { CMD::NET_CLOSE,            {&NDevice::close}                  },
+    { CMD::NET_READ,             {&NDevice::read}                   },
+    { CMD::NET_WRITE,            {&NDevice::write}                  },
+    { CMD::NET_STATUS,           {&NDevice::status}                 },
 
-    { NETCMD_PARSE,            {&NDevice::do_parse}               },
-    { NETCMD_QUERY,            {&NDevice::set_query}              },
-    { NETCMD_CHANNEL_MODE,     {&NDevice::set_parser}             },
-    { NETCMD_TRANSLATION,      {&NDevice::set_translation}        },
-    { NETCMD_SET_EOL,          {&NDevice::set_eol}                },
+    { CMD::NET_PARSE,            {&NDevice::do_parse}               },
+    { CMD::NET_QUERY,            {&NDevice::set_query}              },
+    { CMD::NET_CHANNEL_MODE,     {&NDevice::set_parser}             },
+    { CMD::NET_TRANSLATION,      {&NDevice::set_translation}        },
+    { CMD::NET_SET_EOL,          {&NDevice::set_eol}                },
 #ifdef UNUSED
-    { NETCMD_SET_INT_RATE,     {&NDevice::set_timer_rate}         },
-    { NETCMD_HSIO_INDEX,       {&NDevice::high_speed_index}       },
-    { NETCMD_GET_DSTATS_VALUE, {&NDevice::get_dstats_value}       },
+    { CMD::NET_SET_INT_RATE,     {&NDevice::set_timer_rate}         },
+    { CMD::NET_HSIO_INDEX,       {&NDevice::high_speed_index}       },
+    { CMD::NET_GET_DSTATS_VALUE, {&NDevice::get_dstats_value}       },
 #endif /* UNUSED */
-    { NETCMD_SEEK,             {&NDevice::seek}                   },
-    { NETCMD_TELL,             {&NDevice::tell}                   },
+    { CMD::NET_SEEK,             {&NDevice::seek}                   },
+    { CMD::NET_TELL,             {&NDevice::tell}                   },
 
-    { NETCMD_GETCWD,           {&NDevice::get_prefix}             },
-    { NETCMD_CHDIR,            {&NDevice::set_prefix}             },
-    { NETCMD_USERNAME,         {&NDevice::set_login}              },
-    { NETCMD_PASSWORD,         {&NDevice::set_password}           },
+    { CMD::NET_GETCWD,           {&NDevice::get_prefix}             },
+    { CMD::NET_CHDIR,            {&NDevice::set_prefix}             },
+    { CMD::NET_USERNAME,         {&NDevice::set_login}              },
+    { CMD::NET_PASSWORD,         {&NDevice::set_password}           },
 
-    { NETCMD_RENAME,           {&NDevice::fs_rename}              },
-    { NETCMD_DELETE,           {&NDevice::fs_delete}              },
-    { NETCMD_LOCK,             {&NDevice::fs_lock}                },
-    { NETCMD_UNLOCK,           {&NDevice::fs_unlock}              },
-    { NETCMD_MKDIR,            {&NDevice::fs_mkdir}               },
-    { NETCMD_RMDIR,            {&NDevice::fs_rmdir}               },
+    { CMD::NET_RENAME,           {&NDevice::fs_rename}              },
+    { CMD::NET_DELETE,           {&NDevice::fs_delete}              },
+    { CMD::NET_LOCK,             {&NDevice::fs_lock}                },
+    { CMD::NET_UNLOCK,           {&NDevice::fs_unlock}              },
+    { CMD::NET_MKDIR,            {&NDevice::fs_mkdir}               },
+    { CMD::NET_RMDIR,            {&NDevice::fs_rmdir}               },
 
-    { NETCMD_CONTROL,          {&NDevice::tcp_control}            },
-    { NETCMD_CLOSE_CLIENT,     {&NDevice::tcp_close_client}       },
+    { CMD::NET_CONTROL,          {&NDevice::tcp_control}            },
+    { CMD::NET_CLOSE_CLIENT,     {&NDevice::tcp_close_client}       },
 
-    { NETCMD_SET_CHANNEL_MODE, {&NDevice::http_set_channel_mode}  },
+    { CMD::NET_SET_CHANNEL_MODE, {&NDevice::http_set_channel_mode}  },
 
-    { NETCMD_GET_REMOTE,       {&NDevice::udp_get_remote}         },
-    { NETCMD_SET_DESTINATION,  {&NDevice::udp_set_destination}    },
+    { CMD::NET_GET_REMOTE,       {&NDevice::udp_get_remote}         },
+    { CMD::NET_SET_DESTINATION,  {&NDevice::udp_set_destination}    },
 };
 
 NDevice::NDevice()

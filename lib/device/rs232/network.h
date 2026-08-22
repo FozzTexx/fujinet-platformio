@@ -1,6 +1,9 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "NDevice.h"
+
+#ifdef OBSOLETE
 #include <memory>
 #include <string>
 #include <vector>
@@ -392,5 +395,25 @@ private:
     void parse_and_instantiate_protocol(fileAccessMode_t access);
 
 };
+
+#else /***************** NOT OBSOLETE *****************/
+
+class rs232Network : public NDevice
+{
+protected:
+    void rs232_process(const FujiBusPacket &packet) { NDevice::processCommand(packet); }
+    void status(const FUJI_COMMAND_PACKET &packet) override;
+    void set_query(const FUJI_COMMAND_PACKET &packet) override;
+#ifdef UNUSED
+    void status_local(uint8_t reqType) override;
+#endif /* UNUSED */
+
+public:
+#ifdef OBSOLETE
+    void rs232_status(FujiStatusReq reqType) override;
+#endif /* OBSOLETE */
+};
+
+#endif /* OBSOLETE */
 
 #endif /* NETWORK_H */

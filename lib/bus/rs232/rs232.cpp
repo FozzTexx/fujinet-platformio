@@ -174,10 +174,35 @@ void systemBus::service()
     }
 
     // Handle interrupts from network protocols
-    for (int i = 0; i < 8; i++)
+    if (!_netDev.empty())
     {
-        if (_netDev[i] != nullptr)
-            _netDev[i]->rs232_poll_interrupt();
+        bool hasUpdate = false;
+        for (auto it=_netDev.begin(); it != _netDev.end(); ++it)
+        {
+            if (it->second->poll_interrupt())
+            {
+                hasUpdate = true;
+                break;
+            }
+        }
+        if (!isBoIP())
+        {
+#ifdef ESP_PLATFORM
+            _serial.setRI(!hasUpdate);
+#else /* ! ESP_PLATFORM */
+            switch (Config.get_serial_proceed())
+            {
+            case fnConfig::SERIAL_PROCEED_DTR:
+                _serial.setDSR(!hasUpdate); // drives RS-232 DTR
+                break;
+            case fnConfig::SERIAL_PROCEED_RTS:
+                _serial.setCTS(!hasUpdate); // drives RS-232 RTS
+                break;
+            default:
+                break; // SERIAL_PROCEED_NONE / invalid
+            }
+#endif /* ESP_PLATFORM */
+        }
     }
 }
 
