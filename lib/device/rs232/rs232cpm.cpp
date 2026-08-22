@@ -23,11 +23,13 @@
 #endif
 
 
+#ifdef UNUSED
 void rs232CPM::rs232_status(FujiStatusReq reqType)
 {
     // Nothing to do here
     return;
 }
+#endif /* UNUSED */
 
 void rs232CPM::rs232_handle_cpm()
 {

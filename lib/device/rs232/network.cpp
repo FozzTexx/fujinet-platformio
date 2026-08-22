@@ -1,10 +1,12 @@
 #ifdef BUILD_RS232
 
+#include "network.h"
+
+#ifdef OBSOLETE
 /**
  * N: Firmware
  */
 
-#include "network.h"
 #include "../network.h"
 #include "ProtocolParser.h"
 #include "fnSystem.h"
@@ -1245,5 +1247,67 @@ void rs232Network::process_fs(const FujiBusPacket &packet)
     else
         SYSTEM_BUS.transaction_success();
 }
+
+#else /***************** NOT OBSOLETE *****************/
+
+void rs232Network::status(const FUJI_COMMAND_PACKET &packet)
+{
+    FujiStatusReq reqType = STATREQ::CONNERR;
+    if (packet.paramCount() >= 2)
+        reqType = (FujiStatusReq) packet.param(1);
+
+    auto nstatus = NDevice::status(static_cast<uint8_t>(reqType));
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    SYSTEM_BUS.transaction_send(&nstatus, sizeof(nstatus));
+}
+
+void rs232Network::set_query(const FUJI_COMMAND_PACKET &packet)
+{
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    NDevice::set_query(packet.dataAsString().value_or(""), 0);
+    SYSTEM_BUS.transaction_success();
+}
+
+#ifdef UNUSED
+void rs232Network::status_local(FujiStatusReq reqType)
+{
+    uint8_t ipAddress[4];
+    uint8_t ipNetmask[4];
+    uint8_t ipGateway[4];
+    uint8_t ipDNS[4];
+    uint8_t default_status[4] = {0, 0, 0, 0};
+
+    Debug_printf("rs232Network::rs232_status_local(%u)\n", reqType);
+
+    fnSystem.Net.get_ip4_info((uint8_t *)ipAddress, (uint8_t *)ipNetmask, (uint8_t *)ipGateway);
+    fnSystem.Net.get_ip4_dns_info((uint8_t *)ipDNS);
+
+    switch (reqType)
+    {
+    case 1: // IP Address
+        Debug_printf("IP Address: %u.%u.%u.%u\n", ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
+        SYSTEM_BUS.transaction_send(ipAddress, 4, false);
+        break;
+    case 2: // Netmask
+        Debug_printf("Netmask: %u.%u.%u.%u\n", ipNetmask[0], ipNetmask[1], ipNetmask[2], ipNetmask[3]);
+        SYSTEM_BUS.transaction_send(ipNetmask, 4, false);
+        break;
+    case 3: // Gateway
+        Debug_printf("Gateway: %u.%u.%u.%u\n", ipGateway[0], ipGateway[1], ipGateway[2], ipGateway[3]);
+        SYSTEM_BUS.transaction_send(ipGateway, 4, false);
+        break;
+    case 4: // DNS
+        Debug_printf("DNS: %u.%u.%u.%u\n", ipDNS[0], ipDNS[1], ipDNS[2], ipDNS[3]);
+        SYSTEM_BUS.transaction_send(ipDNS, 4, false);
+        break;
+    default:
+        default_status[2] = status.connected;
+        default_status[3] = (uint8_t) status.error;
+        SYSTEM_BUS.transaction_send(default_status, 4, false);
+    }
+}
+#endif /* UNUSED */
+
+#endif /* OBSOLETE */
 
 #endif /* BUILD_RS232 */

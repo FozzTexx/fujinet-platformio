@@ -147,14 +147,16 @@ void systemBus::_rs232_process_cmd()
     {
         // find device, ack and pass control
         // or go back to WAIT
-        for (auto devicep : _daisyChain)
+        auto it = _daisyChain.find(tempFrame->device());
+        if (it == _daisyChain.end()
+            && tempFrame->device() >= FUJI_DEVICEID_NETWORK
+            && tempFrame->device() <= FUJI_DEVICEID_NETWORK_LAST)
         {
-            if (tempFrame->device() == devicep->_devnum)
-            {
-                _activeDev = devicep;
-                break;
-            }
+            _activeDev = new rs232Network();
+            addDevice(_activeDev, tempFrame->device());
         }
+        else if (it != _daisyChain.end() && it->second->device_active == true)
+            _activeDev = it->second;
     }
 
     if (_activeDev != nullptr)
@@ -203,10 +205,35 @@ void systemBus::service()
     }
 
     // Handle interrupts from network protocols
-    for (int i = 0; i < 8; i++)
+    if (!_netDev.empty())
     {
-        if (_netDev[i] != nullptr)
-            _netDev[i]->rs232_poll_interrupt();
+        bool hasUpdate = false;
+        for (auto it=_netDev.begin(); it != _netDev.end(); ++it)
+        {
+            if (it->second->poll_interrupt())
+            {
+                hasUpdate = true;
+                break;
+            }
+        }
+        if (!isBoIP())
+        {
+#ifdef ESP_PLATFORM
+            _serial.setRI(!hasUpdate);
+#else /* ! ESP_PLATFORM */
+            switch (Config.get_serial_proceed())
+            {
+            case fnConfig::SERIAL_PROCEED_DTR:
+                _serial.setDSR(!hasUpdate); // drives RS-232 DTR
+                break;
+            case fnConfig::SERIAL_PROCEED_RTS:
+                _serial.setCTS(!hasUpdate); // drives RS-232 RTS
+                break;
+            default:
+                break; // SERIAL_PROCEED_NONE / invalid
+            }
+#endif /* ESP_PLATFORM */
+        }
     }
 }
 
@@ -287,15 +314,14 @@ void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t device_id)
     }
 
     pDevice->_devnum = device_id;
-
-    _daisyChain.push_front(pDevice);
+    _daisyChain[device_id] = pDevice;
 }
 
 // Removes device from the RS232 bus.
 // Note that the destructor is called on the device!
 void systemBus::remDevice(virtualDevice *p)
 {
-    _daisyChain.remove(p);
+    _daisyChain.erase(p->_devnum);
 }
 
 // Should avoid using this as it requires counting through the list
@@ -311,22 +337,28 @@ int systemBus::numDevices()
 
 void systemBus::changeDeviceId(virtualDevice *p, int device_id)
 {
-    for (auto devicep : _daisyChain)
+    for (auto it = _daisyChain.begin(); it != _daisyChain.end(); ++it)
     {
-        if (devicep == p)
-            devicep->_devnum = (fujiDeviceID_t) device_id;
+        if (it->second == p)
+        {
+            auto nodeHandler = _daisyChain.extract(it);
+            nodeHandler.key() = device_id;
+            p->_devnum = (fujiDeviceID_t)device_id;
+            _daisyChain.insert(std::move(nodeHandler));
+            break;
+        }
     }
 }
 
+#ifdef UNUSED
 virtualDevice *systemBus::deviceById(fujiDeviceID_t device_id)
 {
-    for (auto devicep : _daisyChain)
-    {
-        if (devicep->_devnum == device_id)
-            return devicep;
-    }
+    auto it = _daisyChain.find(device_id);
+    if (it != _daisyChain.end())
+        return it->second;
     return nullptr;
 }
+#endif /* UNUSED */
 
 // Give devices an opportunity to clean up before a reboot
 void systemBus::shutdown()
@@ -335,8 +367,8 @@ void systemBus::shutdown()
 
     for (auto devicep : _daisyChain)
     {
-        Debug_printf("Shutting down device %02x\n",devicep->id());
-        devicep->shutdown();
+        Debug_printf("Shutting down device %02x\n",devicep.second->id());
+        devicep.second->shutdown();
     }
     Debug_printf("All devices shut down.\n");
 }
