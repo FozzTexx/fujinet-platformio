@@ -23,7 +23,9 @@ protected:
     void iwm_open(const iwm_decoded_cmd_t &cmd) override;
     void iwm_close(const iwm_decoded_cmd_t &cmd) override;
     void iwm_write(const iwm_decoded_cmd_t &cmd) override;
+#ifdef OBSOLETE
     void shutdown() override {}
+#endif /* OBSOLETE */
 
     printer_emu *_pptr = nullptr;
     FileSystem *_storage = nullptr;

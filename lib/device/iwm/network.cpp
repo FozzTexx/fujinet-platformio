@@ -1,10 +1,12 @@
 #ifdef BUILD_APPLE
 
+#include "network.h"
+
+#ifdef OBSOLETE
 /**
  * N: Firmware
  */
 
-#include "network.h"
 #include "../network.h"
 #include "NetworkProtocolFactory.h"
 #include "utils.h"
@@ -933,5 +935,101 @@ void iwmNetwork::process_udp(const iwm_decoded_cmd_t &cmd)
         break;
     }
 }
+
+#else /********************* NOT OBSOLETE *********************/
+
+iwm_device_status_block_t iwmNetwork::create_status_reply_packet()
+{
+  iwm_device_status_block_t status;
+
+  status.code = STATCODE_WRITE_ALLOWED | STATCODE_READ_ALLOWED | STATCODE_DEVICE_ONLINE;
+  status.block_size = 0;
+  return status;
+}
+
+iwm_device_info_block_t iwmNetwork::create_dib_reply_packet()
+{
+  iwm_device_info_block_t dib;
+
+  dib.dev_status = create_status_reply_packet();
+  strcpy(dib.name, "NETWORK");
+  dib.name_len = strlen(dib.name);
+  dib.type = SP_TYPE_BYTE_FUJINET_NETWORK;
+  dib.subtype = SP_SUBTYPE_BYTE_FUJINET_NETWORK;
+  dib.version = 0x0100;
+
+  return dib;
+}
+
+void iwmNetwork::iwm_status(const iwm_decoded_cmd_t &cmd)
+{
+#ifdef DEBUG
+    Debug_printf("\r\n[NETWORK] Device %02x Status Code %02x('%c') net_unit %02x\r\n",
+                 id(), cmd.command(), isprint(cmd.command())
+                 ? (char) cmd.command() : '.', cmd.unit());
+#endif
+
+    // Let the base class handle standard commands
+    if (NDevice::processCommand(cmd))
+        return;
+}
+
+void iwmNetwork::iwm_ctrl(const iwm_decoded_cmd_t &cmd)
+{
+    Debug_printf("\r\n[NETWORK] Device %02x Control Code %02x('%c') net_unit %02x",
+                 id(), cmd.command(), isprint(cmd.command())
+                 ? (char)cmd.command() : '.', cmd.unit());
+
+    // Let the base class handle standard commands
+    if (NDevice::processCommand(cmd))
+        return;
+}
+
+void iwmNetwork::iwm_write(const iwm_decoded_cmd_t &cmd)
+{
+    Debug_printf("\r\n[NETWORK] Device %02x Write %04x bytes, net_unit %02x\n",
+                 id(), cmd.frame.char_rw.length, cmd.unit());
+
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    if (cmd.frame.char_rw.length && NDevice::write(cmd.data().value()).is_error())
+    {
+        SYSTEM_BUS.transaction_error();
+        return;
+    }
+
+    SYSTEM_BUS.transaction_success();
+}
+
+void iwmNetwork::iwm_read(const iwm_decoded_cmd_t &cmd)
+{
+    Debug_printf("\r\n[NETWORK] Device %02x Read %04x bytes, net_unit %02x\n",
+                 id(), cmd.frame.char_rw.length, cmd.unit());
+
+    ByteBuffer buffer;
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    if (NDevice::read(buffer, cmd.frame.char_rw.length).is_error())
+    {
+        SYSTEM_BUS.transaction_error();
+        return;
+    }
+
+    SYSTEM_BUS.transaction_send(buffer);
+}
+
+void iwmNetwork::status(const iwm_decoded_cmd_t &cmd)
+{
+    NDeviceStatus status = NDevice::status(0);
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    SYSTEM_BUS.transaction_send(&status, sizeof(status));
+}
+
+void iwmNetwork::do_query(const iwm_decoded_cmd_t &cmd)
+{
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    NDevice::do_query(cmd.dataAsString().value_or(""), 0);
+    SYSTEM_BUS.transaction_success();
+}
+
+#endif /* OBSOLETE */
 
 #endif /* BUILD_APPLE */

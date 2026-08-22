@@ -230,9 +230,11 @@ void iwmDisk::iwm_format(const iwm_decoded_cmd_t &cmd)
   SYSTEM_BUS.transaction_success();
 }
 
+#ifdef OBSOLETE
 void iwmDisk::shutdown()
 {
 }
+#endif /* OBSOLETE */
 
 iwmDisk::iwmDisk()
 {

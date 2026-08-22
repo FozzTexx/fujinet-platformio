@@ -13,6 +13,7 @@
 #include "NetworkProtocolFactory.h"
 #include "fnjson.h"
 #include "fnsgml.h"
+#include "IOChannel.h" // For GET_TIMESTAMP()
 #include "debug.h"
 
 const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table = {
@@ -22,8 +23,8 @@ const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table
     { NETCMD_WRITE,            {&NDevice::write}                  },
     { NETCMD_STATUS,           {&NDevice::status}                 },
 
-    { NETCMD_PARSE,            {&NDevice::json_parse}             },
-    { NETCMD_QUERY,            {&NDevice::json_query}             },
+    { NETCMD_PARSE,            {&NDevice::do_parse}               },
+    { NETCMD_QUERY,            {&NDevice::do_query}               },
     { NETCMD_CHANNEL_MODE,     {&NDevice::set_parser}             },
     { NETCMD_TRANSLATION,      {&NDevice::set_translation}        },
     { NETCMD_SET_EOL,          {&NDevice::set_eol}                },
@@ -462,22 +463,36 @@ void NDevice::set_prefix(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::json_query(const std::string &query, uint8_t parseFlags)
+void NDevice::do_query(const std::string &query, uint8_t parseFlags)
 {
-    json->setReadQuery(query, parseFlags);
-    json_bytes_remaining = json->available();
+    std::string buffer;
 
-    std::string tmp(json_bytes_remaining, 0);
-    json->readValue(reinterpret_cast<uint8_t *>(tmp.data()), json_bytes_remaining);
+    switch (parserMode)
+    {
+    case PARSER::JSON:
+        json->setReadQuery(query, parseFlags);
+        json_bytes_remaining = json->available();
+        buffer.resize(json_bytes_remaining);
+        json->readValue(reinterpret_cast<uint8_t *>(buffer.data()), json_bytes_remaining);
+        break;
+    case PARSER::SGML:
+        sgml->setReadQuery(query, parseFlags);
+        sgml_bytes_remaining = sgml->available();
+        buffer.resize(sgml_bytes_remaining);
+        sgml->readValue(reinterpret_cast<uint8_t *>(buffer.data()), sgml_bytes_remaining);
+        break;
+
+    default:
+        return;
+    }
 
     // don't copy past first nul char in tmp
-    tmp.resize(strlen(tmp.c_str()));
-    *receiveBuffer += tmp;
-
+    buffer.resize(strlen(buffer.c_str()));
+    *receiveBuffer += buffer;
     Debug_printf("Query set to >%s<\r\n", query.c_str());
 }
 
-void NDevice::json_query(const FUJI_COMMAND_PACKET &packet)
+void NDevice::do_query(const FUJI_COMMAND_PACKET &packet)
 {
     uint8_t query_param = packet.param(1);
 
@@ -486,7 +501,7 @@ void NDevice::json_query(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     SYSTEM_BUS.transaction_get(in);
 
-    json_query(in, query_param);
+    do_query(in, query_param);
     SYSTEM_BUS.transaction_success();
 }
 
@@ -564,7 +579,7 @@ void NDevice::set_parser(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::json_parse(const FUJI_COMMAND_PACKET &packet)
+void NDevice::do_parse(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     json->parse();
