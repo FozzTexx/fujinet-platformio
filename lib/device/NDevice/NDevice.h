@@ -37,6 +37,15 @@ public:
 
 protected:
     /**
+     * Timer Rate for interrupt timer (ms)
+     */
+#ifdef ESP_PLATFORM
+    int timerRate = 100;
+#else
+    int timerRate = 20;
+#endif
+
+    /**
      * The channel mode for the currently open N: device. By default it is
      * PROTOCOL, which passes read/write/status through to the protocol
      * adapter. JSON routes them to the fnJSON parser instead.
@@ -52,11 +61,13 @@ protected:
 
     uint64_t readAck = 0;
 
+#ifdef HAVE_LAST_ERROR
     /**
      * The last operation's error code, remembered so a later bare STATUS
      * command (no open protocol) can report it.
      */
     nDevStatus_t lastError = NDEV_STATUS::SUCCESS;
+#endif /* HAVE_LAST_ERROR */
 
     /** Currently set prefix (CWD) for this N: device. */
     std::string prefix;
@@ -102,14 +113,14 @@ protected:
     virtual std::string json_line_ending() const { return std::string(1, '\x0a'); }
     virtual std::string sgml_line_ending() const { return std::string(1, '\x0a'); }
 
-#ifdef UNUSED
+#ifdef HAVE_LAST_ERROR
     /**
      * Populate a STATUS reply when no protocol is bound. Default just
      * reports lastError. SIO/RS232/DriveWire override to also serve
      * IP/netmask/gateway/DNS queries via the mode byte.
      */
     virtual NDeviceStatus status_local(uint8_t mode);
-#endif /* UNUSED */
+#endif /* HAVE_LAST_ERROR */
 
     void open(const FUJI_COMMAND_PACKET &packet);
     void close(const FUJI_COMMAND_PACKET &packet);
@@ -166,15 +177,12 @@ protected:
     void udp_get_remote(const FUJI_COMMAND_PACKET &packet);
     void udp_set_destination(const FUJI_COMMAND_PACKET &packet);
 
-    // ---- optional features: default to "unsupported" ----------------------
-
-    /** NETCMD_TRANSLATION. Only rs232 and sio support this; default reports unsupported. */
-    virtual void set_translation(const FUJI_COMMAND_PACKET &packet) { (void)packet; SYSTEM_BUS.transaction_error(); }
+    void set_translation(const FUJI_COMMAND_PACKET &packet) {
+        (void)packet; SYSTEM_BUS.transaction_error();
+    }
+    void set_timer_rate(const FUJI_COMMAND_PACKET &packet);
 
 #ifdef UNUSED
-    /** NETCMD_SET_INT_RATE. Only sio's interrupt timer is real; rs232's copy of this is vestigial. Default reports unsupported. */
-    virtual void set_timer_rate(const FUJI_COMMAND_PACKET &packet) { (void)packet; SYSTEM_BUS.transaction_error(); }
-
     /** NETCMD_HSIO_INDEX. SIO-only concept. Default reports unsupported. */
     virtual void high_speed_index(const FUJI_COMMAND_PACKET &packet) { (void)packet; SYSTEM_BUS.transaction_error(); }
 
@@ -203,6 +211,8 @@ private:
      * to this with a different member-function pointer for `op`.
      */
     void fs_op(const FUJI_COMMAND_PACKET &packet, fujiError_t (NetworkProtocolFS::*op)(PeoplesUrlParser *));
+
+    NDeviceStatus current_status(uint8_t mode);
 };
 
 #endif /* NDEVICE_H */

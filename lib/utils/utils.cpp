@@ -880,6 +880,26 @@ void clean_transform_petscii_to_ascii(std::string& data) {
     data = mstr::toUTF8(data);
 }
 
+bool is_N_prefix(const std::string &unit)
+{
+    // Must start with 'N' and end with ':'
+    if (unit.size() < 2 || unit.front() != 'N' || unit.back() != ':')
+        return false;
+
+    // If it's exactly "N:", it's a valid match
+    if (unit.size() == 2)
+        return true;
+
+    // For "N[0-9]+:", ensure all middle characters are digits
+    for (size_t idx = 1; idx < unit.size() - 1; idx++)
+    {
+        if (!std::isdigit(static_cast<unsigned char>(unit[idx])))
+            return false;
+    }
+
+    return true;
+}
+
 // Non-mutating
 std::string util_devicespec_fix_for_parsing(std::string deviceSpec, std::string prefix, bool is_directory_read, bool process_fs_dot)
 {
@@ -890,6 +910,11 @@ std::string util_devicespec_fix_for_parsing(std::string deviceSpec, std::string 
 
     string unit = deviceSpec.substr(0, deviceSpec.find_first_of(":") + 1);
     string path = deviceSpec.substr(unit.length());
+    if (!is_N_prefix(unit))
+    {
+        unit = "N:";
+        path = deviceSpec;
+    }
 
     // if prefix is empty, the concatenation is still valid
     deviceSpec = unit + prefix + path;
