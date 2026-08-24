@@ -2,7 +2,7 @@
 
 #include "sio.h"
 #include "sio/sioFuji.h"
-#include "sio/network.h"
+#include "sio/sioNetwork.h"
 #include "modem.h"
 #include "siocpm.h"
 #include "fnSystem.h"

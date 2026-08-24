@@ -57,12 +57,12 @@ FN_HISPEED_INDEX=40 //  18,806 (18,806) baud
 #define COMMAND_FRAME_SPEED_CHANGE_THRESHOLD 2
 #define SERIAL_TIMEOUT 300
 
-enum AtariSIODirection {
-    SIO_DIRECTION_NONE    = 0x00,
-    SIO_DIRECTION_READ    = 0x40,
-    SIO_DIRECTION_WRITE   = 0x80,
-    SIO_DIRECTION_INVALID = 0xFF,
-};
+typedef enum class SIO_DIRECTION {
+    NONE    = 0x00,
+    READ    = 0x40,
+    WRITE   = 0x80,
+    INVALID = 0xFF,
+} AtariSIODirection;
 
 typedef enum class SIO_SPEED {
     STANDARD,

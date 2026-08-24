@@ -1,7 +1,7 @@
 #ifdef BUILD_ATARI
 
 #include "sioFuji.h"
-#include "network.h"
+#include "sioNetwork.h"
 #include "siocpm.h"
 #include "fsFlash.h"
 #include "compat_string.h"

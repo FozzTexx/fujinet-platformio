@@ -1,5 +1,8 @@
 #ifdef BUILD_ATARI
 
+#include "sioNetwork.h"
+#include "fnSystem.h"
+
 #ifdef OBSOLETE
 /**
  * N: Firmware
@@ -1520,6 +1523,157 @@ void sioNetwork::process_udp(const FujiSIOPacket &packet)
         return;
     }
 }
+
+#else /****************** NOT OBSOLETE ***************/
+
+void sioNetwork::sio_process(const FujiSIOPacket &packet)
+{
+    // Let the base class handle standard commands
+    if (NDevice::processCommand(packet))
+        return;
+
+    switch (packet.command())
+    {
+    case NETCMD_GET_DSTATS_VALUE:
+        sio_get_dstats_value(packet);
+        break;
+    case NETCMD_SET_INT_RATE:
+        sio_set_timer_rate(packet);
+        break;
+    case NETCMD_HSIO_INDEX:
+        sio_high_speed();
+        break;
+    defaut:
+        break;
+    }
+}
+
+/**
+ * Get DSTATS value for a given command.
+ *
+ * This command allows CIO programs to query the data direction
+ * (DSTATS) for any network command.  The command code to query is
+ * passed in DAUX1 (aux1).
+ *
+ * Returns a single byte:
+ * - SIO_DIRECTION::NONE    0x00 (no payload)
+ * - SIO_DIRECTION::READ    0x40 (FujiNet→Atari)
+ * - SIO_DIRECTION::WRITE   0x80 (Atari→FujiNet)
+ * - SIO_DIRECTION::INVALID 0xFF (invalid command)
+ */
+void sioNetwork::sio_get_dstats_value(const FujiSIOPacket &packet)
+{
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    SYSTEM_BUS.transaction_send((uint8_t) get_dstats_for_command(packet.command()));
+}
+
+/**
+ * Get the DSTATS value for a given network command.
+ * DSTATS indicates the direction of data for a command:
+ * - SIO_DIRECTION::NONE    0x00: No payload
+ * - SIO_DIRECTION::READ    0x40: Payload from FujiNet to Atari
+ * - SIO_DIRECTION::WRITE   0x80: Payload from Atari to FujiNet
+ * - SIO_DIRECTION::INVALID 0xFF: Invalid/unknown command
+ *
+ * @param command The network command code (typically from aux1)
+ * @return The DSTATS byte value for that command
+ */
+AtariSIODirection sioNetwork::get_dstats_for_command(fujiCommandID_t command)
+{
+    switch (command)
+    {
+    // No payload commands (0x00)
+    case NETCMD_CLOSE:
+    case NETCMD_PARSE:
+    case NETCMD_CONTROL:
+    case NETCMD_CLOSE_CLIENT:
+    case NETCMD_CHANNEL_MODE:
+    case NETCMD_TRANSLATION:
+    case NETCMD_SET_INT_RATE:
+    case NETCMD_SET_PARAMETERS:
+        return SIO_DIRECTION::NONE;
+
+    // Payload from FujiNet to Atari (0x40)
+    case NETCMD_HSIO_INDEX:
+    case NETCMD_READ:
+    case NETCMD_STATUS:
+    case NETCMD_GETCWD:
+    case NETCMD_TELL:
+        return SIO_DIRECTION::READ;
+
+    // Payload from Atari to FujiNet (0x80)
+    case NETCMD_OPEN:
+    case NETCMD_WRITE:
+    case NETCMD_CHDIR:
+    case NETCMD_QUERY:
+    case NETCMD_USERNAME:
+    case NETCMD_PASSWORD:
+    case NETCMD_RENAME:
+    case NETCMD_DELETE:
+    case NETCMD_LOCK:
+    case NETCMD_UNLOCK:
+    case NETCMD_MKDIR:
+    case NETCMD_RMDIR:
+    case NETCMD_SET_DESTINATION:
+    case NETCMD_SEEK:
+        return SIO_DIRECTION::WRITE;
+
+    // Invalid/unknown command
+    default:
+        return SIO_DIRECTION::INVALID;
+    }
+}
+
+void sioNetwork::sio_set_timer_rate(const FujiSIOPacket &packet)
+{
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    timerRate = packet.param8(0);
+
+    // Stop extant timer
+    timer_stop();
+
+    // Restart timer if we're running a protocol.
+    if (protocol != nullptr)
+        timer_start();
+
+    SYSTEM_BUS.transaction_success();
+}
+
+/**
+ * Start the Interrupt rate limiting timer
+ */
+void sioNetwork::timer_start()
+{
+#ifdef ESP_PLATFORM
+    esp_timer_create_args_t tcfg;
+    tcfg.arg = this;
+    tcfg.callback = onTimer;
+    tcfg.dispatch_method = esp_timer_dispatch_t::ESP_TIMER_TASK;
+    tcfg.name = nullptr;
+    esp_timer_create(&tcfg, &rateTimerHandle);
+    esp_timer_start_periodic(rateTimerHandle, timerRate * 1000);
+#else
+    lastInterruptMs = fnSystem.millis() - timerRate;
+#endif
+}
+
+/**
+ * Stop the Interrupt rate limiting timer
+ */
+void sioNetwork::timer_stop()
+{
+#ifdef ESP_PLATFORM
+    // Delete existing timer
+    if (rateTimerHandle != nullptr)
+    {
+        Debug_println("Deleting existing rateTimer\n");
+        esp_timer_stop(rateTimerHandle);
+        esp_timer_delete(rateTimerHandle);
+        rateTimerHandle = nullptr;
+    }
+#endif
+}
+
 #endif /* OBSOLETE */
 
 #endif /* BUILD_ATARI */
