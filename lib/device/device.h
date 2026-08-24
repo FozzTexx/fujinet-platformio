@@ -8,7 +8,7 @@
 # include "sio/pclink.h"
 # include "sio/netstream.h"
 # include "sio/modem.h"
-# include "sio/network.h"
+# include "sio/sioNetwork.h"
 # include "sio/printer.h"
 # include "sio/printerlist.h"
 # include "sio/siocpm.h"
