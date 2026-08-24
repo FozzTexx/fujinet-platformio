@@ -1530,9 +1530,6 @@ void sioNetwork::sio_process(const FujiSIOPacket &packet)
     case NETCMD_GET_DSTATS_VALUE:
         sio_get_dstats_value(packet);
         break;
-    case NETCMD_SET_INT_RATE:
-        sio_set_timer_rate(packet);
-        break;
     case NETCMD_HSIO_INDEX:
         sio_high_speed();
         break;
@@ -1615,56 +1612,6 @@ AtariSIODirection sioNetwork::get_dstats_for_command(fujiCommandID_t command)
     default:
         return SIO_DIRECTION::INVALID;
     }
-}
-
-void sioNetwork::sio_set_timer_rate(const FujiSIOPacket &packet)
-{
-    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    timerRate = packet.param8(0);
-
-    // Stop extant timer
-    timer_stop();
-
-    // Restart timer if we're running a protocol.
-    if (protocol != nullptr)
-        timer_start();
-
-    SYSTEM_BUS.transaction_success();
-}
-
-/**
- * Start the Interrupt rate limiting timer
- */
-void sioNetwork::timer_start()
-{
-#ifdef ESP_PLATFORM
-    esp_timer_create_args_t tcfg;
-    tcfg.arg = this;
-    tcfg.callback = onTimer;
-    tcfg.dispatch_method = esp_timer_dispatch_t::ESP_TIMER_TASK;
-    tcfg.name = nullptr;
-    esp_timer_create(&tcfg, &rateTimerHandle);
-    esp_timer_start_periodic(rateTimerHandle, timerRate * 1000);
-#else
-    lastInterruptMs = fnSystem.millis() - timerRate;
-#endif
-}
-
-/**
- * Stop the Interrupt rate limiting timer
- */
-void sioNetwork::timer_stop()
-{
-#ifdef ESP_PLATFORM
-    // Delete existing timer
-    if (rateTimerHandle != nullptr)
-    {
-        Debug_println("Deleting existing rateTimer\n");
-        esp_timer_stop(rateTimerHandle);
-        esp_timer_delete(rateTimerHandle);
-        rateTimerHandle = nullptr;
-    }
-#endif
 }
 
 #endif /* OBSOLETE */

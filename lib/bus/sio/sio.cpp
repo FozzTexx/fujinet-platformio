@@ -478,7 +478,7 @@ void systemBus::service()
 
     // Handle interrupts from network protocols
     bool hasUpdate = false;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 1; i++)
     {
         if (_netDev[i] != nullptr && _netDev[i]->poll_interrupt())
         {
@@ -486,7 +486,7 @@ void systemBus::service()
             break;
         }
     }
-    set_proceed(hasUpdate);
+    set_proceed(!hasUpdate);
 }
 
 #ifdef ESP_PLATFORM

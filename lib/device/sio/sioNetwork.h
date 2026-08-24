@@ -11,24 +11,6 @@ public:
 
 private:
     /**
-     * Timer Rate for interrupt timer (ms)
-     */
-#ifdef ESP_PLATFORM
-    int timerRate = 100;
-#else
-    int timerRate = 20;
-#endif
-
-    /**
-     * ESP timer handle for the Interrupt rate limiting timer
-     */
-#ifdef ESP_PLATFORM
-    esp_timer_handle_t rateTimerHandle = nullptr;
-#else
-    uint64_t lastInterruptMs;
-#endif
-
-    /**
      * @brief Get DSTATS value for a given network command
      * Allows programs to query the data direction for any command.
      */
@@ -40,21 +22,6 @@ private:
      * @return The DSTATS byte value (0x00, 0x40, 0x80, or 0xFF for invalid)
      */
     AtariSIODirection get_dstats_for_command(fujiCommandID_t command);
-
-    /**
-     * @brief Set timer rate for PROCEED timer in ms
-     */
-    void sio_set_timer_rate(const FujiSIOPacket &packet);
-
-    /**
-     * Start the Interrupt rate limiting timer
-     */
-    void timer_start();
-
-    /**
-     * Stop the Interrupt rate limiting timer
-     */
-    void timer_stop();
 };
 
 #ifdef OBSOLETE

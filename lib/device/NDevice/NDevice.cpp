@@ -29,8 +29,8 @@ const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table
     { NETCMD_CHANNEL_MODE,     {&NDevice::set_parser}             },
     { NETCMD_TRANSLATION,      {&NDevice::set_translation}        },
     { NETCMD_SET_EOL,          {&NDevice::set_eol}                },
-#ifdef UNUSED
     { NETCMD_SET_INT_RATE,     {&NDevice::set_timer_rate}         },
+#ifdef UNUSED
     { NETCMD_HSIO_INDEX,       {&NDevice::high_speed_index}       },
     { NETCMD_GET_DSTATS_VALUE, {&NDevice::get_dstats_value}       },
 #endif /* UNUSED */
@@ -131,7 +131,7 @@ std::string NDevice::create_devicespec(bool is_dir)
 }
 #endif /* UNUSED */
 
-#ifdef UNUSED
+#ifdef HAVE_LAST_ERROR
 NDeviceStatus NDevice::status_local(uint8_t mode)
 {
     NDeviceStatus status;
@@ -142,7 +142,7 @@ NDeviceStatus NDevice::status_local(uint8_t mode)
     status.avail = 0;
     return status;
 }
-#endif /* UNUSED */
+#endif /* HAVE_LAST_ERROR */
 
 // ============================ shared operations =============================
 
@@ -190,8 +190,10 @@ void NDevice::open(const FUJI_COMMAND_PACKET &packet)
 
     if (protocol->open(url.get(), access, trans_mode) != FUJI_ERROR::NONE)
     {
+#ifdef HAVE_LAST_ERROR
         lastError = protocol->error;
-        Debug_printf("Protocol unable to make connection. Error: %d\n", lastError);
+#endif /* HAVE_LAST_ERROR */
+        Debug_printf("Protocol unable to make connection. Error: %d\n", protocol->error);
         protocol = nullptr;
         SYSTEM_BUS.transaction_error();
         return;
@@ -240,6 +242,8 @@ void NDevice::close(const FUJI_COMMAND_PACKET &packet)
 
 error_is_true NDevice::read(ByteBuffer &buf, size_t len)
 {
+    readAck = GET_TIMESTAMP();
+
     if (receiveBuffer == nullptr
         || protocol == nullptr
         || read_channel(len) != FUJI_ERROR::NONE)
@@ -255,18 +259,20 @@ void NDevice::read(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
-    readAck = GET_TIMESTAMP();
-
     if (receiveBuffer == nullptr)
     {
+#ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::COULD_NOT_ALLOCATE_BUFFERS;
+#endif /* HAVE_LAST_ERROR */
         SYSTEM_BUS.transaction_error();
         return;
     }
 
     if (protocol == nullptr)
     {
+#ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::NOT_CONNECTED;
+#endif /* HAVE_LAST_ERROR */
         SYSTEM_BUS.transaction_error();
         return;
     }
@@ -314,7 +320,9 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
 
     if ((protocol == nullptr) || (transmitBuffer == nullptr))
     {
+#ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::NOT_CONNECTED;
+#endif /* HAVE_LAST_ERROR */
         SYSTEM_BUS.transaction_error();
         return;
     }
@@ -356,20 +364,20 @@ size_t NDevice::available()
     return avail;
 }
 
-NDeviceStatus NDevice::status(uint8_t mode)
+NDeviceStatus NDevice::current_status(uint8_t mode)
 {
     NDeviceStatus nstatus;
 
     if (protocol == nullptr)
     {
-#ifdef UNUSED
+#ifdef HAVE_LAST_ERROR
         return status_local(mode);
 #else
         nstatus.avail = 0;
         nstatus.conn = 0;
         nstatus.err = NDEV_STATUS::NOT_CONNECTED;
         return nstatus;
-#endif /* UNUSED */
+#endif /* HAVE_LAST_ERROR */
     }
 
     NetworkStatus ns;
@@ -402,11 +410,18 @@ NDeviceStatus NDevice::status(uint8_t mode)
     return nstatus;
 }
 
+NDeviceStatus NDevice::status(uint8_t mode)
+{
+    readAck = GET_TIMESTAMP();
+    return current_status(mode);
+}
+
 void NDevice::status(const FUJI_COMMAND_PACKET &packet)
 {
     uint8_t mode = packet.param(1);
 
     auto nstatus = status(mode);
+    readAck = GET_TIMESTAMP();
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_send(&nstatus, sizeof(nstatus), false);
 }
@@ -528,7 +543,9 @@ bool NDevice::parse_and_instantiate_protocol(std::string &deviceSpec, bool is_di
     if (!url_out->isValidUrl())
     {
         Debug_printf("Invalid devicespec: >%s<\n", deviceSpec.c_str());
+#ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::INVALID_DEVICESPEC;
+#endif /* HAVE_LAST_ERROR */
         protocol = nullptr;
         return false;
     }
@@ -542,7 +559,9 @@ bool NDevice::parse_and_instantiate_protocol(std::string &deviceSpec, bool is_di
     if (protocol == nullptr)
     {
         Debug_printf("Could not open protocol. spec: >%s<, url: >%s<\n", deviceSpec.c_str(), url_out->mRawUrl.c_str());
+#ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::GENERAL;
+#endif /* HAVE_LAST_ERROR */
         return false;
     }
 
@@ -625,14 +644,18 @@ void NDevice::seek(const FUJI_COMMAND_PACKET &packet)
 
     if (protocol == nullptr)
     {
+#ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::NOT_CONNECTED;
+#endif /* HAVE_LAST_ERROR */
         SYSTEM_BUS.transaction_error();
         return;
     }
 
     if (parserMode != PARSER::NONE)
     {
+#ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::INVALID_POINT;
+#endif /* HAVE_LAST_ERROR */
         SYSTEM_BUS.transaction_error();
         return;
     }
@@ -644,7 +667,9 @@ void NDevice::seek(const FUJI_COMMAND_PACKET &packet)
 
     if (protocol->seek(offset, SEEK_SET) == -1)
     {
+#ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::INVALID_POINT;
+#endif /* HAVE_LAST_ERROR */
         SYSTEM_BUS.transaction_error();
         return;
     }
@@ -665,7 +690,9 @@ void NDevice::tell(const FUJI_COMMAND_PACKET &packet)
 
     if (offset == -1)
     {
+#ifdef HAVE_LAST_ERROR
         lastError = protocol == nullptr ? NDEV_STATUS::NOT_CONNECTED : NDEV_STATUS::INVALID_POINT;
+#endif /* HAVE_LAST_ERROR */
         SYSTEM_BUS.transaction_send(pos, sizeof(pos), true);
         return;
     }
@@ -880,10 +907,37 @@ bool NDevice::poll_interrupt()
 {
     if (!protocol)
         return false;
-    uint32_t now = GET_TIMESTAMP();
-    if (now - readAck < 5000)
+    uint64_t delta = GET_TIMESTAMP() - readAck;
+    if (delta < 5000)
         return false;
-    return protocol->available() > 0;
+    delta /= 1000; // micro to milli
+    delta /= timerRate;
+    if (delta % 2)
+        return false;
+    bool hasUpdate = protocol->available() > 0;
+    if (!hasUpdate)
+    {
+        nDevStatus_t err;
+#ifdef HAVE_LAST_ERROR
+        err = lastError;
+#else
+        auto nstatus = status(0);
+        if (!nstatus.conn)
+            hasUpdate = true;
+        err = nstatus.err;
+#endif /* HAVE_LAST_ERROR */
+
+        hasUpdate |= err != NDEV_STATUS::SUCCESS && err != NDEV_STATUS::END_OF_FILE;
+    }
+
+    return hasUpdate;
+}
+
+void NDevice::set_timer_rate(const FujiSIOPacket &packet)
+{
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    timerRate = packet.param8(0);
+    SYSTEM_BUS.transaction_success();
 }
 
 #ifdef UNUSED
