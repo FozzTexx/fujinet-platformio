@@ -104,6 +104,14 @@ bool NDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
     return true;
 }
 
+bool NDevice::recognizesCommand(const FUJI_COMMAND_PACKET &packet)
+{
+    auto it = dispatch_table.find(packet.command());
+    if (it != dispatch_table.end())
+        return true;
+    return false;
+}
+
 // ============================= hook defaults ===============================
 
 std::string NDevice::network_eol() const
