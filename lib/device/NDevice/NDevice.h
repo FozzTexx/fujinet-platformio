@@ -126,7 +126,7 @@ protected:
     void fujidev_close(const FUJI_COMMAND_PACKET &packet);
     void fujidev_read(const FUJI_COMMAND_PACKET &packet);
     virtual void fujidev_write(const FUJI_COMMAND_PACKET &packet);
-    virtual void fujidev_status(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_status(const FUJI_COMMAND_PACKET &packet);
     void fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet);
     void fujidev_get_prefix(const FUJI_COMMAND_PACKET &packet);
     virtual void fujidev_set_query(const FUJI_COMMAND_PACKET &packet);
@@ -134,7 +134,7 @@ protected:
     error_is_true fujicore_write(const ByteBuffer &buf);
     error_is_true fujicore_read(ByteBuffer &buf, size_t len);
     size_t fujicore_available();
-    NDeviceStatus fujicore_status(uint8_t mode);
+    NDeviceStatus fujicore_status();
     void fujicore_set_query(const std::string &query, uint8_t parseFlags);
 
     /**
@@ -212,7 +212,7 @@ private:
      */
     void fs_op(const FUJI_COMMAND_PACKET &packet, fujiError_t (NetworkProtocolFS::*op)(PeoplesUrlParser *));
 
-    NDeviceStatus current_status(uint8_t mode);
+    NDeviceStatus current_status();
 };
 
 #endif /* NDEVICE_H */

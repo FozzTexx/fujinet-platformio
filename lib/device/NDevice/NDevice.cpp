@@ -365,7 +365,7 @@ size_t NDevice::fujicore_available()
     return avail;
 }
 
-NDeviceStatus NDevice::current_status(uint8_t mode)
+NDeviceStatus NDevice::current_status()
 {
     NDeviceStatus nstatus;
 
@@ -411,17 +411,15 @@ NDeviceStatus NDevice::current_status(uint8_t mode)
     return nstatus;
 }
 
-NDeviceStatus NDevice::fujicore_status(uint8_t mode)
+NDeviceStatus NDevice::fujicore_status()
 {
     readAck = GET_TIMESTAMP();
-    return current_status(mode);
+    return current_status();
 }
 
 void NDevice::fujidev_status(const FUJI_COMMAND_PACKET &packet)
 {
-    uint8_t mode = packet.param(1);
-
-    auto nstatus = fujicore_status(mode);
+    auto nstatus = fujicore_status();
     readAck = GET_TIMESTAMP();
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_send(&nstatus, sizeof(nstatus), false);
@@ -922,7 +920,7 @@ bool NDevice::poll_interrupt()
 #ifdef HAVE_LAST_ERROR
         err = lastError;
 #else
-        auto nstatus = fujicore_status(0);
+        auto nstatus = fujicore_status();
         if (!nstatus.conn)
             hasUpdate = true;
         err = nstatus.err;
