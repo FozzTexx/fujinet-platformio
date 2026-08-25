@@ -111,7 +111,11 @@ void virtualDevice::process_cmd()
             return;
     }
     else
+    {
+        Debug_printf("RAW payload len=%d\n%s", _payload.size(),
+                     util_hexdump((uint8_t *) _payload.data(), _payload.size()).c_str());
         _activePacket->setPayload(_payload);
+    }
 
     SYSTEM_BUS._activePacket = _activePacket.get();
     processCommand(*_activePacket);
