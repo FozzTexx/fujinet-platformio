@@ -16,6 +16,7 @@ private:
      */
     void sio_get_dstats_value(const FujiSIOPacket &packet);
 
+protected:
     /**
      * Get the DSTATS value for a given network command
      * @param command The network command code
