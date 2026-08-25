@@ -136,7 +136,6 @@ class IECFileDevice : public IECDevice
 #endif
 };
 
-
-#endif
+#endif /* IECFILEDEVICE_H */
 
 #endif /* BUILD_IEC */

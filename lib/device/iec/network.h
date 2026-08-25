@@ -1,6 +1,33 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "NDevice.h"
+
+class iecNetwork : public NDevice
+{
+public:
+    /**
+     * @brief CTOR
+     */
+    iecNetwork(uint8_t devnr) {
+        m_devnr = devnr;
+    }
+
+    /**
+     * @brief DTOR
+     */
+    virtual ~iecNetwork() {}
+
+#ifdef UNUSED
+protected:
+    bool open(uint8_t channel, const char *name) override;
+    void close(uint8_t channel) override;
+    uint8_t read(uint8_t channel, uint8_t *buffer, uint8_t bufferSize, bool *eoi);
+    uint8_t write(uint8_t channel, uint8_t *buffer, uint8_t bufferSize, bool eoi);
+#endif /* UNUSED */
+};
+
+#ifdef OBSOLETE
 #include "../network.h"
 #include "IECFileDevice.h"
 #include "network_data.h"
@@ -202,5 +229,6 @@ private:
     IECData commanddata;
     std::string payload;
 };
+#endif /* OBSOLETE */
 
 #endif /* NETWORK_H */
