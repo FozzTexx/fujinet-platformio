@@ -30,7 +30,7 @@ public:
     bool processCommand(const FUJI_COMMAND_PACKET &packet);
 
     // Return true if command is one that can be handled
-    bool recognizesCommand(const FUJI_COMMAND_PACKET &packet);
+    bool recognizesCommand(fujiCommandID_t command);
 
     /** returns true when data is available */
     bool poll_interrupt();

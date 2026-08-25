@@ -1581,6 +1581,8 @@ AtariSIODirection sioNetwork::get_dstats_for_command(fujiCommandID_t command)
     case NETCMD_TRANSLATION:
     case NETCMD_SET_INT_RATE:
     case NETCMD_SET_PARAMETERS:
+    case NETCMD_SET_CHANNEL_MODE:
+    case NETCMD_GET_REMOTE:
         return SIO_DIRECTION::NONE;
 
     // Payload from FujiNet to Atari (0x40)
@@ -1606,6 +1608,7 @@ AtariSIODirection sioNetwork::get_dstats_for_command(fujiCommandID_t command)
     case NETCMD_RMDIR:
     case NETCMD_SET_DESTINATION:
     case NETCMD_SEEK:
+    case NETCMD_SET_EOL:
         return SIO_DIRECTION::WRITE;
 
     // Invalid/unknown command

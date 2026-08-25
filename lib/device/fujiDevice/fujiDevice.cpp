@@ -1720,9 +1720,9 @@ bool fujiDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
     return true;
 }
 
-bool fujiDevice::recognizesCommand(const FUJI_COMMAND_PACKET &packet)
+bool fujiDevice::recognizesCommand(fujiCommandID_t command)
 {
-    if (checkAllMixins(packet))
+    if (checkAllMixins(command))
         return true;
-    return handlers.find(packet.command()) != handlers.end();
+    return handlers.find(command) != handlers.end();
 }

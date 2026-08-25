@@ -104,9 +104,9 @@ bool NDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
     return true;
 }
 
-bool NDevice::recognizesCommand(const FUJI_COMMAND_PACKET &packet)
+bool NDevice::recognizesCommand(fujiCommandID_t command)
 {
-    auto it = dispatch_table.find(packet.command());
+    auto it = dispatch_table.find(command);
     if (it != dispatch_table.end())
         return true;
     return false;
