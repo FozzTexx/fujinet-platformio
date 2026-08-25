@@ -162,6 +162,7 @@ void NDevice::fujidev_open(const FUJI_COMMAND_PACKET &packet)
         return;
     }
     spec.resize(strlen(spec.c_str()));
+    spec = SYSTEM_BUS.nativeTextToUnicode(spec);
 
     parserMode = PARSER::NONE;
 
