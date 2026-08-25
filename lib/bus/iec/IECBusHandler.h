@@ -36,16 +36,6 @@
 #define INTERRUPT_FCN_ARG
 #endif
 
-typedef enum
-{
-    DEVICE_ERROR = -1,
-    DEVICE_IDLE = 0,      // Ready and waiting
-    DEVICE_ACTIVE = 1,
-    DEVICE_LISTEN = 2,    // A command is recieved and data is coming to us
-    DEVICE_TALK = 3,      // A command is recieved and we must talk now
-    DEVICE_PAUSED = 4,    // Execute device command
-} device_state_t;
-
 class IECDevice;
 
 class IECBusHandler

@@ -14,16 +14,21 @@ protected:
 
     AdapterConfig cfg;
 
+#ifdef UNUSED
     ByteBuffer _payload;
+#endif /* UNUSED */
     bool is_raw_command;
 
+#ifdef UNUSED
     void process_cmd();
+#endif /* UNUSED */
     bool processCommand(const FUJI_COMMAND_PACKET &packet) override;
 
     std::vector<std::string> tokenize_basic_command(std::string command);
 
     success_is_true validate_directory_slot();
 
+#ifdef OBSOLETE
     void talk(uint8_t secondary) override;
     void listen(uint8_t secondary) override;
     void untalk() override;
@@ -34,6 +39,7 @@ protected:
     uint8_t read() override;
     void task() override;
     void reset() override;
+#endif /* OBSOLETE */
 
     // is the cmd supported by RAW?
     bool is_supported(const FujiIECPacket &packet);
@@ -87,8 +93,10 @@ protected:
         int channel;
     } iecStatus;
 
+#ifdef UNUSED
     device_state_t state;
     std::unique_ptr<FujiIECPacket> _activePacket;
+#endif /* UNUSED */
 
 public:
     void setup();

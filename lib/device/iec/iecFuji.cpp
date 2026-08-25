@@ -74,7 +74,9 @@ iecFuji::iecFuji() : fujiDevice(MAX_DISK_DEVICES, IMAGE_EXTENSION, std::nullopt)
     for (int i = 0; i < MAX_HOSTS; i++)
         _fnHosts[i].slotid = i;
 
+#ifdef OBSOLETE
     state = DEVICE_IDLE;
+#endif /* OBSOLETE */
 }
 
 // Initializes base settings and adds our devices to the SIO bus
@@ -144,6 +146,7 @@ void logResponse(const void* data, size_t length)
 }
 
 
+#ifdef OBSOLETE
 void iecFuji::talk(uint8_t secondary)
 {
   // only talk on channel 15
@@ -223,7 +226,9 @@ void iecFuji::reset()
   IECDevice::reset();
   state = DEVICE_IDLE;
 }
+#endif /* OBSOLETE */
 
+#ifdef OBSOLETE
 void iecFuji::process_cmd()
 {
   if (!_activePacket) {
@@ -247,6 +252,7 @@ void iecFuji::process_cmd()
   processCommand(*_activePacket);
   _activePacket = NULL;
 }
+#endif /* OBSOLETE */
 
 bool iecFuji::processCommand(const FUJI_COMMAND_PACKET &packet)
 {

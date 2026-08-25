@@ -22,8 +22,12 @@
 #ifdef BUILD_IEC
 
 #include "IECConfig.h"
-#include "global_types.h"
 #include <stdint.h>
+
+#ifdef OBSOLETE
+#include "bus.h"
+#include "global_types.h"
+#endif /* OBSOLETE */
 
 class IECBusHandler;
 
@@ -191,9 +195,9 @@ class IECDevice
 
  protected:
   //bool       m_isActive;
-  uint8_t    m_devnr {};
-  uint16_t m_sflags {};
-  IECBusHandler *m_handler {};
+  uint8_t    m_devnr;
+  uint16_t m_sflags;
+  IECBusHandler *m_handler;
 };
 
 #endif /* BUILD_IEC */
