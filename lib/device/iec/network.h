@@ -18,13 +18,8 @@ public:
      */
     virtual ~iecNetwork() {}
 
-#ifdef UNUSED
 protected:
-    bool open(uint8_t channel, const char *name) override;
-    void close(uint8_t channel) override;
-    uint8_t read(uint8_t channel, uint8_t *buffer, uint8_t bufferSize, bool *eoi);
-    uint8_t write(uint8_t channel, uint8_t *buffer, uint8_t bufferSize, bool eoi);
-#endif /* UNUSED */
+    void fujidev_write(const FUJI_COMMAND_PACKET &packet) override;
 };
 
 #ifdef OBSOLETE
