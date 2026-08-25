@@ -275,7 +275,7 @@ bool iecFuji::is_supported(const FujiIECPacket &packet)
     bool result = true;
 
     // Let the base class validate standard commands
-    if (!fujiDevice::recognizesCommand(packet))
+    if (!fujiDevice::recognizesCommand(packet.command()))
       switch (packet.command())
       {
       default:

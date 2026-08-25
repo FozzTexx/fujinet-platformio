@@ -122,20 +122,20 @@ protected:
     virtual NDeviceStatus status_local(uint8_t mode);
 #endif /* HAVE_LAST_ERROR */
 
-    void open(const FUJI_COMMAND_PACKET &packet);
-    void close(const FUJI_COMMAND_PACKET &packet);
-    void read(const FUJI_COMMAND_PACKET &packet);
-    virtual void write(const FUJI_COMMAND_PACKET &packet);
-    virtual void status(const FUJI_COMMAND_PACKET &packet);
-    void set_prefix(const FUJI_COMMAND_PACKET &packet);
-    void get_prefix(const FUJI_COMMAND_PACKET &packet);
-    virtual void set_query(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_open(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_close(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_read(const FUJI_COMMAND_PACKET &packet);
+    virtual void fujidev_write(const FUJI_COMMAND_PACKET &packet);
+    virtual void fujidev_status(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_get_prefix(const FUJI_COMMAND_PACKET &packet);
+    virtual void fujidev_set_query(const FUJI_COMMAND_PACKET &packet);
 
-    error_is_true write(const ByteBuffer &buf);
-    error_is_true read(ByteBuffer &buf, size_t len);
-    size_t available();
-    NDeviceStatus status(uint8_t mode);
-    void set_query(const std::string &query, uint8_t parseFlags);
+    error_is_true fujicore_write(const ByteBuffer &buf);
+    error_is_true fujicore_read(ByteBuffer &buf, size_t len);
+    size_t fujicore_available();
+    NDeviceStatus fujicore_status(uint8_t mode);
+    void fujicore_set_query(const std::string &query, uint8_t parseFlags);
 
     /**
      * Parse a devicespec into a URL and instantiate the matching protocol.
@@ -147,47 +147,47 @@ protected:
     bool parse_and_instantiate_protocol(std::string &deviceSpec, bool is_dir,
                                         std::unique_ptr<PeoplesUrlParser> &url_out);
 
-    void set_login(const FUJI_COMMAND_PACKET &packet);
-    void set_password(const FUJI_COMMAND_PACKET &packet);
-    void set_parser(const FUJI_COMMAND_PACKET &packet);
-    void do_parse(const FUJI_COMMAND_PACKET &packet);
-    void set_eol(const FUJI_COMMAND_PACKET &packet);
-    void seek(const FUJI_COMMAND_PACKET &packet);
-    void tell(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_set_login(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_set_password(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_set_parser(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_do_parse(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_set_eol(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_seek(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_tell(const FUJI_COMMAND_PACKET &packet);
 
     fujiError_t read_channel(unsigned short num_bytes);
     fujiError_t write_channel(unsigned short num_bytes);
 
     // fs ops -- each is its own dispatch-table entry; fs_op() below is the shared plumbing.
-    void fs_rename(const FUJI_COMMAND_PACKET &packet);
-    void fs_delete(const FUJI_COMMAND_PACKET &packet);
-    void fs_lock(const FUJI_COMMAND_PACKET &packet);
-    void fs_unlock(const FUJI_COMMAND_PACKET &packet);
-    void fs_mkdir(const FUJI_COMMAND_PACKET &packet);
-    void fs_rmdir(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_rename(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_delete(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_lock(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_unlock(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_mkdir(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_rmdir(const FUJI_COMMAND_PACKET &packet);
 
     // tcp ops
-    void tcp_control(const FUJI_COMMAND_PACKET &packet);
-    void tcp_close_client(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_tcp_control(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_tcp_close_client(const FUJI_COMMAND_PACKET &packet);
 
     // http ops
-    void http_set_channel_mode(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_http_set_channel_mode(const FUJI_COMMAND_PACKET &packet);
 
     // udp ops
-    void udp_get_remote(const FUJI_COMMAND_PACKET &packet);
-    void udp_set_destination(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_udp_get_remote(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_udp_set_destination(const FUJI_COMMAND_PACKET &packet);
 
-    void set_translation(const FUJI_COMMAND_PACKET &packet) {
+    void fujidev_set_translation(const FUJI_COMMAND_PACKET &packet) {
         (void)packet; SYSTEM_BUS.transaction_error();
     }
-    void set_timer_rate(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_set_timer_rate(const FUJI_COMMAND_PACKET &packet);
 
 #ifdef UNUSED
     /** NETCMD_HSIO_INDEX. SIO-only concept. Default reports unsupported. */
-    virtual void high_speed_index(const FUJI_COMMAND_PACKET &packet) { (void)packet; SYSTEM_BUS.transaction_error(); }
+    virtual void fujidev_high_speed_index(const FUJI_COMMAND_PACKET &packet) { (void)packet; SYSTEM_BUS.transaction_error(); }
 
     /** NETCMD_GET_DSTATS_VALUE: looks up the queried command's direction straight out of dispatch_table. */
-    void get_dstats_value(const FUJI_COMMAND_PACKET &packet);
+    void fujidev_get_dstats_value(const FUJI_COMMAND_PACKET &packet);
 #endif /* UNUSED */
 
 private:

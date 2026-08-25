@@ -18,44 +18,44 @@
 #include "debug.h"
 
 const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table = {
-    { NETCMD_OPEN,             {&NDevice::open}                   },
-    { NETCMD_CLOSE,            {&NDevice::close}                  },
-    { NETCMD_READ,             {&NDevice::read}                   },
-    { NETCMD_WRITE,            {&NDevice::write}                  },
-    { NETCMD_STATUS,           {&NDevice::status}                 },
+    { NETCMD_OPEN,             {&NDevice::fujidev_open}                   },
+    { NETCMD_CLOSE,            {&NDevice::fujidev_close}                  },
+    { NETCMD_READ,             {&NDevice::fujidev_read}                   },
+    { NETCMD_WRITE,            {&NDevice::fujidev_write}                  },
+    { NETCMD_STATUS,           {&NDevice::fujidev_status}                 },
 
-    { NETCMD_PARSE,            {&NDevice::do_parse}               },
-    { NETCMD_QUERY,            {&NDevice::set_query}              },
-    { NETCMD_CHANNEL_MODE,     {&NDevice::set_parser}             },
-    { NETCMD_TRANSLATION,      {&NDevice::set_translation}        },
-    { NETCMD_SET_EOL,          {&NDevice::set_eol}                },
-    { NETCMD_SET_INT_RATE,     {&NDevice::set_timer_rate}         },
+    { NETCMD_PARSE,            {&NDevice::fujidev_do_parse}               },
+    { NETCMD_QUERY,            {&NDevice::fujidev_set_query}              },
+    { NETCMD_CHANNEL_MODE,     {&NDevice::fujidev_set_parser}             },
+    { NETCMD_TRANSLATION,      {&NDevice::fujidev_set_translation}        },
+    { NETCMD_SET_EOL,          {&NDevice::fujidev_set_eol}                },
+    { NETCMD_SET_INT_RATE,     {&NDevice::fujidev_set_timer_rate}         },
 #ifdef UNUSED
-    { NETCMD_HSIO_INDEX,       {&NDevice::high_speed_index}       },
-    { NETCMD_GET_DSTATS_VALUE, {&NDevice::get_dstats_value}       },
+    { NETCMD_HSIO_INDEX,       {&NDevice::fujidev_high_speed_index}       },
+    { NETCMD_GET_DSTATS_VALUE, {&NDevice::fujidev_get_dstats_value}       },
 #endif /* UNUSED */
-    { NETCMD_SEEK,             {&NDevice::seek}                   },
-    { NETCMD_TELL,             {&NDevice::tell}                   },
+    { NETCMD_SEEK,             {&NDevice::fujidev_seek}                   },
+    { NETCMD_TELL,             {&NDevice::fujidev_tell}                   },
 
-    { NETCMD_GETCWD,           {&NDevice::get_prefix}             },
-    { NETCMD_CHDIR,            {&NDevice::set_prefix}             },
-    { NETCMD_USERNAME,         {&NDevice::set_login}              },
-    { NETCMD_PASSWORD,         {&NDevice::set_password}           },
+    { NETCMD_GETCWD,           {&NDevice::fujidev_get_prefix}             },
+    { NETCMD_CHDIR,            {&NDevice::fujidev_set_prefix}             },
+    { NETCMD_USERNAME,         {&NDevice::fujidev_set_login}              },
+    { NETCMD_PASSWORD,         {&NDevice::fujidev_set_password}           },
 
-    { NETCMD_RENAME,           {&NDevice::fs_rename}              },
-    { NETCMD_DELETE,           {&NDevice::fs_delete}              },
-    { NETCMD_LOCK,             {&NDevice::fs_lock}                },
-    { NETCMD_UNLOCK,           {&NDevice::fs_unlock}              },
-    { NETCMD_MKDIR,            {&NDevice::fs_mkdir}               },
-    { NETCMD_RMDIR,            {&NDevice::fs_rmdir}               },
+    { NETCMD_RENAME,           {&NDevice::fujidev_rename}              },
+    { NETCMD_DELETE,           {&NDevice::fujidev_delete}              },
+    { NETCMD_LOCK,             {&NDevice::fujidev_lock}                },
+    { NETCMD_UNLOCK,           {&NDevice::fujidev_unlock}              },
+    { NETCMD_MKDIR,            {&NDevice::fujidev_mkdir}               },
+    { NETCMD_RMDIR,            {&NDevice::fujidev_rmdir}               },
 
-    { NETCMD_CONTROL,          {&NDevice::tcp_control}            },
-    { NETCMD_CLOSE_CLIENT,     {&NDevice::tcp_close_client}       },
+    { NETCMD_CONTROL,          {&NDevice::fujidev_tcp_control}            },
+    { NETCMD_CLOSE_CLIENT,     {&NDevice::fujidev_tcp_close_client}       },
 
-    { NETCMD_SET_CHANNEL_MODE, {&NDevice::http_set_channel_mode}  },
+    { NETCMD_SET_CHANNEL_MODE, {&NDevice::fujidev_http_set_channel_mode}  },
 
-    { NETCMD_GET_REMOTE,       {&NDevice::udp_get_remote}         },
-    { NETCMD_SET_DESTINATION,  {&NDevice::udp_set_destination}    },
+    { NETCMD_GET_REMOTE,       {&NDevice::fujidev_udp_get_remote}         },
+    { NETCMD_SET_DESTINATION,  {&NDevice::fujidev_udp_set_destination}    },
 };
 
 NDevice::NDevice()
@@ -146,7 +146,7 @@ NDeviceStatus NDevice::status_local(uint8_t mode)
 
 // ============================ shared operations =============================
 
-void NDevice::open(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_open(const FUJI_COMMAND_PACKET &packet)
 {
     fileAccessMode_t access = static_cast<fileAccessMode_t>
         (static_cast<uint8_t>(packet.param(0)));
@@ -214,7 +214,7 @@ void NDevice::open(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::close(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_close(const FUJI_COMMAND_PACKET &packet)
 {
     (void)packet;
 
@@ -240,7 +240,7 @@ void NDevice::close(const FUJI_COMMAND_PACKET &packet)
     }
 }
 
-error_is_true NDevice::read(ByteBuffer &buf, size_t len)
+error_is_true NDevice::fujicore_read(ByteBuffer &buf, size_t len)
 {
     readAck = GET_TIMESTAMP();
 
@@ -255,7 +255,7 @@ error_is_true NDevice::read(ByteBuffer &buf, size_t len)
     RETURN_SUCCESS_AS_FALSE();
 }
 
-void NDevice::read(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_read(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
@@ -286,7 +286,7 @@ void NDevice::read(const FUJI_COMMAND_PACKET &packet)
     }
 
     ByteBuffer buf;
-    if (read(buf, num_bytes).is_error())
+    if (fujicore_read(buf, num_bytes).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
@@ -295,7 +295,7 @@ void NDevice::read(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_send(buf);
 }
 
-error_is_true NDevice::write(const ByteBuffer &buf)
+error_is_true NDevice::fujicore_write(const ByteBuffer &buf)
 {
 #ifdef DEBUG_RAW_WRITE
     Debug_printf("writing\n%s", util_hexdump(buf.data(), buf.size()).c_str());
@@ -306,7 +306,7 @@ error_is_true NDevice::write(const ByteBuffer &buf)
     RETURN_ERROR_IF(write_channel(view.size()) != FUJI_ERROR::NONE);
 }
 
-void NDevice::write(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_write(const FUJI_COMMAND_PACKET &packet)
 {
     uint16_t num_bytes = packet.param(0);
 
@@ -334,7 +334,7 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
         return;
     }
 
-    if (write(buf).is_error())
+    if (fujicore_write(buf).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
@@ -343,7 +343,7 @@ void NDevice::write(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-size_t NDevice::available()
+size_t NDevice::fujicore_available()
 {
     size_t avail = 0;
 
@@ -381,7 +381,7 @@ NDeviceStatus NDevice::current_status(uint8_t mode)
     }
 
     NetworkStatus ns;
-    size_t avail = available();
+    size_t avail = fujicore_available();
 
     switch (parserMode)
     {
@@ -410,29 +410,29 @@ NDeviceStatus NDevice::current_status(uint8_t mode)
     return nstatus;
 }
 
-NDeviceStatus NDevice::status(uint8_t mode)
+NDeviceStatus NDevice::fujicore_status(uint8_t mode)
 {
     readAck = GET_TIMESTAMP();
     return current_status(mode);
 }
 
-void NDevice::status(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_status(const FUJI_COMMAND_PACKET &packet)
 {
     uint8_t mode = packet.param(1);
 
-    auto nstatus = status(mode);
+    auto nstatus = fujicore_status(mode);
     readAck = GET_TIMESTAMP();
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_send(&nstatus, sizeof(nstatus), false);
 }
 
-void NDevice::get_prefix(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_get_prefix(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     SYSTEM_BUS.transaction_send((uint8_t *)prefix.data(), prefix.size(), false);
 }
 
-void NDevice::set_prefix(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet)
 {
     std::string prefixSpec_str(256, 0);
 
@@ -491,7 +491,7 @@ void NDevice::set_prefix(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::set_query(const std::string &query, uint8_t parseFlags)
+void NDevice::fujicore_set_query(const std::string &query, uint8_t parseFlags)
 {
     std::string buffer;
 
@@ -520,7 +520,7 @@ void NDevice::set_query(const std::string &query, uint8_t parseFlags)
     Debug_printf("Query set to >%s<\r\n", query.c_str());
 }
 
-void NDevice::set_query(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_set_query(const FUJI_COMMAND_PACKET &packet)
 {
     uint8_t query_param = packet.param(1);
 
@@ -529,7 +529,7 @@ void NDevice::set_query(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     SYSTEM_BUS.transaction_get(in);
 
-    set_query(in, query_param);
+    fujicore_set_query(in, query_param);
     SYSTEM_BUS.transaction_success();
 }
 
@@ -571,7 +571,7 @@ bool NDevice::parse_and_instantiate_protocol(std::string &deviceSpec, bool is_di
     return true;
 }
 
-void NDevice::set_login(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_set_login(const FUJI_COMMAND_PACKET &packet)
 {
     login.resize(256, 0);
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
@@ -580,7 +580,7 @@ void NDevice::set_login(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::set_password(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_set_password(const FUJI_COMMAND_PACKET &packet)
 {
     password.resize(256);
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
@@ -589,7 +589,7 @@ void NDevice::set_password(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::set_parser(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_set_parser(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
@@ -611,14 +611,14 @@ void NDevice::set_parser(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::do_parse(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_do_parse(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     json->parse();
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::set_eol(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_set_eol(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
@@ -639,7 +639,7 @@ void NDevice::set_eol(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::seek(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_seek(const FUJI_COMMAND_PACKET &packet)
 {
 
     if (protocol == nullptr)
@@ -677,7 +677,7 @@ void NDevice::seek(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::tell(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_tell(const FUJI_COMMAND_PACKET &packet)
 {
 
     uint8_t pos[3] = {0, 0, 0};
@@ -784,28 +784,28 @@ void NDevice::fs_op(const FUJI_COMMAND_PACKET &packet, fujiError_t (NetworkProto
         SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::fs_rename(const FUJI_COMMAND_PACKET &packet) {
+void NDevice::fujidev_rename(const FUJI_COMMAND_PACKET &packet) {
     fs_op(packet, &NetworkProtocolFS::rename);
 }
-void NDevice::fs_delete(const FUJI_COMMAND_PACKET &packet) {
+void NDevice::fujidev_delete(const FUJI_COMMAND_PACKET &packet) {
     fs_op(packet, &NetworkProtocolFS::del);
 }
-void NDevice::fs_lock(const FUJI_COMMAND_PACKET &packet) {
+void NDevice::fujidev_lock(const FUJI_COMMAND_PACKET &packet) {
     fs_op(packet, &NetworkProtocolFS::lock);
 }
-void NDevice::fs_unlock(const FUJI_COMMAND_PACKET &packet) {
+void NDevice::fujidev_unlock(const FUJI_COMMAND_PACKET &packet) {
     fs_op(packet, &NetworkProtocolFS::unlock);
 }
-void NDevice::fs_mkdir(const FUJI_COMMAND_PACKET &packet) {
+void NDevice::fujidev_mkdir(const FUJI_COMMAND_PACKET &packet) {
     fs_op(packet, &NetworkProtocolFS::mkdir);
 }
-void NDevice::fs_rmdir(const FUJI_COMMAND_PACKET &packet) {
+void NDevice::fujidev_rmdir(const FUJI_COMMAND_PACKET &packet) {
     fs_op(packet, &NetworkProtocolFS::rmdir);
 }
 
 // ================================ tcp ops ===================================
 
-void NDevice::tcp_control(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_tcp_control(const FUJI_COMMAND_PACKET &packet)
 {
     NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol.get());
     if (!tcp)
@@ -822,7 +822,7 @@ void NDevice::tcp_control(const FUJI_COMMAND_PACKET &packet)
         SYSTEM_BUS.transaction_success();
 }
 
-void NDevice::tcp_close_client(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_tcp_close_client(const FUJI_COMMAND_PACKET &packet)
 {
     NetworkProtocolTCP *tcp = dynamic_cast<NetworkProtocolTCP *>(protocol.get());
     if (!tcp)
@@ -841,7 +841,7 @@ void NDevice::tcp_close_client(const FUJI_COMMAND_PACKET &packet)
 
 // ================================ http ops ==================================
 
-void NDevice::http_set_channel_mode(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_http_set_channel_mode(const FUJI_COMMAND_PACKET &packet)
 {
     NetworkProtocolHTTP *http = dynamic_cast<NetworkProtocolHTTP *>(protocol.get());
     if (!http)
@@ -861,7 +861,7 @@ void NDevice::http_set_channel_mode(const FUJI_COMMAND_PACKET &packet)
 
 // ================================ udp ops ===================================
 
-void NDevice::udp_get_remote(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_udp_get_remote(const FUJI_COMMAND_PACKET &packet)
 {
 #ifndef ESP_PLATFORM
     NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol.get());
@@ -879,7 +879,7 @@ void NDevice::udp_get_remote(const FUJI_COMMAND_PACKET &packet)
 #endif
 }
 
-void NDevice::udp_set_destination(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_udp_set_destination(const FUJI_COMMAND_PACKET &packet)
 {
     NetworkProtocolUDP *udp = dynamic_cast<NetworkProtocolUDP *>(protocol.get());
     if (!udp)
@@ -921,7 +921,7 @@ bool NDevice::poll_interrupt()
 #ifdef HAVE_LAST_ERROR
         err = lastError;
 #else
-        auto nstatus = status(0);
+        auto nstatus = fujicore_status(0);
         if (!nstatus.conn)
             hasUpdate = true;
         err = nstatus.err;
@@ -933,7 +933,7 @@ bool NDevice::poll_interrupt()
     return hasUpdate;
 }
 
-void NDevice::set_timer_rate(const FujiSIOPacket &packet)
+void NDevice::fujidev_set_timer_rate(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
     timerRate = packet.param8(0);
@@ -943,7 +943,7 @@ void NDevice::set_timer_rate(const FujiSIOPacket &packet)
 #ifdef UNUSED
 // ============================ optional: DSTATS ==============================
 
-void NDevice::get_dstats_value(const FUJI_COMMAND_PACKET &packet)
+void NDevice::fujidev_get_dstats_value(const FUJI_COMMAND_PACKET &packet)
 {
     uint8_t queried_command = packet.param(0);
 

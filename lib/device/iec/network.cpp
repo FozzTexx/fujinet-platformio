@@ -1,4 +1,6 @@
 #ifdef BUILD_IEC
+
+#ifdef OBSOLETE
 /**
  * N: Firmware
  */
@@ -1045,5 +1047,6 @@ void iecNetwork::task()
     }
 }
 
+#endif /* OBSOLETE */
 
 #endif /* BUILD_IEC */
