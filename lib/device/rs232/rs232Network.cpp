@@ -1271,6 +1271,7 @@ void rs232Network::fujidev_set_query(const FUJI_COMMAND_PACKET &packet)
     NDevice::fujidev_set_query(packet.dataAsString().value_or(""), 0);
     SYSTEM_BUS.transaction_success();
 }
+#endif /* OBSOLETE */
 
 #ifdef UNUSED
 void rs232Network::status_local(FujiStatusReq reqType)

@@ -40,9 +40,9 @@ protected:
      * Timer Rate for interrupt timer (ms)
      */
 #ifdef ESP_PLATFORM
-    int timerRate = 100;
+    uint8_t timerRate = 100;
 #else
-    int timerRate = 20;
+    uint8_t timerRate = 20;
 #endif
 
     /**
