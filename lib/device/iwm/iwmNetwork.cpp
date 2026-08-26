@@ -1,6 +1,6 @@
 #ifdef BUILD_APPLE
 
-#include "network.h"
+#include "iwmNetwork.h"
 
 #ifdef OBSOLETE
 /**
@@ -991,7 +991,7 @@ void iwmNetwork::iwm_write(const iwm_decoded_cmd_t &cmd)
                  id(), cmd.frame.char_rw.length, cmd.unit());
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    if (cmd.frame.char_rw.length && NDevice::write(cmd.data().value()).is_error())
+    if (cmd.frame.char_rw.length && NDevice::fujicore_write(cmd.data().value()).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
@@ -1007,7 +1007,7 @@ void iwmNetwork::iwm_read(const iwm_decoded_cmd_t &cmd)
 
     ByteBuffer buffer;
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    if (NDevice::read(buffer, cmd.frame.char_rw.length).is_error())
+    if (NDevice::fujicore_read(buffer, cmd.frame.char_rw.length).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
@@ -1016,6 +1016,7 @@ void iwmNetwork::iwm_read(const iwm_decoded_cmd_t &cmd)
     SYSTEM_BUS.transaction_send(buffer);
 }
 
+#ifdef OBSOLETE
 void iwmNetwork::status(const iwm_decoded_cmd_t &cmd)
 {
     NDeviceStatus status = NDevice::status(0);
@@ -1029,6 +1030,7 @@ void iwmNetwork::do_query(const iwm_decoded_cmd_t &cmd)
     NDevice::do_query(cmd.dataAsString().value_or(""), 0);
     SYSTEM_BUS.transaction_success();
 }
+#endif /* OBSOLETE */
 
 #endif /* OBSOLETE */
 
