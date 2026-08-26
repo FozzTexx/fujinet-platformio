@@ -1,5 +1,5 @@
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef SIONETWORK_H
+#define SIONETWORK_H
 
 #include "NDevice.h"
 
@@ -469,4 +469,4 @@ private:
 };
 #endif /* OBSOLETE */
 
-#endif /* NETWORK_H */
+#endif /* SIONETWORK_H */

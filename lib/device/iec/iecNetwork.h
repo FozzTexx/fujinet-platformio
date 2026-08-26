@@ -1,5 +1,5 @@
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef IECNETWORK_H
+#define IECNETWORK_H
 
 #include "NDevice.h"
 
@@ -226,4 +226,4 @@ private:
 };
 #endif /* OBSOLETE */
 
-#endif /* NETWORK_H */
+#endif /* IECNETWORK_H */

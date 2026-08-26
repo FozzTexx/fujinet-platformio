@@ -50,14 +50,14 @@
 #endif
 
 #ifdef BUILD_IEC
+# include "iec/iecFuji.h"
+# include "iec/iecNetwork.h"
 # include "iec/iecClock.h"
 # include "iec/cpm.h"
 # include "iec/drive.h"
 # include "iec/modem.h"
-# include "iec/network.h"
 # include "iec/printer.h"
 # include "iec/printerlist.h"
-# include "iec/iecFuji.h"
 
     iecModem *sioR;
 #endif

@@ -1,6 +1,6 @@
 #ifdef BUILD_IEC
 
-#include "network.h"
+#include "iecNetwork.h"
 
 void iecNetwork::fujidev_write(const FUJI_COMMAND_PACKET &packet)
 {
