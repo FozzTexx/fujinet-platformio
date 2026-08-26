@@ -1,6 +1,6 @@
 #ifdef BUILD_RS232
 
-#include "network.h"
+#include "rs232Network.h"
 
 #ifdef OBSOLETE
 /**
@@ -1250,6 +1250,7 @@ void rs232Network::process_fs(const FujiBusPacket &packet)
 
 #else /***************** NOT OBSOLETE *****************/
 
+#ifdef OBSOLETE
 void rs232Network::status(const FUJI_COMMAND_PACKET &packet)
 {
     FujiStatusReq reqType = STATREQ::CONNERR;
@@ -1267,6 +1268,7 @@ void rs232Network::set_query(const FUJI_COMMAND_PACKET &packet)
     NDevice::set_query(packet.dataAsString().value_or(""), 0);
     SYSTEM_BUS.transaction_success();
 }
+#endif /* OBSOLETE */
 
 #ifdef UNUSED
 void rs232Network::status_local(FujiStatusReq reqType)

@@ -14,7 +14,9 @@ protected:
 
 public:
     void rs232_process(const FujiBusPacket &packet) override;
+#ifdef OBSOLETE
     void rs232_status(FujiStatusReq reqType) override {}
+#endif /* OBSOLETE */
 };
 
 extern rs232Clock platformClock;

@@ -944,7 +944,7 @@ bool NDevice::poll_interrupt()
 void NDevice::fujidev_set_timer_rate(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    timerRate = packet.param8(0);
+    timerRate = packet.param(0);
     SYSTEM_BUS.transaction_success();
 }
 
