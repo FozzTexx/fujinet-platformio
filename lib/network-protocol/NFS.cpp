@@ -186,7 +186,7 @@ void NetworkProtocolNFS::fserror_to_error()
     switch (nfs_error)
     {
     default:
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         break;
     }
 }
@@ -212,7 +212,7 @@ fujiError_t NetworkProtocolNFS::read_dir_entry(char *buf, unsigned short len)
 
     if (ent == nullptr)
     {
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 

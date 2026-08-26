@@ -387,13 +387,13 @@ fujiError_t NetworkProtocolS3::mount(PeoplesUrlParser *url)
 
     if (!parse_url(url))
     {
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         return FUJI_ERROR::UNSPECIFIED;
     }
     if (_access_key.empty() || _secret_key.empty())
     {
         Debug_printf("NetworkProtocolS3::mount() - missing credentials\r\n");
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::UNSPECIFIED;
     }
     return FUJI_ERROR::NONE;
@@ -414,7 +414,7 @@ fujiError_t NetworkProtocolS3::stat()
     std::string key = key_from_path(opened_url->path);
     if (key.empty())
     {
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -431,7 +431,7 @@ fujiError_t NetworkProtocolS3::stat()
     }
 
     if (status == 404)
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
     else
         fserror_to_error();
     return FUJI_ERROR::UNSPECIFIED;
@@ -464,7 +464,7 @@ fujiError_t NetworkProtocolS3::open_file_handle()
     std::string key = key_from_path(opened_url->path);
     if (key.empty())
     {
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -473,7 +473,7 @@ fujiError_t NetworkProtocolS3::open_file_handle()
     if (status < 200 || status >= 300)
     {
         if (status == 404)
-            error = NDEV_STATUS::FILE_NOT_FOUND;
+            set_error(NDEV_STATUS::FILE_NOT_FOUND);
         else
             fserror_to_error();
         return FUJI_ERROR::UNSPECIFIED;
@@ -491,7 +491,7 @@ fujiError_t NetworkProtocolS3::read_file_handle(uint8_t *buf, unsigned short len
     // and do not decrement ourselves (avoids double-count / negative wrap).
     if (fileSize <= 0)
     {
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -506,7 +506,7 @@ fujiError_t NetworkProtocolS3::read_file_handle(uint8_t *buf, unsigned short len
 
     if (got == 0)
     {
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         return FUJI_ERROR::UNSPECIFIED;
     }
     return FUJI_ERROR::NONE;
@@ -517,7 +517,7 @@ fujiError_t NetworkProtocolS3::write_file_handle(uint8_t *buf, unsigned short le
     if (_write_buf.size() + len > WRITE_BUF_LIMIT)
     {
         Debug_printf("S3: write buffer limit (%u) reached\r\n", (unsigned)WRITE_BUF_LIMIT);
-        error = NDEV_STATUS::NO_SPACE_ON_DEVICE;
+        set_error(NDEV_STATUS::NO_SPACE_ON_DEVICE);
         return FUJI_ERROR::UNSPECIFIED;
     }
     _write_buf.insert(_write_buf.end(), buf, buf + len);
@@ -531,7 +531,7 @@ fujiError_t NetworkProtocolS3::close_file_handle()
         std::string key = key_from_path(opened_url->path);
         if (key.empty())
         {
-            error = NDEV_STATUS::INVALID_DEVICESPEC;
+            set_error(NDEV_STATUS::INVALID_DEVICESPEC);
             return FUJI_ERROR::UNSPECIFIED;
         }
 
@@ -608,7 +608,7 @@ fujiError_t NetworkProtocolS3::read_dir_entry(char *buf, unsigned short len)
         return FUJI_ERROR::NONE;
     }
 
-    error = NDEV_STATUS::END_OF_FILE;
+    set_error(NDEV_STATUS::END_OF_FILE);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
@@ -629,7 +629,7 @@ fujiError_t NetworkProtocolS3::del(PeoplesUrlParser *url)
     std::string key = key_from_path(url->path);
     if (key.empty())
     {
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         umount();
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -681,7 +681,7 @@ fujiError_t NetworkProtocolS3::rename(PeoplesUrlParser *url)
     std::string new_key = key_from_path(destFilename);
     if (old_key.empty() || new_key.empty())
     {
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         umount();
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -706,23 +706,23 @@ void NetworkProtocolS3::fserror_to_error()
     case 201:
     case 204:
     case 206:
-        error = NDEV_STATUS::SUCCESS;
+        set_error(NDEV_STATUS::SUCCESS);
         break;
     case 403:
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         break;
     case 404:
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         break;
     case 409:
-        error = NDEV_STATUS::FILE_EXISTS;
+        set_error(NDEV_STATUS::FILE_EXISTS);
         break;
     case 0:
     case -1:
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         break;
     default:
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         break;
     }
 }

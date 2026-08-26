@@ -128,13 +128,13 @@ fujiError_t NetworkProtocolTCP::read(unsigned short len)
         // bail if the connection is reset.
         if (errno == ECONNRESET)
         {
-            error = NDEV_STATUS::CONNECTION_RESET;
+            set_error(NDEV_STATUS::CONNECTION_RESET);
             return FUJI_ERROR::UNSPECIFIED;
         }
         else if (actual_len != len) // Read was short and timed out.
         {
             Debug_printf("Short receive. We got %u bytes, returning %u bytes and ERROR\r\n", actual_len, len);
-            error = NDEV_STATUS::SOCKET_TIMEOUT;
+            set_error(NDEV_STATUS::SOCKET_TIMEOUT);
             return FUJI_ERROR::UNSPECIFIED;
         }
 
@@ -147,7 +147,7 @@ fujiError_t NetworkProtocolTCP::read(unsigned short len)
 
     // receiveBuffer already holds translated data (e.g. auto-read during status);
     // return it without translating again, which would corrupt multi-byte native EOLs.
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -165,7 +165,7 @@ fujiError_t NetworkProtocolTCP::write(unsigned short len)
     // Check for client connection
     if (!client.connected())
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::UNSPECIFIED; // error
     }
 
@@ -178,18 +178,18 @@ fujiError_t NetworkProtocolTCP::write(unsigned short len)
     // bail if the connection is reset.
     if (errno == ECONNRESET)
     {
-        error = NDEV_STATUS::CONNECTION_RESET;
+        set_error(NDEV_STATUS::CONNECTION_RESET);
         return FUJI_ERROR::UNSPECIFIED;
     }
     else if (actual_len != len) // write was short.
     {
         Debug_printf("Short send. We sent %u bytes, but asked to send %u bytes.\r\n", actual_len, len);
-        error = NDEV_STATUS::SOCKET_TIMEOUT;
+        set_error(NDEV_STATUS::SOCKET_TIMEOUT);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
     // Return success
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     transmitBuffer->erase(0, len);
 
     return FUJI_ERROR::NONE;
@@ -215,7 +215,7 @@ fujiError_t NetworkProtocolTCP::status(NetworkStatus *status)
 void NetworkProtocolTCP::status_client(NetworkStatus *status)
 {
     status->connected = client.connected();
-    status->error = client.connected() ? error : NDEV_STATUS::END_OF_FILE;
+    status->error = client.connected() ? last_error() : NDEV_STATUS::END_OF_FILE;
 }
 
 void NetworkProtocolTCP::status_server(NetworkStatus *status)
@@ -225,7 +225,7 @@ void NetworkProtocolTCP::status_server(NetworkStatus *status)
     else
     {
         status->connected = server->hasClient();
-        status->error = error;
+        status->error = last_error();
         Debug_printf("TCP::status_server C:%d E:%d\n", status->connected, (int) status->error);
     }
 }
@@ -297,7 +297,7 @@ fujiError_t NetworkProtocolTCP::accept_connection()
     if (server == nullptr)
     {
         Debug_printf("Attempted accept connection on NULL server socket. Aborting.\r\n");
-        error = NDEV_STATUS::SERVER_NOT_RUNNING;
+        set_error(NDEV_STATUS::SERVER_NOT_RUNNING);
         return FUJI_ERROR::UNSPECIFIED; // Error
     }
 
@@ -315,19 +315,19 @@ fujiError_t NetworkProtocolTCP::accept_connection()
             remotePort = client.remotePort();
             remoteIPString = compat_inet_ntoa(remoteIP);
             Debug_printf("Accepted connection from %s:%u\r\n", remoteIPString, remotePort);
-            error = NDEV_STATUS::SUCCESS; // clear e.g. a prior NO_CONNECTION_WAITING
+            set_error(NDEV_STATUS::SUCCESS); // clear e.g. a prior NO_CONNECTION_WAITING
             return FUJI_ERROR::NONE;
         }
         else
         {
-            error = NDEV_STATUS::CONNECTION_RESET;
+            set_error(NDEV_STATUS::CONNECTION_RESET);
             Debug_printf("Client immediately disconnected.\r\n");
             return FUJI_ERROR::UNSPECIFIED;
         }
     }
 
     // Otherwise, we are calling accept on a connection that isn't available.
-    error = NDEV_STATUS::NO_CONNECTION_WAITING;
+    set_error(NDEV_STATUS::NO_CONNECTION_WAITING);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
@@ -343,14 +343,14 @@ fujiError_t NetworkProtocolTCP::close_client_connection()
     if (server == nullptr)
     {
         Debug_printf("Attempted close client connection on NULL server socket. Aborting.\r\n");
-        error = NDEV_STATUS::SERVER_NOT_RUNNING;
+        set_error(NDEV_STATUS::SERVER_NOT_RUNNING);
         return FUJI_ERROR::NONE;
     }
 
     if (!client.connected())
     {
         Debug_printf("Attempted close client with no client connected.\r\n");
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::NONE;
     }
 

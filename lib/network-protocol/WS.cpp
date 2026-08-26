@@ -59,7 +59,7 @@ fujiError_t NetworkProtocolWS::open(PeoplesUrlParser *urlParser, fileAccessMode_
 
     if (opened_url->host.empty())
     {
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -75,11 +75,11 @@ fujiError_t NetworkProtocolWS::open(PeoplesUrlParser *urlParser, fileAccessMode_
     if (!client->connect(url))
     {
         Debug_printf("NetworkProtocolWS::open - connect failed\r\n");
-        error = NDEV_STATUS::CONNECTION_REFUSED;
+        set_error(NDEV_STATUS::CONNECTION_REFUSED);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -110,7 +110,7 @@ fujiError_t NetworkProtocolWS::read(unsigned short len)
 
         if (actual_len < 0 || (!client->connected() && actual_len == 0))
         {
-            error = NDEV_STATUS::NOT_CONNECTED;
+            set_error(NDEV_STATUS::NOT_CONNECTED);
             return FUJI_ERROR::UNSPECIFIED;
         }
 
@@ -120,7 +120,7 @@ fujiError_t NetworkProtocolWS::read(unsigned short len)
         {
             // Short read: return what we have and flag a timeout, like TCP.
             Debug_printf("Short receive. Got %u of %u bytes.\r\n", actual_len, len);
-            error = NDEV_STATUS::SOCKET_TIMEOUT;
+            set_error(NDEV_STATUS::SOCKET_TIMEOUT);
             return FUJI_ERROR::UNSPECIFIED;
         }
 
@@ -130,7 +130,7 @@ fujiError_t NetworkProtocolWS::read(unsigned short len)
 
     // receiveBuffer already holds translated data; return without re-translating,
     // which would corrupt multi-byte native EOLs.
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -140,7 +140,7 @@ fujiError_t NetworkProtocolWS::write(unsigned short len)
 
     if (!client->connected())
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -152,11 +152,11 @@ fujiError_t NetworkProtocolWS::write(unsigned short len)
     if (actual_len != (int)len)
     {
         Debug_printf("Short send. Sent %d of %u bytes.\r\n", actual_len, len);
-        error = NDEV_STATUS::SOCKET_TIMEOUT;
+        set_error(NDEV_STATUS::SOCKET_TIMEOUT);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     transmitBuffer->erase(0, len);
 
     return FUJI_ERROR::NONE;
@@ -166,7 +166,7 @@ fujiError_t NetworkProtocolWS::status(NetworkStatus *status)
 {
     bool up = client != nullptr && client->connected();
     status->connected = up;
-    status->error = up ? error : NDEV_STATUS::END_OF_FILE;
+    status->error = up ? last_error() : NDEV_STATUS::END_OF_FILE;
 
     NetworkProtocol::status(status);
 

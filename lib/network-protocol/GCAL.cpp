@@ -266,7 +266,7 @@ fujiError_t NetworkProtocolGCAL::connect_and_auth()
 {
     if (!ensure_access_token())
     {
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         return FUJI_ERROR::UNSPECIFIED;
     }
     return FUJI_ERROR::NONE;
@@ -276,12 +276,12 @@ void NetworkProtocolGCAL::calendar_error_to_error()
 {
     if (_scope_problem)
     {
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         return;
     }
     // A hook that already diagnosed something specific keeps its own status.
-    if (error != NDEV_STATUS::SUCCESS) return;
-    error = http_status_to_error(_last_http);
+    if (last_error() != NDEV_STATUS::SUCCESS) return;
+    set_error(http_status_to_error(_last_http));
 }
 
 bool NetworkProtocolGCAL::fetch_calendars(bool selectedOnly, std::vector<CalendarListEntry> &out)
@@ -294,7 +294,7 @@ bool NetworkProtocolGCAL::fetch_calendars(bool selectedOnly, std::vector<Calenda
     cJSON *j = cJSON_Parse(resp.c_str());
     if (!j)
     {
-        error = NDEV_STATUS::COULD_NOT_PARSE_JSON;
+        set_error(NDEV_STATUS::COULD_NOT_PARSE_JSON);
         return false;
     }
 
@@ -427,7 +427,7 @@ bool NetworkProtocolGCAL::fetch_events(const CalendarListEntry &cal, uint64_t wi
         cJSON *j = cJSON_Parse(resp.c_str());
         if (!j)
         {
-            error = NDEV_STATUS::COULD_NOT_PARSE_JSON;
+            set_error(NDEV_STATUS::COULD_NOT_PARSE_JSON);
             return false;
         }
 
@@ -559,7 +559,7 @@ fujiError_t NetworkProtocolGCAL::event_detail(const std::string &selector,
     cJSON *j = cJSON_Parse(resp.c_str());
     if (!j)
     {
-        error = NDEV_STATUS::COULD_NOT_PARSE_JSON;
+        set_error(NDEV_STATUS::COULD_NOT_PARSE_JSON);
         return FUJI_ERROR::UNSPECIFIED;
     }
     description = json_str(j, "description");
@@ -627,7 +627,7 @@ fujiError_t NetworkProtocolGCAL::event_create(const std::string &selector,
     if (sel == "*")
     {
         // "Every calendar" cannot be a compose target.
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         return FUJI_ERROR::UNSPECIFIED;
     }
     if (sel.empty())
@@ -638,7 +638,7 @@ fujiError_t NetworkProtocolGCAL::event_create(const std::string &selector,
         resolve_calendars(selector, cals);
         if (cals.empty())
         {
-            error = NDEV_STATUS::FILE_NOT_FOUND;
+            set_error(NDEV_STATUS::FILE_NOT_FOUND);
             return FUJI_ERROR::UNSPECIFIED;
         }
         calId = cals[0].id;
@@ -657,7 +657,7 @@ fujiError_t NetworkProtocolGCAL::event_update(const CalendarEventEntry &ev,
     size_t slash = ev.providerId.find('/');
     if (slash == std::string::npos)
     {
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         return FUJI_ERROR::UNSPECIFIED;
     }
     const std::string calId = ev.providerId.substr(0, slash);

@@ -8,6 +8,10 @@
 #include "global_types.h"
 #include "global_defines.h"
 
+#ifdef ESP_PLATFORM
+#include "esp_debug_helpers.h"
+#endif /* ESP_PLATFORM */
+
 #include <string>
 
 // FIXME - only used by FS classes and doesn't belong here
@@ -108,11 +112,6 @@ public:
      * @brief number of bytes waiting
      */
     unsigned short bytesWaiting = 0;
-
-    /**
-     * @brief Error code to return in status
-     */
-    nDevStatus_t error = NDEV_STATUS::SUCCESS;
 
     /**
      * Translation mode: 0=NONE, 1=CR, 2=LF, 3=CR/LF, 4=PETSCII
@@ -234,6 +233,8 @@ public:
      */
     std::string *password;
 
+    inline nDevStatus_t last_error() { return _error; }
+
 protected:
 
     /**
@@ -246,6 +247,20 @@ protected:
      * @return new buffer length.
      */
     unsigned short translate_transmit_buffer();
+
+    inline void set_error(nDevStatus_t err) {
+        _error = err;
+#ifdef ESP_PLATFORM
+        if (_error == NDEV_STATUS::GENERAL)
+            esp_backtrace_print(10);
+#endif /* ESP_PLATFORM */
+    }
+
+private:
+    /**
+     * @brief Error code to return in status
+     */
+    nDevStatus_t _error = NDEV_STATUS::SUCCESS;
 
 };
 

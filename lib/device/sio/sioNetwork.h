@@ -1,12 +1,14 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#ifdef BUILD_ATARI
+
 #include "NDevice.h"
 
 class sioNetwork : public NDevice
 {
 public:
-    void sio_status(const FujiSIOPacket &packet) override { return status(packet); }
+    void sio_status(const FujiSIOPacket &packet) override { return fujidev_status(packet); }
     void sio_process(const FujiSIOPacket &packet) override;
 
 private:
@@ -468,5 +470,7 @@ private:
     void parse_and_instantiate_protocol(bool is_dir);
 };
 #endif /* OBSOLETE */
+
+#endif /* BUILD_ATARI */
 
 #endif /* NETWORK_H */

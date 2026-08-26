@@ -79,7 +79,7 @@ fujiError_t NetworkProtocolMailbox::open(PeoplesUrlParser *urlParser, fileAccess
                                          netProtoTranslation_t translate)
 {
     NetworkProtocol::open(urlParser, access, translate);
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     receiveBuffer->clear();
 
     bool isDir = (access == ACCESS_MODE::DIRECTORY || access == ACCESS_MODE::DIRECTORY_ALT);
@@ -88,12 +88,12 @@ fujiError_t NetworkProtocolMailbox::open(PeoplesUrlParser *urlParser, fileAccess
     if (!isDir && !isRead && !isWrite)
     {
         // APPEND and READWRITE make no sense here.
-        error = NDEV_STATUS::READ_ONLY;
+        set_error(NDEV_STATUS::READ_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
     if (isWrite && !can_write())
     {
-        error = NDEV_STATUS::READ_ONLY;
+        set_error(NDEV_STATUS::READ_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -131,7 +131,7 @@ fujiError_t NetworkProtocolMailbox::open(PeoplesUrlParser *urlParser, fileAccess
             }
             break;
         default:
-            error = NDEV_STATUS::INVALID_DEVICESPEC;
+            set_error(NDEV_STATUS::INVALID_DEVICESPEC);
             res = FUJI_ERROR::UNSPECIFIED;
             break;
         }
@@ -156,14 +156,14 @@ fujiError_t NetworkProtocolMailbox::open(PeoplesUrlParser *urlParser, fileAccess
         _attach = (uint8_t)strtoul(parts[2].c_str(), nullptr, 10);
         if (isDir)
         {
-            error = NDEV_STATUS::INVALID_DEVICESPEC;
+            set_error(NDEV_STATUS::INVALID_DEVICESPEC);
             res = FUJI_ERROR::UNSPECIFIED;
         }
         else
             res = do_attachment_data();
         break;
     default:
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         res = FUJI_ERROR::UNSPECIFIED;
         break;
     }
@@ -422,13 +422,13 @@ void NetworkProtocolMailbox::format_attachment_index_raw(const std::vector<Mailb
 
 fujiError_t NetworkProtocolMailbox::reply_target(const std::string &, uint32_t, MailReplyTarget &)
 {
-    error = NDEV_STATUS::READ_ONLY;
+    set_error(NDEV_STATUS::READ_ONLY);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
 fujiError_t NetworkProtocolMailbox::message_send(const MailDraft &, const MailReplyTarget *)
 {
-    error = NDEV_STATUS::READ_ONLY;
+    set_error(NDEV_STATUS::READ_ONLY);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
@@ -442,20 +442,20 @@ fujiError_t NetworkProtocolMailbox::write(unsigned short len)
     if (!_writeMode)
     {
         transmitBuffer->erase(0, n);
-        error = NDEV_STATUS::READ_ONLY;
+        set_error(NDEV_STATUS::READ_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
     if (_writeBuf.size() + n > MB_MAX_WRITE)
     {
         transmitBuffer->erase(0, n);
         _writeFailed = true;
-        error = NDEV_STATUS::NO_SPACE_ON_DEVICE;
+        set_error(NDEV_STATUS::NO_SPACE_ON_DEVICE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
     _writeBuf.append(*transmitBuffer, 0, n);
     transmitBuffer->erase(0, n);
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -472,9 +472,9 @@ fujiError_t NetworkProtocolMailbox::close()
 
     // The base close resets `error`; keep the commit result visible so the bus
     // layer can latch it into the STATUS that follows the close.
-    nDevStatus_t saved = error;
+    nDevStatus_t saved = last_error();
     NetworkProtocol::close();
-    error = saved;
+    set_error(saved);
     return res;
 }
 
@@ -483,12 +483,12 @@ fujiError_t NetworkProtocolMailbox::commit_write()
     if (_writeBuf.empty())
     {
         // Opened for write, closed without writing: an abort, not an error.
-        error = NDEV_STATUS::SUCCESS;
+        set_error(NDEV_STATUS::SUCCESS);
         return FUJI_ERROR::NONE;
     }
     if (_writeFailed)
     {
-        error = NDEV_STATUS::NO_SPACE_ON_DEVICE;
+        set_error(NDEV_STATUS::NO_SPACE_ON_DEVICE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -499,7 +499,7 @@ fujiError_t NetworkProtocolMailbox::commit_write()
     if (derr != MailDraftError::NONE)
     {
         Debug_printf("Mailbox: draft rejected (%d)\r\n", (int)derr);
-        error = NDEV_STATUS::INVALID_COMMAND;
+        set_error(NDEV_STATUS::INVALID_COMMAND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -510,7 +510,7 @@ fujiError_t NetworkProtocolMailbox::commit_write()
         return res;
     }
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error( NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -520,11 +520,11 @@ fujiError_t NetworkProtocolMailbox::read(unsigned short len)
 {
     if (_writeMode)
     {
-        error = NDEV_STATUS::WRITE_ONLY;
+        set_error(NDEV_STATUS::WRITE_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
     // All content is staged into receiveBuffer at open(); the device drains it.
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -533,14 +533,14 @@ fujiError_t NetworkProtocolMailbox::status(NetworkStatus *status)
     if (_writeMode)
     {
         // A write channel is never at EOF; report health, not drain state.
-        status->error = error;
+        status->error = last_error();
         status->connected = 1;
         return FUJI_ERROR::NONE;
     }
-    if (error == NDEV_STATUS::SUCCESS && receiveBuffer->empty())
+    if (last_error() == NDEV_STATUS::SUCCESS && receiveBuffer->empty())
         status->error = NDEV_STATUS::END_OF_FILE;
     else
-        status->error = error;
+        status->error = last_error();
     status->connected = receiveBuffer->empty() ? 0 : 1;
     return FUJI_ERROR::NONE;
 }

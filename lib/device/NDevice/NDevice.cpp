@@ -17,7 +17,7 @@
 #include "utils.h"
 #include "debug.h"
 
-const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table = {
+const std::unordered_map<fujiCommandID_t, NDevice::CommandEntry> NDevice::dispatch_table = {
     { CMD::NET_OPEN,             {&NDevice::fujidev_open}                   },
     { CMD::NET_CLOSE,            {&NDevice::fujidev_close}                  },
     { CMD::NET_READ,             {&NDevice::fujidev_read}                   },
@@ -194,7 +194,7 @@ void NDevice::fujidev_open(const FUJI_COMMAND_PACKET &packet)
 #ifdef HAVE_LAST_ERROR
         lastError = protocol->error;
 #endif /* HAVE_LAST_ERROR */
-        Debug_printf("Protocol unable to make connection. Error: %d\n", protocol->error);
+        Debug_printf("Protocol unable to make connection. Error: %d\n", protocol->last_error());
         protocol = nullptr;
         SYSTEM_BUS.transaction_error();
         return;
@@ -935,7 +935,7 @@ bool NDevice::poll_interrupt()
 void NDevice::fujidev_set_timer_rate(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    timerRate = packet.param8(0);
+    timerRate = (uint16_t) packet.param(0);
     SYSTEM_BUS.transaction_success();
 }
 

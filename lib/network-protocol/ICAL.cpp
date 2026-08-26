@@ -665,7 +665,7 @@ fujiError_t NetworkProtocolICAL::calendar_list(const std::string &selector,
 {
     // There is nothing to enumerate without a feed to fetch.
     Debug_printf("ICAL: no feed given; expected ICAL://host/path/to/feed.ics/...\r\n");
-    error = NDEV_STATUS::INVALID_DEVICESPEC;
+    set_error(NDEV_STATUS::INVALID_DEVICESPEC);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
@@ -675,7 +675,7 @@ fujiError_t NetworkProtocolICAL::event_index(const std::string &selector, uint64
 {
     if (selector.empty())
     {
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         return FUJI_ERROR::UNSPECIFIED;
     }
     return scan_feed(selector, winStart, winEnd, categoryFilter, maxCount, &out, nullptr, 0,
@@ -700,8 +700,8 @@ void NetworkProtocolICAL::calendar_error_to_error()
     // A hook that already diagnosed something specific - a missing feed, a body
     // this build cannot decompress - keeps its own status; `error` is reset to
     // SUCCESS at the start of every open, so nothing stale can survive here.
-    if (error != NDEV_STATUS::SUCCESS) return;
-    error = http_status_to_error(_last_http);
+    if (last_error() != NDEV_STATUS::SUCCESS) return;
+    set_error(http_status_to_error(_last_http));
 }
 
 // ─── the streaming pass ───────────────────────────────────────────────────────
@@ -740,7 +740,7 @@ fujiError_t NetworkProtocolICAL::scan_feed(const std::string &selector, uint64_t
     if (!enc.empty() && enc != "identity")
     {
         Debug_printf("ICAL: refusing Content-Encoding: %s\r\n", enc.c_str());
-        error = NDEV_STATUS::NOT_IMPLEMENTED;
+        set_error(NDEV_STATUS::NOT_IMPLEMENTED);
         client.close();
         return FUJI_ERROR::UNSPECIFIED;
     }

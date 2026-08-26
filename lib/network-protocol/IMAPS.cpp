@@ -752,5 +752,5 @@ fujiError_t NetworkProtocolIMAPS::attachment_data(const std::string &folder, uin
 
 void NetworkProtocolIMAPS::mailbox_error_to_error()
 {
-    error = _lastErr;
+    set_error(_lastErr);
 }

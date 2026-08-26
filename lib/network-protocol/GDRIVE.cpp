@@ -402,7 +402,7 @@ fujiError_t NetworkProtocolGDRIVE::mount(PeoplesUrlParser *url)
 
     if (!ensure_access_token())
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -422,7 +422,7 @@ fujiError_t NetworkProtocolGDRIVE::stat()
     std::string id = resolve_path(opened_url->path);
     if (id.empty())
     {
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -476,7 +476,7 @@ fujiError_t NetworkProtocolGDRIVE::open_file_handle()
     _file_id = resolve_path(opened_url->path);
     if (_file_id.empty())
     {
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -501,7 +501,7 @@ fujiError_t NetworkProtocolGDRIVE::open_file_handle()
                          _file_id + "?alt=media";
     if (!_http.begin(dl_url))
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         return FUJI_ERROR::UNSPECIFIED;
     }
     _http.set_header("Authorization", ("Bearer " + _access_token).c_str());
@@ -524,13 +524,13 @@ fujiError_t NetworkProtocolGDRIVE::read_file_handle(uint8_t *buf,
     // signed int negative, making available() return ~4 GB forever.
     if (fileSize <= 0)
     {
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         return FUJI_ERROR::UNSPECIFIED;
     }
     int n = _http.read(buf, len);
     if (n <= 0)
     {
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         return FUJI_ERROR::UNSPECIFIED;
     }
     return FUJI_ERROR::NONE;
@@ -542,7 +542,7 @@ fujiError_t NetworkProtocolGDRIVE::write_file_handle(uint8_t *buf,
     if (_write_buf.size() + len > WRITE_BUF_LIMIT)
     {
         Debug_printf("GDRIVE: write buffer limit reached\r\n");
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         return FUJI_ERROR::UNSPECIFIED;
     }
     _write_buf.insert(_write_buf.end(), buf, buf + len);
@@ -592,7 +592,7 @@ fujiError_t NetworkProtocolGDRIVE::close_file_handle()
         std::string resp = api_post(url, body, ct);
         if (resp.empty())
         {
-            error = NDEV_STATUS::GENERAL;
+            set_error(NDEV_STATUS::GENERAL);
             return FUJI_ERROR::UNSPECIFIED;
         }
         _write_buf.clear();
@@ -676,7 +676,7 @@ fujiError_t NetworkProtocolGDRIVE::open_dir_handle()
         _dir_json = cJSON_Parse(resp.c_str());
         if (!_dir_json)
         {
-            error = NDEV_STATUS::GENERAL;
+            set_error(NDEV_STATUS::GENERAL);
             return FUJI_ERROR::UNSPECIFIED;
         }
         _dir_items = cJSON_GetObjectItemCaseSensitive(_dir_json, "files");
@@ -703,7 +703,7 @@ fujiError_t NetworkProtocolGDRIVE::read_dir_entry(char *buf, unsigned short len)
 {
     if (!_dir_items)
     {
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -750,7 +750,7 @@ fujiError_t NetworkProtocolGDRIVE::read_dir_entry(char *buf, unsigned short len)
         return FUJI_ERROR::NONE;
     }
 
-    error = NDEV_STATUS::END_OF_FILE;
+    set_error(NDEV_STATUS::END_OF_FILE);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
@@ -776,7 +776,7 @@ fujiError_t NetworkProtocolGDRIVE::del(PeoplesUrlParser *url)
     std::string id = resolve_path(url->path);
     if (id.empty())
     {
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -815,5 +815,5 @@ fujiError_t NetworkProtocolGDRIVE::rmdir(PeoplesUrlParser *url)
 
 void NetworkProtocolGDRIVE::fserror_to_error()
 {
-    error = NDEV_STATUS::GENERAL;
+    set_error(NDEV_STATUS::GENERAL);
 }

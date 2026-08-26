@@ -47,7 +47,7 @@ fujiError_t NetworkProtocolFTP::open_file_handle()
         break;
     case ACCESS_MODE::APPEND:
     case ACCESS_MODE::READWRITE:
-        error = NDEV_STATUS::NOT_IMPLEMENTED;
+        set_error(NDEV_STATUS::NOT_IMPLEMENTED);
         return FUJI_ERROR::UNSPECIFIED;
     default:
         break;
@@ -113,28 +113,28 @@ void NetworkProtocolFTP::fserror_to_error()
     case 331:
     case 332:
     case 350:
-        error = NDEV_STATUS::SUCCESS;
+        set_error(NDEV_STATUS::SUCCESS);
         break;
     case 226:
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         break;
     case 421:
-        error = NDEV_STATUS::SERVICE_NOT_AVAILABLE;
+        set_error(NDEV_STATUS::SERVICE_NOT_AVAILABLE);
         break;
     case 400:
     case 425:
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         break;
     case 430:
-        error = NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD;
+        set_error(NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD);
         break;
     case 434:
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         break;
     case 450:
     case 451:
     case 452:
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         break;
     case 500:
     case 501:
@@ -147,13 +147,13 @@ void NetworkProtocolFTP::fserror_to_error()
     case 551:
     case 552:
     case 553:
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         break;
     case 550:
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         break;
     default:
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         break;
     }
 }
@@ -213,7 +213,7 @@ fujiError_t NetworkProtocolFTP::status_file(NetworkStatus *status)
 {
     status->connected = ftp->data_connected() != FUJI_ERROR::NONE;
     fserror_to_error();
-    status->error = error;
+    status->error = last_error();
 
     NetworkProtocol::status(status);
     return FUJI_ERROR::NONE;

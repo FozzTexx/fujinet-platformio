@@ -343,7 +343,7 @@ fujiError_t NetworkProtocolCalendar::open(PeoplesUrlParser *urlParser, fileAcces
                                           netProtoTranslation_t translate)
 {
     NetworkProtocol::open(urlParser, access, translate);
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     receiveBuffer->clear();
 
     bool isDir = (access == ACCESS_MODE::DIRECTORY || access == ACCESS_MODE::DIRECTORY_ALT);
@@ -354,12 +354,12 @@ fujiError_t NetworkProtocolCalendar::open(PeoplesUrlParser *urlParser, fileAcces
     if (!isDir && !isRead && !isWrite)
     {
         // APPEND (and anything else) makes no sense here.
-        error = NDEV_STATUS::READ_ONLY;
+        set_error(NDEV_STATUS::READ_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
     if (isWrite && !can_write())
     {
-        error = NDEV_STATUS::READ_ONLY;
+        set_error(NDEV_STATUS::READ_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
     if (access == ACCESS_MODE::READWRITE)
@@ -367,7 +367,7 @@ fujiError_t NetworkProtocolCalendar::open(PeoplesUrlParser *urlParser, fileAcces
 
     if (!parse_devicespec(urlParser->mRawUrl))
     {
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -389,7 +389,7 @@ fujiError_t NetworkProtocolCalendar::open(PeoplesUrlParser *urlParser, fileAcces
             if (res != FUJI_ERROR::NONE) return res;
             if (_eventNum < 1 || (size_t)_eventNum > items.size())
             {
-                error = NDEV_STATUS::FILE_NOT_FOUND;
+                set_error(NDEV_STATUS::FILE_NOT_FOUND);
                 return FUJI_ERROR::UNSPECIFIED;
             }
             _editTarget = items[(size_t)_eventNum - 1];
@@ -398,7 +398,7 @@ fujiError_t NetworkProtocolCalendar::open(PeoplesUrlParser *urlParser, fileAcces
         else if (_haveView)
         {
             // A period without an event number is nothing writable.
-            error = NDEV_STATUS::INVALID_DEVICESPEC;
+            set_error(NDEV_STATUS::INVALID_DEVICESPEC);
             return FUJI_ERROR::UNSPECIFIED;
         }
         _writeMode = true;
@@ -412,7 +412,7 @@ fujiError_t NetworkProtocolCalendar::open(PeoplesUrlParser *urlParser, fileAcces
     {
         if (isDir)
         {
-            error = NDEV_STATUS::INVALID_DEVICESPEC;
+            set_error(NDEV_STATUS::INVALID_DEVICESPEC);
             res = FUJI_ERROR::UNSPECIFIED;
         }
         else
@@ -487,7 +487,7 @@ fujiError_t NetworkProtocolCalendar::do_event_detail()
 
     if (_eventNum < 1 || (size_t)_eventNum > items.size())
     {
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -941,13 +941,13 @@ std::string NetworkProtocolCalendar::format_detail(const CalendarEventEntry &ev,
 
 fujiError_t NetworkProtocolCalendar::event_create(const std::string &, const CalendarEventDraft &)
 {
-    error = NDEV_STATUS::READ_ONLY;
+    set_error(NDEV_STATUS::READ_ONLY);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
 fujiError_t NetworkProtocolCalendar::event_update(const CalendarEventEntry &, const CalendarEventDraft &)
 {
-    error = NDEV_STATUS::READ_ONLY;
+    set_error(NDEV_STATUS::READ_ONLY);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
@@ -961,20 +961,20 @@ fujiError_t NetworkProtocolCalendar::write(unsigned short len)
     if (!_writeMode)
     {
         transmitBuffer->erase(0, n);
-        error = NDEV_STATUS::READ_ONLY;
+        set_error(NDEV_STATUS::READ_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
     if (_writeBuf.size() + n > CAL_MAX_WRITE)
     {
         transmitBuffer->erase(0, n);
         _writeFailed = true;
-        error = NDEV_STATUS::NO_SPACE_ON_DEVICE;
+        set_error(NDEV_STATUS::NO_SPACE_ON_DEVICE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
     _writeBuf.append(*transmitBuffer, 0, n);
     transmitBuffer->erase(0, n);
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -991,9 +991,9 @@ fujiError_t NetworkProtocolCalendar::close()
 
     // The base close resets `error`; keep the commit result visible so the bus
     // layer can latch it into the STATUS that follows the close.
-    nDevStatus_t saved = error;
+    nDevStatus_t saved = last_error();
     NetworkProtocol::close();
-    error = saved;
+    set_error(saved);
     return res;
 }
 
@@ -1002,12 +1002,12 @@ fujiError_t NetworkProtocolCalendar::commit_write()
     if (_writeBuf.empty())
     {
         // Opened for write, closed without writing: an abort, not an error.
-        error = NDEV_STATUS::SUCCESS;
+        set_error(NDEV_STATUS::SUCCESS);
         return FUJI_ERROR::NONE;
     }
     if (_writeFailed)
     {
-        error = NDEV_STATUS::NO_SPACE_ON_DEVICE;
+        set_error(NDEV_STATUS::NO_SPACE_ON_DEVICE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -1032,7 +1032,7 @@ fujiError_t NetworkProtocolCalendar::commit_write()
     if (derr != CalDraftError::NONE)
     {
         Debug_printf("Calendar: draft rejected (%d)\r\n", (int)derr);
-        error = NDEV_STATUS::INVALID_COMMAND;
+        set_error(NDEV_STATUS::INVALID_COMMAND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -1045,7 +1045,7 @@ fujiError_t NetworkProtocolCalendar::commit_write()
     }
 
     clear_window_cache();
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -1055,11 +1055,11 @@ fujiError_t NetworkProtocolCalendar::read(unsigned short len)
 {
     if (_writeMode)
     {
-        error = NDEV_STATUS::WRITE_ONLY;
+        set_error(NDEV_STATUS::WRITE_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
     // All content is staged into receiveBuffer at open(); the device drains it.
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -1068,14 +1068,14 @@ fujiError_t NetworkProtocolCalendar::status(NetworkStatus *status)
     if (_writeMode)
     {
         // A write channel is never at EOF; report health, not drain state.
-        status->error = error;
+        status->error = last_error();
         status->connected = 1;
         return FUJI_ERROR::NONE;
     }
-    if (error == NDEV_STATUS::SUCCESS && receiveBuffer->empty())
+    if (last_error() == NDEV_STATUS::SUCCESS && receiveBuffer->empty())
         status->error = NDEV_STATUS::END_OF_FILE;
     else
-        status->error = error;
+        status->error = last_error();
     status->connected = receiveBuffer->empty() ? 0 : 1;
     return FUJI_ERROR::NONE;
 }

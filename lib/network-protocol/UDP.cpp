@@ -123,7 +123,7 @@ fujiError_t NetworkProtocolUDP::read(unsigned short len)
 
     // receiveBuffer already holds translated data; return without re-translating,
     // which would corrupt multi-byte native EOLs.
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -137,7 +137,7 @@ fujiError_t NetworkProtocolUDP::write(unsigned short len)
     // Check for client connection
     if (dest.empty())
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::UNSPECIFIED; // error
     }
 
@@ -157,7 +157,7 @@ fujiError_t NetworkProtocolUDP::write(unsigned short len)
     }
 
     // Return success
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     transmitBuffer->erase(0, len);
 
     return FUJI_ERROR::NONE;
@@ -182,7 +182,7 @@ fujiError_t NetworkProtocolUDP::status(NetworkStatus *status)
     }
 
     status->connected = 1; // Always 'connected'
-    status->error = error;
+    status->error = last_error();
 
     NetworkProtocol::status(status);
 

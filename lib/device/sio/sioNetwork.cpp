@@ -1534,10 +1534,10 @@ void sioNetwork::sio_process(const FujiSIOPacket &packet)
 
     switch (packet.command())
     {
-    case NETCMD_GET_DSTATS_VALUE:
+    case CMD::NET_GET_DSTATS_VALUE:
         sio_get_dstats_value(packet);
         break;
-    case NETCMD_HSIO_INDEX:
+    case CMD::NET_HSIO_INDEX:
         sio_high_speed();
         break;
     defaut:
@@ -1580,42 +1580,42 @@ AtariSIODirection sioNetwork::get_dstats_for_command(fujiCommandID_t command)
     switch (command)
     {
     // No payload commands (0x00)
-    case NETCMD_CLOSE:
-    case NETCMD_PARSE:
-    case NETCMD_CONTROL:
-    case NETCMD_CLOSE_CLIENT:
-    case NETCMD_CHANNEL_MODE:
-    case NETCMD_TRANSLATION:
-    case NETCMD_SET_INT_RATE:
-    case NETCMD_SET_PARAMETERS:
-    case NETCMD_SET_CHANNEL_MODE:
-    case NETCMD_GET_REMOTE:
+    case CMD::NET_CLOSE:
+    case CMD::NET_PARSE:
+    case CMD::NET_CONTROL:
+    case CMD::NET_CLOSE_CLIENT:
+    case CMD::NET_CHANNEL_MODE:
+    case CMD::NET_TRANSLATION:
+    case CMD::NET_SET_INT_RATE:
+    case CMD::NET_SET_PARAMETERS:
+    case CMD::NET_SET_CHANNEL_MODE:
+    case CMD::NET_GET_REMOTE:
         return SIO_DIRECTION::NONE;
 
     // Payload from FujiNet to Atari (0x40)
-    case NETCMD_HSIO_INDEX:
-    case NETCMD_READ:
-    case NETCMD_STATUS:
-    case NETCMD_GETCWD:
-    case NETCMD_TELL:
+    case CMD::NET_HSIO_INDEX:
+    case CMD::NET_READ:
+    case CMD::NET_STATUS:
+    case CMD::NET_GETCWD:
+    case CMD::NET_TELL:
         return SIO_DIRECTION::READ;
 
     // Payload from Atari to FujiNet (0x80)
-    case NETCMD_OPEN:
-    case NETCMD_WRITE:
-    case NETCMD_CHDIR:
-    case NETCMD_QUERY:
-    case NETCMD_USERNAME:
-    case NETCMD_PASSWORD:
-    case NETCMD_RENAME:
-    case NETCMD_DELETE:
-    case NETCMD_LOCK:
-    case NETCMD_UNLOCK:
-    case NETCMD_MKDIR:
-    case NETCMD_RMDIR:
-    case NETCMD_SET_DESTINATION:
-    case NETCMD_SEEK:
-    case NETCMD_SET_EOL:
+    case CMD::NET_OPEN:
+    case CMD::NET_WRITE:
+    case CMD::NET_CHDIR:
+    case CMD::NET_QUERY:
+    case CMD::NET_USERNAME:
+    case CMD::NET_PASSWORD:
+    case CMD::NET_RENAME:
+    case CMD::NET_DELETE:
+    case CMD::NET_LOCK:
+    case CMD::NET_UNLOCK:
+    case CMD::NET_MKDIR:
+    case CMD::NET_RMDIR:
+    case CMD::NET_SET_DESTINATION:
+    case CMD::NET_SEEK:
+    case CMD::NET_SET_EOL:
         return SIO_DIRECTION::WRITE;
 
     // Invalid/unknown command

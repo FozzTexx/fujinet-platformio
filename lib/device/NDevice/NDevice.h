@@ -126,7 +126,7 @@ protected:
     void fujidev_close(const FUJI_COMMAND_PACKET &packet);
     void fujidev_read(const FUJI_COMMAND_PACKET &packet);
     virtual void fujidev_write(const FUJI_COMMAND_PACKET &packet);
-    void fujidev_status(const FUJI_COMMAND_PACKET &packet);
+    virtual void fujidev_status(const FUJI_COMMAND_PACKET &packet);
     void fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet);
     void fujidev_get_prefix(const FUJI_COMMAND_PACKET &packet);
     virtual void fujidev_set_query(const FUJI_COMMAND_PACKET &packet);

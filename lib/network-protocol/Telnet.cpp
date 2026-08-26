@@ -157,7 +157,7 @@ fujiError_t NetworkProtocolTELNET::read(unsigned short len)
         // Check for client connection
         if (!client.connected())
         {
-            error = NDEV_STATUS::NOT_CONNECTED;
+            set_error(NDEV_STATUS::NOT_CONNECTED);
             return FUJI_ERROR::UNSPECIFIED; // error
         }
 
@@ -169,19 +169,19 @@ fujiError_t NetworkProtocolTELNET::read(unsigned short len)
         // bail if the connection is reset.
         if (errno == ECONNRESET)
         {
-            error = NDEV_STATUS::CONNECTION_RESET;
+            set_error(NDEV_STATUS::CONNECTION_RESET);
             return FUJI_ERROR::UNSPECIFIED;
         }
 
         // Translate the freshly-read bytes exactly once.
-        error = NDEV_STATUS::SUCCESS;
+        set_error(NDEV_STATUS::SUCCESS);
         Debug_printf("NetworkProtocolTELNET::read(%d) - %s\r\n", newRxLen, receiveBuffer->c_str());
         return NetworkProtocol::read(newRxLen); // newRxLen set by calls into telnet_recv()
     }
 
     // receiveBuffer already holds translated data; return without re-translating,
     // which would corrupt multi-byte native EOLs.
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -197,7 +197,7 @@ fujiError_t NetworkProtocolTELNET::write(unsigned short len)
     // Check for client connection
     if (!client.connected())
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::UNSPECIFIED; // error
     }
 
@@ -210,12 +210,12 @@ fujiError_t NetworkProtocolTELNET::write(unsigned short len)
     // bail if the connection is reset.
     if (errno == ECONNRESET)
     {
-        error = NDEV_STATUS::CONNECTION_RESET;
+        set_error(NDEV_STATUS::CONNECTION_RESET);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
     // Return success
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
 
     return FUJI_ERROR::NONE;
 }

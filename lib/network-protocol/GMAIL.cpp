@@ -755,19 +755,19 @@ void NetworkProtocolGMAIL::mailbox_error_to_error()
     switch (_last_http)
     {
     case 401:
-        error = NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD;
+        set_error(NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD);
         break;
     case 403:
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         break;
     case 404:
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         break;
     case 0:
-        error = NDEV_STATUS::SERVICE_NOT_AVAILABLE;
+        set_error(NDEV_STATUS::SERVICE_NOT_AVAILABLE);
         break;
     default:
-        error = (_last_http >= 500) ? NDEV_STATUS::SERVICE_NOT_AVAILABLE : NDEV_STATUS::GENERAL;
+        set_error(_last_http >= 500 ? NDEV_STATUS::SERVICE_NOT_AVAILABLE : NDEV_STATUS::GENERAL);
         break;
     }
 }

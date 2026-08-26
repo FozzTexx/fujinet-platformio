@@ -434,21 +434,21 @@ fujiError_t NetworkProtocolSSHCopyId::open(PeoplesUrlParser *urlParser,
     /* ---- Validate URL ---- */
     if (user.empty()) {
         setErrorResponse("SSH.COPYID error: missing SSH username");
-        error = NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD;
+        set_error(NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD);
         Debug_printf("SSH.COPYID: missing username.\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
 
     if (pass.empty()) {
         setErrorResponse("SSH.COPYID error: password required");
-        error = NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD;
+        set_error(NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD);
         Debug_printf("SSH.COPYID: password required.\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
 
     if (host.empty()) {
         setErrorResponse("SSH.COPYID error: missing hostname");
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("SSH.COPYID: missing hostname.\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -457,7 +457,7 @@ fujiError_t NetworkProtocolSSHCopyId::open(PeoplesUrlParser *urlParser,
     std::string pubkeyLine;
     if (!readDefaultPublicKey(pubkeyLine)) {
         setErrorResponse("SSH.COPYID error: public key not found");
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -465,7 +465,7 @@ fujiError_t NetworkProtocolSSHCopyId::open(PeoplesUrlParser *urlParser,
 
     if (!validateEd25519PublicKey(pubkeyLine)) {
         setErrorResponse("SSH.COPYID error: invalid public key");
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("SSH.COPYID: public key validation failed.\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -474,7 +474,7 @@ fujiError_t NetworkProtocolSSHCopyId::open(PeoplesUrlParser *urlParser,
     ssh_session sess = NULL;
     if (!connectWithPassword(host, port, user, pass, sess)) {
         /* Error response already set by connectWithPassword */
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -488,7 +488,7 @@ fujiError_t NetworkProtocolSSHCopyId::open(PeoplesUrlParser *urlParser,
 
     if (!ok) {
         /* Error response already set by installPublicKey */
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -514,7 +514,7 @@ fujiError_t NetworkProtocolSSHCopyId::read(unsigned short len)
             statusResponse.clear();
     }
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return NetworkProtocol::read(len);
 }
 
@@ -523,7 +523,7 @@ fujiError_t NetworkProtocolSSHCopyId::read(unsigned short len)
 /* ------------------------------------------------------------------ */
 fujiError_t NetworkProtocolSSHCopyId::write(unsigned short len)
 {
-    error = NDEV_STATUS::GENERAL;
+    set_error(NDEV_STATUS::GENERAL);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
@@ -533,7 +533,7 @@ fujiError_t NetworkProtocolSSHCopyId::write(unsigned short len)
 fujiError_t NetworkProtocolSSHCopyId::status(NetworkStatus *status)
 {
     status->connected = 1;
-    status->error = error;
+    status->error = last_error();
     NetworkProtocol::status(status);
     return FUJI_ERROR::NONE;
 }

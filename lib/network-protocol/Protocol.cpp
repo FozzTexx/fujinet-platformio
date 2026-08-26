@@ -84,7 +84,7 @@ NetworkProtocol::NetworkProtocol(std::string *rx_buf,
     receiveBuffer = rx_buf;
     transmitBuffer = tx_buf;
     specialBuffer = sp_buf;
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     login = password = nullptr;
 }
 
@@ -134,7 +134,7 @@ fujiError_t NetworkProtocol::close()
     transmitBuffer->shrink_to_fit();
     specialBuffer->shrink_to_fit();
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -149,7 +149,7 @@ fujiError_t NetworkProtocol::read(unsigned short len)
     Debug_printf("NetworkProtocol::read(%u)\r\n", len);
 #endif
     translate_receive_buffer();
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -262,62 +262,62 @@ void NetworkProtocol::errno_to_error()
     {
 #if defined(_WIN32)
     case WSAEWOULDBLOCK:
-        error = NDEV_STATUS::SUCCESS; // This is okay.
+        set_error(NDEV_STATUS::SUCCESS); // This is okay.
         compat_setsockerr(0); // Short circuit and say it's okay.
     case WSAEADDRINUSE:
-        error = NDEV_STATUS::ADDRESS_IN_USE;
+        set_error(NDEV_STATUS::ADDRESS_IN_USE);
         break;
     case WSAEINPROGRESS:
     case WSAEALREADY:
-        error = NDEV_STATUS::CONNECTION_ALREADY_IN_PROGRESS;
+        set_error(NDEV_STATUS::CONNECTION_ALREADY_IN_PROGRESS);
         break;
     case WSAECONNRESET:
-        error = NDEV_STATUS::CONNECTION_RESET;
+        set_error(NDEV_STATUS::CONNECTION_RESET);
         break;
     case WSAECONNREFUSED:
-        error = NDEV_STATUS::CONNECTION_REFUSED;
+        set_error(NDEV_STATUS::CONNECTION_REFUSED);
         break;
     case WSAENETUNREACH:
-        error = NDEV_STATUS::NETWORK_UNREACHABLE;
+        set_error(NDEV_STATUS::NETWORK_UNREACHABLE);
         break;
     case WSAETIMEDOUT:
-        error = NDEV_STATUS::SOCKET_TIMEOUT;
+        set_error(NDEV_STATUS::SOCKET_TIMEOUT);
         break;
     case WSAENETDOWN:
-        error = NDEV_STATUS::NETWORK_DOWN;
+        set_error(NDEV_STATUS::NETWORK_DOWN);
         break;
 #else
     case EAGAIN:
-        error = NDEV_STATUS::SUCCESS; // This is okay.
+        set_error(NDEV_STATUS::SUCCESS); // This is okay.
         compat_setsockerr(0); // Short circuit and say it's okay.
         break;
     case EADDRINUSE:
-        error = NDEV_STATUS::ADDRESS_IN_USE;
+        set_error(NDEV_STATUS::ADDRESS_IN_USE);
         break;
     case EINPROGRESS:
-        error = NDEV_STATUS::CONNECTION_ALREADY_IN_PROGRESS;
+        set_error(NDEV_STATUS::CONNECTION_ALREADY_IN_PROGRESS);
         break;
     case ECONNRESET:
-        error = NDEV_STATUS::CONNECTION_RESET;
+        set_error(NDEV_STATUS::CONNECTION_RESET);
         break;
     case ECONNREFUSED:
-        error = NDEV_STATUS::CONNECTION_REFUSED;
+        set_error(NDEV_STATUS::CONNECTION_REFUSED);
         break;
     case ENETUNREACH:
-        error = NDEV_STATUS::NETWORK_UNREACHABLE;
+        set_error(NDEV_STATUS::NETWORK_UNREACHABLE);
         break;
     case ETIMEDOUT:
-        error = NDEV_STATUS::SOCKET_TIMEOUT;
+        set_error(NDEV_STATUS::SOCKET_TIMEOUT);
         break;
     case ENETDOWN:
-        error = NDEV_STATUS::NETWORK_DOWN;
+        set_error(NDEV_STATUS::NETWORK_DOWN);
         break;
 #endif
     default:
 #ifdef VERBOSE_PROTOCOL
         Debug_printf("errno_to_error() - Uncaught errno = %u, returning 144.\r\n", err);
 #endif
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         break;
     }
 }

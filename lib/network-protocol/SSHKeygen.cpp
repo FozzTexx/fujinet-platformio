@@ -305,7 +305,7 @@ fujiError_t NetworkProtocolSSHKeygen::open(PeoplesUrlParser *urlParser,
     /* Only Ed25519 is supported */
     if (algo != "ed25519") {
         statusResponse = "SSH.KEYGEN error: unsupported algorithm: " + algo + "\r\n";
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("SSH.KEYGEN: unsupported algorithm '%s'.\r\n", algo.c_str());
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -313,7 +313,7 @@ fujiError_t NetworkProtocolSSHKeygen::open(PeoplesUrlParser *urlParser,
     /* Ensure /.ssh directory exists */
     if (!ensureSshDirectoryExists()) {
         statusResponse = "SSH.KEYGEN error: cannot create .ssh directory\r\n";
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -321,7 +321,7 @@ fujiError_t NetworkProtocolSSHKeygen::open(PeoplesUrlParser *urlParser,
     bool keysExist = keyFilesAlreadyExist();
     if (keysExist && !overwrite) {
         statusResponse = "SSH.KEYGEN error: key already exists\r\n";
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("SSH.KEYGEN: refusing to overwrite existing keys.\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -331,7 +331,7 @@ fujiError_t NetworkProtocolSSHKeygen::open(PeoplesUrlParser *urlParser,
        private/public keys if a write fails partway. */
     if (!generateEd25519KeyPair(keysExist && overwrite)) {
         statusResponse = "SSH.KEYGEN error: key generation failed\r\n";
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -365,7 +365,7 @@ fujiError_t NetworkProtocolSSHKeygen::read(unsigned short len)
             statusResponse.clear();
     }
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return NetworkProtocol::read(len);
 }
 
@@ -374,7 +374,7 @@ fujiError_t NetworkProtocolSSHKeygen::read(unsigned short len)
 /* ------------------------------------------------------------------ */
 fujiError_t NetworkProtocolSSHKeygen::write(unsigned short len)
 {
-    error = NDEV_STATUS::GENERAL;
+    set_error(NDEV_STATUS::GENERAL);
     return FUJI_ERROR::UNSPECIFIED;
 }
 
@@ -384,7 +384,7 @@ fujiError_t NetworkProtocolSSHKeygen::write(unsigned short len)
 fujiError_t NetworkProtocolSSHKeygen::status(NetworkStatus *status)
 {
     status->connected = 1;
-    status->error = error;
+    status->error = last_error();
     NetworkProtocol::status(status);
     return FUJI_ERROR::NONE;
 }

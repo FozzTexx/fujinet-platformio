@@ -402,8 +402,8 @@ class rs232Network : public NDevice
 {
 protected:
     void rs232_process(const FujiBusPacket &packet) { NDevice::processCommand(packet); }
-    void status(const FUJI_COMMAND_PACKET &packet) override;
-    void set_query(const FUJI_COMMAND_PACKET &packet) override;
+    void fujidev_status(const FUJI_COMMAND_PACKET &packet) override;
+    void fujidev_set_query(const FUJI_COMMAND_PACKET &packet) override;
 #ifdef UNUSED
     void status_local(uint8_t reqType) override;
 #endif /* UNUSED */
