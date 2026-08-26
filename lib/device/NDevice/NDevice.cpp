@@ -91,7 +91,11 @@ NDevice::~NDevice()
 
 bool NDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
 {
-    Debug_printf("NDevice processCommand: 0x%02x\n", packet.command());
+    {
+        uint8_t cmd = packet.command();
+        Debug_printf("NDevice processCommand: '%c' 0x%02x\n", isprint(cmd) ? cmd : '.', cmd);
+    }
+
     auto it = dispatch_table.find(packet.command());
     if (it == dispatch_table.end())
     {
@@ -923,7 +927,9 @@ bool NDevice::poll_interrupt()
 #ifdef HAVE_LAST_ERROR
         err = lastError;
 #else
+        protocol->fromInterrupt = true;
         auto nstatus = fujicore_status();
+        protocol->fromInterrupt = false;
         if (!nstatus.conn)
             hasUpdate = true;
         err = nstatus.err;
