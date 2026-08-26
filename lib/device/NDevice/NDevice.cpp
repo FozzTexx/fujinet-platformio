@@ -194,7 +194,8 @@ void NDevice::fujidev_open(const FUJI_COMMAND_PACKET &packet)
 #ifdef HAVE_LAST_ERROR
         lastError = protocol->error;
 #endif /* HAVE_LAST_ERROR */
-        Debug_printf("Protocol unable to make connection. Error: %d\n", protocol->last_error());
+        Debug_printf("Protocol unable to make connection. Error: %d\n",
+                     protocol->last_error());
         protocol = nullptr;
         SYSTEM_BUS.transaction_error();
         return;
@@ -515,20 +516,22 @@ void NDevice::fujicore_set_query(const std::string &query, uint8_t parseFlags)
 
     // don't copy past first nul char in tmp
     buffer.resize(strlen(buffer.c_str()));
-    *receiveBuffer += buffer;
+    *receiveBuffer += SYSTEM_BUS.unicodeTextToNative(buffer);
     Debug_printf("Query set to >%s<\r\n", query.c_str());
 }
 
 void NDevice::fujidev_set_query(const FUJI_COMMAND_PACKET &packet)
 {
-    uint8_t query_param = packet.param(1);
+    uint8_t query_param = 0; //packet.param(1);
 
-    std::string in(256, 0);
+    std::string query(256, 0);
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
-    SYSTEM_BUS.transaction_get(in);
+    SYSTEM_BUS.transaction_get(query);
+    query.resize(strlen(query.c_str()));
+    query = SYSTEM_BUS.nativeTextToUnicode(query);
 
-    fujicore_set_query(in, query_param);
+    fujicore_set_query(query, query_param);
     SYSTEM_BUS.transaction_success();
 }
 
@@ -935,7 +938,7 @@ bool NDevice::poll_interrupt()
 void NDevice::fujidev_set_timer_rate(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    timerRate = (uint16_t) packet.param(0);
+    timerRate = (uint8_t) packet.param(0);
     SYSTEM_BUS.transaction_success();
 }
 
