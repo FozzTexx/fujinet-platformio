@@ -6,7 +6,7 @@
 class sioNetwork : public NDevice
 {
 public:
-    void sio_status(const FujiSIOPacket &packet) override { return status(packet); }
+    void sio_status(const FujiSIOPacket &packet) override { return fujidev_status(packet); }
     void sio_process(const FujiSIOPacket &packet) override;
 
 private:

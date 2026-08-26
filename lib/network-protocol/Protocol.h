@@ -8,7 +8,9 @@
 #include "global_types.h"
 #include "global_defines.h"
 
+#ifdef ESP_PLATFORM
 #include "esp_debug_helpers.h"
+#endif /* ESP_PLATFORM */
 
 #include <string>
 
@@ -248,8 +250,10 @@ protected:
 
     inline void set_error(nDevStatus_t err) {
         _error = err;
+#ifdef ESP_PLATFORM
         if (_error == NDEV_STATUS::GENERAL)
             esp_backtrace_print(10);
+#endif /* ESP_PLATFORM */
     }
 
 private:

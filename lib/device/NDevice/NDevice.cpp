@@ -913,7 +913,7 @@ bool NDevice::poll_interrupt()
     if (delta < 5000)
         return false;
     delta /= 1000; // micro to milli
-    delta /= timerRate;
+    delta /= timerRate * 2;
     if (delta % 2)
         return false;
     bool hasUpdate = protocol->available() > 0;
