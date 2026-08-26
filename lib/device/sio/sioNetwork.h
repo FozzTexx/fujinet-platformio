@@ -1,7 +1,5 @@
-#ifndef NETWORK_H
-#define NETWORK_H
-
-#ifdef BUILD_ATARI
+#ifndef SIONETWORK_H
+#define SIONETWORK_H
 
 #include "NDevice.h"
 
@@ -471,6 +469,4 @@ private:
 };
 #endif /* OBSOLETE */
 
-#endif /* BUILD_ATARI */
-
-#endif /* NETWORK_H */
+#endif /* SIONETWORK_H */

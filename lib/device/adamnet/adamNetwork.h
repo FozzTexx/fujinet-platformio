@@ -1,5 +1,5 @@
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef ADAMNETWORK_H
+#define ADAMNETWORK_H
 
 #include "NDevice.h"
 #include "bus.h"
@@ -36,4 +36,4 @@ protected:
     void set_query(const FUJI_COMMAND_PACKET &packet) override;
 };
 
-#endif /* NETWORK_H */
+#endif /* ADAMNETWORK_H */

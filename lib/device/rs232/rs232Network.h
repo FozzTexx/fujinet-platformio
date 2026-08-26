@@ -1,5 +1,5 @@
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef RS232NETWORK_H
+#define RS232NETWORK_H
 
 #include "NDevice.h"
 
@@ -416,4 +416,4 @@ public:
 
 #endif /* OBSOLETE */
 
-#endif /* NETWORK_H */
+#endif /* RS232NETWORK_H */

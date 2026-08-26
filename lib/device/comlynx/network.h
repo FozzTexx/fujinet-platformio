@@ -1,3 +1,5 @@
+#ifdef BUILD_LYNX
+
 #ifndef NETWORK_H
 #define NETWORK_H
 
@@ -308,3 +310,5 @@ private:
 };
 
 #endif /* NETWORK_H */
+
+#endif /* BUILD_LYNX */

@@ -1,5 +1,5 @@
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef IWMNETWORK_H
+#define IWMNETWORK_H
 
 #include "NDevice.h"
 
@@ -311,4 +311,4 @@ public:
 
 #endif /* OBSOLETE */
 
-#endif /* NETWORK_H */
+#endif /* IWMNETWORK_H */
