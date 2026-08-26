@@ -94,14 +94,14 @@ bool NetworkProtocolSSH::authenticateWithPassword()
     bool allowsPassword = ret & SSH_AUTH_METHOD_PASSWORD;
 
     if (!allowsPassword) {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSSH::authenticateWithPassword() - Server does not allow password auth.\r\n");
         return false;
     }
 
     ret = ssh_userauth_password(session, NULL, password->c_str());
     if (ret != SSH_AUTH_SUCCESS) {
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         const char *message = ssh_get_error(session);
         Debug_printf("NetworkProtocolSSH::authenticateWithPassword() - Password auth failed, error: %s.\r\n", message);
         return false;
@@ -121,7 +121,7 @@ bool NetworkProtocolSSH::authenticateWithDefaultKey()
     bool allowsPublicKey = ret & SSH_AUTH_METHOD_PUBLICKEY;
 
     if (!allowsPublicKey) {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSSH::authenticateWithDefaultKey() - Server does not allow public key auth.\r\n");
         return false;
     }
@@ -133,7 +133,7 @@ bool NetworkProtocolSSH::authenticateWithDefaultKey()
     ssh_key privkey = NULL;
     ret = ssh_pki_import_privkey_file(keyPath.c_str(), NULL, NULL, NULL, &privkey);
     if (ret != SSH_OK) {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSSH::authenticateWithDefaultKey() - "
                      "Could not load private key from %s (error code: %d). "
                      "Check that the file exists and is a valid SSH private key.\r\n",
@@ -146,7 +146,7 @@ bool NetworkProtocolSSH::authenticateWithDefaultKey()
     ssh_key_free(privkey);
 
     if (ret != SSH_AUTH_SUCCESS) {
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         const char *message = ssh_get_error(session);
         Debug_printf("NetworkProtocolSSH::authenticateWithDefaultKey() - "
                      "Public key auth failed, error: %s.\r\n", message);
@@ -180,14 +180,14 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
 
     /* Username is always required */
     if (!login || login->empty()) {
-        error = NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD;
+        set_error(NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD);
         Debug_printf("NetworkProtocolSSH::open() - Missing SSH username.\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
 
     /* For password auth, password must be present */
     if (usePasswordAuth && (!password || password->empty())) {
-        error = NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD;
+        set_error(NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD);
         Debug_printf("NetworkProtocolSSH::open() - Password auth selected but password is empty.\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -201,7 +201,7 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
     if ((ret = ssh_init()) != 0)
     {
         Debug_printf("NetworkProtocolSSH::open() - ssh_init not successful. Value returned: %d\r\n", ret);
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -210,7 +210,7 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
     if (session == NULL)
     {
         Debug_printf("Could not create session. aborting.\r\n");
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -227,7 +227,7 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
     ret = ssh_connect(session);
     if (ret != SSH_OK)
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         const char *message = ssh_get_error(session);
         Debug_printf("NetworkProtocolSSH::open() - Could not connect, error: %s.\r\n", message);
         return FUJI_ERROR::UNSPECIFIED;
@@ -237,7 +237,7 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
     ssh_key srv_pubkey = NULL;
     ret = ssh_get_server_publickey(session, &srv_pubkey);
     if (ret < 0) {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         const char *message = ssh_get_error(session);
         Debug_printf("NetworkProtocolSSH::open() - Could not get server ssh public key, error: %s.\r\n", message);
         return FUJI_ERROR::UNSPECIFIED;
@@ -249,7 +249,7 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
                                 &fingerprint,
                                 &hlen);
     if (ret == -1) {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         const char *message = ssh_get_error(session);
         Debug_printf("NetworkProtocolSSH::open() - Could not get server ssh public key hash, error: %s.\r\n", message);
         return FUJI_ERROR::UNSPECIFIED;
@@ -272,7 +272,7 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
     /* ---- Probe server auth methods ---- */
     ret = ssh_userauth_none(session, NULL);
     if (ret == SSH_AUTH_ERROR) {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         const char *message = ssh_get_error(session);
         Debug_printf("NetworkProtocolSSH::open() - Could not issue 'none' userauth method to server, error: %s.\r\n", message);
         return FUJI_ERROR::UNSPECIFIED;
@@ -310,14 +310,14 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
     /* ---- Open channel, PTY, shell ---- */
     channel = ssh_channel_new(session);
     if (channel == NULL) {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         const char *message = ssh_get_error(session);
         Debug_printf("NetworkProtocolSSH::open() - Could not open new channel, error: %s.\r\n", message);
         return FUJI_ERROR::UNSPECIFIED;
     }
     ret = ssh_channel_open_session(channel);
     if (ret != SSH_OK) {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         const char *message = ssh_get_error(session);
         Debug_printf("NetworkProtocolSSH::open() - Could not open session, error: %s.\r\n", message);
         return FUJI_ERROR::UNSPECIFIED;
@@ -336,7 +336,7 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
 
     if (ret != SSH_OK)
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("Could not request pty\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -344,7 +344,7 @@ fujiError_t NetworkProtocolSSH::open(PeoplesUrlParser *urlParser,
     ret = ssh_channel_request_shell(channel);
     if (ret != SSH_OK)
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("Could not open shell on channel\r\n");
         return FUJI_ERROR::UNSPECIFIED;
     }
@@ -391,7 +391,7 @@ fujiError_t NetworkProtocolSSH::write(unsigned short len)
     ssh_channel_write(channel, transmitBuffer->data(), len);
 
     // Return success - WTF?
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     transmitBuffer->erase(0, len);
 
     return err;

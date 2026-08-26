@@ -69,14 +69,14 @@ bool NetworkProtocolSFTP::authenticateWithPassword()
     int methods = ssh_userauth_list(session, NULL);
     if (!(methods & SSH_AUTH_METHOD_PASSWORD))
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSFTP::authenticateWithPassword() - Server does not allow password auth.\r\n");
         return false;
     }
 
     if (ssh_userauth_password(session, NULL, password->c_str()) != SSH_AUTH_SUCCESS)
     {
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         Debug_printf("NetworkProtocolSFTP::authenticateWithPassword() - failed: %s\r\n", ssh_get_error(session));
         return false;
     }
@@ -91,7 +91,7 @@ bool NetworkProtocolSFTP::authenticateWithDefaultKey()
     int methods = ssh_userauth_list(session, NULL);
     if (!(methods & SSH_AUTH_METHOD_PUBLICKEY))
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSFTP::authenticateWithDefaultKey() - Server does not allow public key auth.\r\n");
         return false;
     }
@@ -102,7 +102,7 @@ bool NetworkProtocolSFTP::authenticateWithDefaultKey()
     ssh_key privkey = NULL;
     if (ssh_pki_import_privkey_file(keyPath.c_str(), NULL, NULL, NULL, &privkey) != SSH_OK)
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSFTP::authenticateWithDefaultKey() - could not load key from %s\r\n", keyPath.c_str());
         return false;
     }
@@ -112,7 +112,7 @@ bool NetworkProtocolSFTP::authenticateWithDefaultKey()
 
     if (ret != SSH_AUTH_SUCCESS)
     {
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         Debug_printf("NetworkProtocolSFTP::authenticateWithDefaultKey() - failed: %s\r\n", ssh_get_error(session));
         return false;
     }
@@ -128,7 +128,7 @@ bool NetworkProtocolSFTP::sshConnectAndAuth(PeoplesUrlParser *url)
 
     if (login->empty())
     {
-        error = NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD;
+        set_error(NDEV_STATUS::INVALID_USERNAME_OR_PASSWORD);
         Debug_printf("NetworkProtocolSFTP::sshConnectAndAuth() - missing username.\r\n");
         return false;
     }
@@ -140,7 +140,7 @@ bool NetworkProtocolSFTP::sshConnectAndAuth(PeoplesUrlParser *url)
 
     if (ssh_init() != 0)
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSFTP::sshConnectAndAuth() - ssh_init failed.\r\n");
         return false;
     }
@@ -148,7 +148,7 @@ bool NetworkProtocolSFTP::sshConnectAndAuth(PeoplesUrlParser *url)
     session = ssh_new();
     if (session == NULL)
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         Debug_printf("NetworkProtocolSFTP::sshConnectAndAuth() - could not create session.\r\n");
         return false;
     }
@@ -165,7 +165,7 @@ bool NetworkProtocolSFTP::sshConnectAndAuth(PeoplesUrlParser *url)
 
     if (ssh_connect(session) != SSH_OK)
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         Debug_printf("NetworkProtocolSFTP::sshConnectAndAuth() - could not connect: %s\r\n", ssh_get_error(session));
         return false;
     }
@@ -174,7 +174,7 @@ bool NetworkProtocolSFTP::sshConnectAndAuth(PeoplesUrlParser *url)
 
     if (ssh_userauth_none(session, NULL) == SSH_AUTH_ERROR)
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSFTP::sshConnectAndAuth() - 'none' userauth failed: %s\r\n", ssh_get_error(session));
         return false;
     }
@@ -195,7 +195,7 @@ fujiError_t NetworkProtocolSFTP::mount(PeoplesUrlParser *url)
     sftp = sftp_new(session);
     if (sftp == nullptr)
     {
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
         Debug_printf("NetworkProtocolSFTP::mount() - sftp_new failed: %s\r\n", ssh_get_error(session));
         umount();
         return FUJI_ERROR::UNSPECIFIED;
@@ -236,25 +236,25 @@ void NetworkProtocolSFTP::fserror_to_error()
     switch (sftp_err)
     {
     case SSH_FX_OK:
-        error = NDEV_STATUS::SUCCESS;
+        set_error(NDEV_STATUS::SUCCESS);
         break;
     case SSH_FX_EOF:
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         break;
     case SSH_FX_NO_SUCH_FILE:
     case SSH_FX_NO_SUCH_PATH:
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         break;
     case SSH_FX_PERMISSION_DENIED:
     case SSH_FX_WRITE_PROTECT:
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         break;
     case SSH_FX_FILE_ALREADY_EXISTS:
-        error = NDEV_STATUS::FILE_EXISTS;
+        set_error(NDEV_STATUS::FILE_EXISTS);
         break;
     default:
         Debug_printf("SFTP uncaught error: %d\r\n", sftp_err);
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
     }
 }
 
@@ -351,7 +351,7 @@ fujiError_t NetworkProtocolSFTP::read_dir_entry(char *buf, unsigned short len)
 
     if (attr == nullptr)
     {
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 

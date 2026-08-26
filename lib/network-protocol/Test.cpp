@@ -63,7 +63,7 @@ fujiError_t NetworkProtocolTest::read(unsigned short len)
     if (receiveBuffer->length() == 0)
         *receiveBuffer += test_data.substr(0, len);
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
 
     Debug_printf("NetworkProtocolTest::read(%u)\r\n", len);
     for (int i = 0; i < receiveBuffer->length(); i++)
@@ -97,7 +97,7 @@ fujiError_t NetworkProtocolTest::write(unsigned short len)
 fujiError_t NetworkProtocolTest::status(NetworkStatus *status)
 {
     status->connected = 1;
-    status->error = error;
+    status->error = last_error();
 
     NetworkProtocol::status(status);
 

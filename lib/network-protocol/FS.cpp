@@ -187,10 +187,10 @@ fujiError_t NetworkProtocolFS::open_dir(dirFormat_t fmt)
         dirBuffer += "999+FREE SECTORS\x9b";
 #endif /* BUILD_ATARI */
 
-    if (error == NDEV_STATUS::END_OF_FILE)
-        error = NDEV_STATUS::SUCCESS;
+    if (last_error() == NDEV_STATUS::END_OF_FILE)
+        set_error(NDEV_STATUS::SUCCESS);
 
-    return error == NDEV_STATUS::SUCCESS ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
+    return last_error() == NDEV_STATUS::SUCCESS ? FUJI_ERROR::NONE : FUJI_ERROR::UNSPECIFIED;
 }
 
 void NetworkProtocolFS::update_dir_filename(PeoplesUrlParser *url)
@@ -301,7 +301,7 @@ fujiError_t NetworkProtocolFS::read_file(unsigned short len)
 
     // receiveBuffer already holds translated data; return without re-translating,
     // which would corrupt multi-byte native EOLs.
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -369,7 +369,7 @@ fujiError_t NetworkProtocolFS::status_file(NetworkStatus *status)
     if (was_write)
         status->error = NDEV_STATUS::SUCCESS;
     else
-        status->error = remaining > 0 ? error : NDEV_STATUS::END_OF_FILE;
+        status->error = remaining > 0 ? last_error() : NDEV_STATUS::END_OF_FILE;
 
     return FUJI_ERROR::NONE;
 }
@@ -377,7 +377,7 @@ fujiError_t NetworkProtocolFS::status_file(NetworkStatus *status)
 fujiError_t NetworkProtocolFS::status_dir(NetworkStatus *status)
 {
     status->connected = dirBuffer.length() > 0 ? 1 : 0;
-    status->error = dirBuffer.length() > 0 ? error : NDEV_STATUS::END_OF_FILE;
+    status->error = dirBuffer.length() > 0 ? last_error() : NDEV_STATUS::END_OF_FILE;
 
     NetworkProtocol::status(status);
 
@@ -445,7 +445,7 @@ fujiError_t NetworkProtocolFS::rename(PeoplesUrlParser *url)
     // No comma found, return invalid devicespec error.
     if (comma_pos == std::string::npos)
     {
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         return FUJI_ERROR::UNSPECIFIED;
     }
 

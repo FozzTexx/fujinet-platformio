@@ -130,7 +130,7 @@ fujiError_t NetworkProtocolCPM::open(PeoplesUrlParser *urlParser,
 
     running = true;
     NetworkProtocol::open(urlParser, access, translate);
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -204,12 +204,12 @@ fujiError_t NetworkProtocolCPM::read(unsigned short len)
 
         if (collected == 0)
         {
-            error = NDEV_STATUS::SOCKET_TIMEOUT;
+            set_error(NDEV_STATUS::SOCKET_TIMEOUT);
             return FUJI_ERROR::UNSPECIFIED;
         }
     }
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return NetworkProtocol::read(len);
 }
 
@@ -220,7 +220,7 @@ fujiError_t NetworkProtocolCPM::write(unsigned short len)
 {
     if (!running)
     {
-        error = NDEV_STATUS::NOT_CONNECTED;
+        set_error(NDEV_STATUS::NOT_CONNECTED);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -232,7 +232,7 @@ fujiError_t NetworkProtocolCPM::write(unsigned short len)
 #ifdef ESP_PLATFORM
         if (_cpm_txq == nullptr)
         {
-            error = NDEV_STATUS::NOT_CONNECTED;
+            set_error(NDEV_STATUS::NOT_CONNECTED);
             return FUJI_ERROR::UNSPECIFIED;
         }
         xQueueSend(_cpm_txq, &ch, portMAX_DELAY);
@@ -246,7 +246,7 @@ fujiError_t NetworkProtocolCPM::write(unsigned short len)
     }
 
     transmitBuffer->erase(0, len);
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -257,7 +257,7 @@ fujiError_t NetworkProtocolCPM::status(NetworkStatus *status)
         stopCPM();
 
     status->connected = running ? 1 : 0;
-    status->error     = running ? error : NDEV_STATUS::END_OF_FILE;
+    status->error     = running ? last_error() : NDEV_STATUS::END_OF_FILE;
     NetworkProtocol::status(status);
     return FUJI_ERROR::NONE;
 }

@@ -152,7 +152,7 @@ fujiError_t NetworkProtocolMailbox::open(PeoplesUrlParser *urlParser, fileAccess
                                          netProtoTranslation_t translate)
 {
     NetworkProtocol::open(urlParser, access, translate);
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     receiveBuffer->clear();
 
     bool isDir = (access == ACCESS_MODE::DIRECTORY || access == ACCESS_MODE::DIRECTORY_ALT);
@@ -160,7 +160,7 @@ fujiError_t NetworkProtocolMailbox::open(PeoplesUrlParser *urlParser, fileAccess
     if (!isDir && !isRead)
     {
         // Mailboxes are read-only.
-        error = NDEV_STATUS::READ_ONLY;
+        set_error(NDEV_STATUS::READ_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -190,14 +190,14 @@ fujiError_t NetworkProtocolMailbox::open(PeoplesUrlParser *urlParser, fileAccess
         _attach = (uint8_t)strtoul(parts[2].c_str(), nullptr, 10);
         if (isDir)
         {
-            error = NDEV_STATUS::INVALID_DEVICESPEC;
+            set_error(NDEV_STATUS::INVALID_DEVICESPEC);
             res = FUJI_ERROR::UNSPECIFIED;
         }
         else
             res = do_attachment_data();
         break;
     default:
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         res = FUJI_ERROR::UNSPECIFIED;
         break;
     }
@@ -457,16 +457,16 @@ void NetworkProtocolMailbox::format_attachment_index_raw(const std::vector<Mailb
 fujiError_t NetworkProtocolMailbox::read(unsigned short len)
 {
     // All content is staged into receiveBuffer at open(); the device drains it.
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
 fujiError_t NetworkProtocolMailbox::status(NetworkStatus *status)
 {
-    if (error == NDEV_STATUS::SUCCESS && receiveBuffer->empty())
+    if (last_error() == NDEV_STATUS::SUCCESS && receiveBuffer->empty())
         status->error = NDEV_STATUS::END_OF_FILE;
     else
-        status->error = error;
+        status->error = last_error();
     status->connected = receiveBuffer->empty() ? 0 : 1;
     return FUJI_ERROR::NONE;
 }

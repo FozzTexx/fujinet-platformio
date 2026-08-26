@@ -101,30 +101,30 @@ void NetworkProtocolTNFS::fserror_to_error()
     switch (tnfs_error)
     {
     case -1: // special case for mount
-        error = NDEV_STATUS::GENERAL_TIMEOUT;
+        set_error(NDEV_STATUS::GENERAL_TIMEOUT);
         break;
     case TNFS_RESULT_SUCCESS:
-        error = NDEV_STATUS::SUCCESS;
+        set_error(NDEV_STATUS::SUCCESS);
         break;
     case TNFS_RESULT_FILE_NOT_FOUND:
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         break;
     case TNFS_RESULT_READONLY_FILESYSTEM:
     case TNFS_RESULT_ACCESS_DENIED:
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         break;
     case TNFS_RESULT_NO_SPACE_ON_DEVICE:
-        error = NDEV_STATUS::NO_SPACE_ON_DEVICE;
+        set_error(NDEV_STATUS::NO_SPACE_ON_DEVICE);
         break;
     case TNFS_RESULT_END_OF_FILE:
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         break;
     case TNFS_RESULT_FILE_EXISTS:
-        error = NDEV_STATUS::FILE_EXISTS;
+        set_error(NDEV_STATUS::FILE_EXISTS);
         break;
     default:
         Debug_printf("TNFS uncaught error: %u\r\n", tnfs_error);
-        error = NDEV_STATUS::GENERAL;
+        set_error(NDEV_STATUS::GENERAL);
     }
 }
 

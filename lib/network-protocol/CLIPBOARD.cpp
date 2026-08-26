@@ -92,7 +92,7 @@ fujiError_t NetworkProtocolClipboard::open(PeoplesUrlParser *urlParser,
     if (!parse_index(urlParser, index))
     {
         Debug_printf("NetworkProtocolClipboard::open() - No such snippet: %s\r\n", urlParser->path.c_str());
-        error = NDEV_STATUS::INVALID_DEVICESPEC;
+        set_error(NDEV_STATUS::INVALID_DEVICESPEC);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -112,7 +112,7 @@ fujiError_t NetworkProtocolClipboard::open(PeoplesUrlParser *urlParser,
         break;
     default:
         Debug_printf("NetworkProtocolClipboard::open() - Unsupported access mode: %u\r\n", (unsigned)access);
-        error = NDEV_STATUS::INVALID_COMMAND;
+        set_error(NDEV_STATUS::INVALID_COMMAND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -121,7 +121,7 @@ fujiError_t NetworkProtocolClipboard::open(PeoplesUrlParser *urlParser,
     if (writable && index != 0)
     {
         Debug_printf("NetworkProtocolClipboard::open() - Snippet %u is read only\r\n", (unsigned)index);
-        error = NDEV_STATUS::ACCESS_DENIED;
+        set_error(NDEV_STATUS::ACCESS_DENIED);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -130,7 +130,7 @@ fujiError_t NetworkProtocolClipboard::open(PeoplesUrlParser *urlParser,
     if (fnClipboard.snippet(index) == nullptr)
     {
         Debug_printf("NetworkProtocolClipboard::open() - Snippet %u is not there\r\n", (unsigned)index);
-        error = NDEV_STATUS::FILE_NOT_FOUND;
+        set_error(NDEV_STATUS::FILE_NOT_FOUND);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -143,7 +143,7 @@ fujiError_t NetworkProtocolClipboard::open(PeoplesUrlParser *urlParser,
                  (unsigned)index, (unsigned)readBuffer.size(), (unsigned)translation_mode,
                  binary ? ", binary" : "");
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -212,7 +212,7 @@ fujiError_t NetworkProtocolClipboard::read(unsigned short len)
 
     if (!readable)
     {
-        error = NDEV_STATUS::WRITE_ONLY;
+        set_error(NDEV_STATUS::WRITE_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -231,11 +231,11 @@ fujiError_t NetworkProtocolClipboard::read(unsigned short len)
     {
         // Short: pad out the block the channel is expecting and say why.
         receiveBuffer->append(len - receiveBuffer->length(), '\0');
-        error = NDEV_STATUS::END_OF_FILE;
+        set_error(NDEV_STATUS::END_OF_FILE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
     return FUJI_ERROR::NONE;
 }
 
@@ -245,7 +245,7 @@ fujiError_t NetworkProtocolClipboard::write(unsigned short len)
 
     if (!writable)
     {
-        error = NDEV_STATUS::READ_ONLY;
+        set_error(NDEV_STATUS::READ_ONLY);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -257,7 +257,7 @@ fujiError_t NetworkProtocolClipboard::write(unsigned short len)
         Debug_printf("NetworkProtocolClipboard::write(%u) - Would exceed the %u byte limit\r\n",
                      len, (unsigned)CLIPBOARD_MAX_SIZE);
         transmitBuffer->erase(0, len);
-        error = NDEV_STATUS::NO_SPACE_ON_DEVICE;
+        set_error(NDEV_STATUS::NO_SPACE_ON_DEVICE);
         return FUJI_ERROR::UNSPECIFIED;
     }
 
@@ -266,7 +266,7 @@ fujiError_t NetworkProtocolClipboard::write(unsigned short len)
     transmitBuffer->shrink_to_fit();
 
     wrote = true;
-    error = NDEV_STATUS::SUCCESS;
+    set_error(NDEV_STATUS::SUCCESS);
 
     return FUJI_ERROR::NONE;
 }
@@ -280,7 +280,7 @@ fujiError_t NetworkProtocolClipboard::status(NetworkStatus *status)
     if (was_write || !readable)
         status->error = NDEV_STATUS::SUCCESS;
     else
-        status->error = remaining > 0 ? error : NDEV_STATUS::END_OF_FILE;
+        status->error = remaining > 0 ? last_error() : NDEV_STATUS::END_OF_FILE;
 
     return FUJI_ERROR::NONE;
 }
