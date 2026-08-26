@@ -295,9 +295,11 @@ private:
 
 class iwmNetwork : public NDevice
 {
+#ifdef OBSOLETE
 protected:
     void status(const FUJI_COMMAND_PACKET &packet) override;
     void do_query(const iwm_decoded_cmd_t &cmd) override;
+#endif /* OBSOLETE */
 
 public:
     iwm_device_info_block_t create_dib_reply_packet() override;
