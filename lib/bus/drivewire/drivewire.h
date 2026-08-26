@@ -81,12 +81,11 @@ class fujiDevice;
 
 class drivewireDevice
 {
-#ifdef OBSOLETE
     friend systemBus;
-#endif /* OBSOLETE */
     friend fujiDevice;
 
 protected:
+    nDevStatus_t _errorCode;
     fujiDeviceID_t _devnum;
 
     // Optional shutdown/reboot cleanup routine

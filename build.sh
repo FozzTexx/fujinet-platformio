@@ -365,7 +365,7 @@ if [ ! -z "$PC_TARGET" ] ; then
 
   # run unit tests
   ctest -V --progress
-    if [ $? -ne 0 ] ; then
+  if [ $? -ne 0 ] ; then
     echo "Error running unit tests. Aborting"
     exit 1
   fi
