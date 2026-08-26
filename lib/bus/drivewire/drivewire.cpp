@@ -2,6 +2,7 @@
 
 #include "drivewire.h"
 #include "drivewire/drivewireFuji.h"
+#include "drivewire/drivewireNetwork.h"
 #include "drivewire/drivewireClock.h"
 #include "NDevice.h"
 #include "led.h"

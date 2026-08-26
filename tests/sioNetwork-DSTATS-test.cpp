@@ -230,4 +230,3 @@ fnUDP::~fnUDP() {}
 int fnUDP::available() { return 0; }
 
 uint16_t FujiSIOPacket::getParam(size_t index, size_t psize) const { return 0; }
-
