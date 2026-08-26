@@ -1,6 +1,6 @@
 #ifdef BUILD_ADAM
 
-#include "network.h"
+#include "adamNetwork.h"
 #include "debug.h"
 
 #define MAX_ADAM_PACKET_LEN 1024
@@ -29,12 +29,12 @@ AdamNetStatus adamNetwork::deviceStatus()
     return status;
 }
 
-void adamNetwork::write(const FUJI_COMMAND_PACKET &packet)
+void adamNetwork::fujidev_write(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
     if (!packet.data().has_value()
-        || NDevice::write(packet.data().value()).is_error())
+        || fujicore_write(packet.data().value()).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
@@ -46,7 +46,12 @@ void adamNetwork::write(const FUJI_COMMAND_PACKET &packet)
 void adamNetwork::adamnet_control_receive()
 {
     ByteBuffer buf;
-    size_t avail = std::min<size_t>(available(), MAX_ADAM_PACKET_LEN);
+#ifdef UNUSED
+    size_t avail = std::min<size_t>(fujicore_available(), MAX_ADAM_PACKET_LEN);
+#else
+    NDeviceStatus nstatus = fujicore_status();
+    size_t avail = nstatus.avail;
+#endif /* UNUSED */
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
@@ -56,7 +61,7 @@ void adamNetwork::adamnet_control_receive()
         return;
     }
 
-    if (NDevice::read(buf, avail).is_error())
+    if (fujicore_read(buf, avail).is_error())
     {
         SYSTEM_BUS.transaction_error();
         return;
@@ -66,6 +71,7 @@ void adamNetwork::adamnet_control_receive()
     SYSTEM_BUS.transaction_send(buf);
 }
 
+#ifdef OBSOLETE
 void adamNetwork::status(const FUJI_COMMAND_PACKET &packet)
 {
     auto nstatus = NDevice::status(0);
@@ -81,5 +87,6 @@ void adamNetwork::set_query(const FUJI_COMMAND_PACKET &packet)
     NDevice::set_query(packet.dataAsString().value_or(""), 0);
     SYSTEM_BUS.transaction_success();
 }
+#endif /* OBSOLETE */
 
 #endif /* BUILD_ADAM */
