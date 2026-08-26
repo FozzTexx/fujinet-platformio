@@ -71,59 +71,46 @@ add_test(
             ${CMAKE_SOURCE_DIR}/lib/device/fujiClock
 )
 
-add_executable(sio_dstats_tests
-  sioNetwork-DSTATS-test.cpp
-  ${CMAKE_SOURCE_DIR}/lib/device/NDevice/NDevice.cpp
-  ${CMAKE_SOURCE_DIR}/lib/device/sio/sioNetwork.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/bus/sio/sio.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/bus/sio/FujiSIOPacket.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/utils/utils.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/hardware/TTYChannel.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/bus/sio/NetSIO.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/fnjson/fnjson.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/fnsgml/fnsgml.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/utils/peoples_url_parser.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/network-protocol/NetworkProtocolFactory.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/network-protocol/Protocol.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/network-protocol/FS.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/network-protocol/TCP.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/network-protocol/HTTP.cpp
-  # ${CMAKE_SOURCE_DIR}/lib/network-protocol/UDP.cpp
-  # + anything else needed to link sioNetwork
-  )
-target_include_directories(sio_dstats_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/include/
-  ${CMAKE_SOURCE_DIR}/lib/
-  ${CMAKE_SOURCE_DIR}/lib/bus/
-  ${CMAKE_SOURCE_DIR}/lib/sam/
-  ${CMAKE_SOURCE_DIR}/lib/device/
-  ${CMAKE_SOURCE_DIR}/lib/config/
-  ${CMAKE_SOURCE_DIR}/lib/printer-emulator/
-  ${CMAKE_SOURCE_DIR}/lib/FileSystem/
-  ${CMAKE_SOURCE_DIR}/lib/encoding/
-  ${CMAKE_SOURCE_DIR}/lib/media/
-  ${CMAKE_SOURCE_DIR}/lib/fuji/
-  ${CMAKE_SOURCE_DIR}/lib/modem-sniffer/
-  ${CMAKE_SOURCE_DIR}/lib/telnet/
-  ${CMAKE_SOURCE_DIR}/lib/device/NDevice/
-  ${CMAKE_SOURCE_DIR}/lib/device/fujiDevice/
-  ${CMAKE_SOURCE_DIR}/lib/hardware/
-  ${CMAKE_SOURCE_DIR}/lib/tcpip/
-  ${CMAKE_SOURCE_DIR}/lib/compat/
-  ${CMAKE_SOURCE_DIR}/lib/network-protocol/
-  ${CMAKE_SOURCE_DIR}/lib/utils/
-  ${CMAKE_SOURCE_DIR}/lib/ftp/
-  ${CMAKE_SOURCE_DIR}/lib/webdav/
-  ${CMAKE_SOURCE_DIR}/lib/http/
-  ${CMAKE_SOURCE_DIR}/lib/TNFSlib/
-  ${CMAKE_SOURCE_DIR}/lib/fnjson/
-  ${CMAKE_SOURCE_DIR}/lib/fnsgml/
-  ${CMAKE_SOURCE_DIR}/components_pc/
-  ${CMAKE_SOURCE_DIR}/components_pc/libssh/include/
-  ${CMAKE_SOURCE_DIR}/build/components_pc/libssh/include/
-  ${CMAKE_SOURCE_DIR}/components_pc/cJSON/
-  ${CMAKE_SOURCE_DIR}/components_pc/mongoose/
-  ${CMAKE_SOURCE_DIR}/components/gumbo-query/
-  )
-target_link_libraries(sio_dstats_tests PRIVATE)
-add_test(NAME sio_dstats_tests COMMAND sio_dstats_tests)
+if(FUJINET_TARGET STREQUAL "ATARI")
+  add_executable(sio_dstats_tests
+    sioNetwork-DSTATS-test.cpp
+    ${CMAKE_SOURCE_DIR}/lib/device/NDevice/NDevice.cpp
+    ${CMAKE_SOURCE_DIR}/lib/device/sio/sioNetwork.cpp
+    )
+  target_include_directories(sio_dstats_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/
+    ${CMAKE_SOURCE_DIR}/lib/
+    ${CMAKE_SOURCE_DIR}/lib/bus/
+    ${CMAKE_SOURCE_DIR}/lib/sam/
+    ${CMAKE_SOURCE_DIR}/lib/device/
+    ${CMAKE_SOURCE_DIR}/lib/config/
+    ${CMAKE_SOURCE_DIR}/lib/printer-emulator/
+    ${CMAKE_SOURCE_DIR}/lib/FileSystem/
+    ${CMAKE_SOURCE_DIR}/lib/encoding/
+    ${CMAKE_SOURCE_DIR}/lib/media/
+    ${CMAKE_SOURCE_DIR}/lib/fuji/
+    ${CMAKE_SOURCE_DIR}/lib/modem-sniffer/
+    ${CMAKE_SOURCE_DIR}/lib/telnet/
+    ${CMAKE_SOURCE_DIR}/lib/device/NDevice/
+    ${CMAKE_SOURCE_DIR}/lib/device/fujiDevice/
+    ${CMAKE_SOURCE_DIR}/lib/hardware/
+    ${CMAKE_SOURCE_DIR}/lib/tcpip/
+    ${CMAKE_SOURCE_DIR}/lib/compat/
+    ${CMAKE_SOURCE_DIR}/lib/network-protocol/
+    ${CMAKE_SOURCE_DIR}/lib/utils/
+    ${CMAKE_SOURCE_DIR}/lib/ftp/
+    ${CMAKE_SOURCE_DIR}/lib/webdav/
+    ${CMAKE_SOURCE_DIR}/lib/http/
+    ${CMAKE_SOURCE_DIR}/lib/TNFSlib/
+    ${CMAKE_SOURCE_DIR}/lib/fnjson/
+    ${CMAKE_SOURCE_DIR}/lib/fnsgml/
+    ${CMAKE_SOURCE_DIR}/components_pc/
+    ${CMAKE_SOURCE_DIR}/components_pc/libssh/include/
+    ${CMAKE_SOURCE_DIR}/build/components_pc/libssh/include/
+    ${CMAKE_SOURCE_DIR}/components_pc/cJSON/
+    ${CMAKE_SOURCE_DIR}/components_pc/mongoose/
+    ${CMAKE_SOURCE_DIR}/components/gumbo-query/
+    )
+  target_link_libraries(sio_dstats_tests PRIVATE)
+  add_test(NAME sio_dstats_tests COMMAND sio_dstats_tests)
+endif()
