@@ -8,6 +8,7 @@ protected:
     void comlynx_process(const FujiLynxPacket &packet) override {
         processCommand(packet);
     }
+    void fujidev_read(const FUJI_COMMAND_PACKET &packet) override;
 };
 
 #ifdef OBSOLETE
