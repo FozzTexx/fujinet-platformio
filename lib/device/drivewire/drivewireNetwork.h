@@ -13,7 +13,6 @@ class drivewireNetwork : public NDevice
 #endif /* HAVE_LAST_ERROR */
 };
 #else
-using drivewireNetwork = NDevice;
 #endif /* UNUSED */
 
 #endif /* DRIVEWIRENETWORK_H */
