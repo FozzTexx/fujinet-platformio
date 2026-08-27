@@ -883,7 +883,7 @@ void clean_transform_petscii_to_ascii(std::string& data) {
 bool is_N_prefix(const std::string &unit)
 {
     // Must start with 'N' and end with ':'
-    if (unit.size() < 2 || unit.front() != 'N' || unit.back() != ':')
+    if (unit.size() < 2 || (unit.front() != 'N' && unit.front() != 'n') || unit.back() != ':')
         return false;
 
     // If it's exactly "N:", it's a valid match

@@ -1,5 +1,6 @@
 #ifdef BUILD_LYNX
 
+#ifdef OBSOLETE
 /**
  * N: Firmware
  */
@@ -859,5 +860,6 @@ void lynxNetwork::process_udp(const FujiLynxPacket &packet)
     else
         SYSTEM_BUS.transaction_success();
 }
+#endif /* OBSOLETE */
 
 #endif /* BUILD_LYNX */
