@@ -314,9 +314,9 @@ public:
     void set_command_processed(bool processed);
     void sio_empty_ack();                                       // for NetSIO, notify hub we are not interested to handle the command
 
-    void set_proceed(bool level);
     void bus_idle(uint16_t ms) { _netsio.busIdle(ms); }
 #endif /* ESP_PLATFORM */
+    void set_proceed(bool level);
 
     bool motor_asserted();
 

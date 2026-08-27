@@ -5,9 +5,9 @@
 #include "siocpm.h"
 #include "fsFlash.h"
 #include "compat_string.h"
+#include "utils.h"
 #ifdef OBSOLETE
 #include "fnFsSD.h"
-#include "utils.h"
 #include "base64.h"
 #include "fuji_endian.h"
 

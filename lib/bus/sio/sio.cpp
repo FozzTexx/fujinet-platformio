@@ -605,11 +605,9 @@ void systemBus::remDevice(virtualDevice *p)
 int systemBus::numDevices()
 {
     int i = 0;
-    __BEGIN_IGNORE_UNUSEDVARS
     for (auto devicep : _daisyChain)
         i++;
     return i;
-    __END_IGNORE_UNUSEDVARS
 }
 
 void systemBus::changeDeviceId(virtualDevice *p, int device_id)
@@ -827,6 +825,11 @@ void systemBus::sio_empty_ack()
     {
         netsio_empty_sync();
     }
+}
+#else
+void systemBus::set_proceed(bool level)
+{
+    fnSystem.digital_write(PIN_PROC, level == true ? DIGI_HIGH : DIGI_LOW);
 }
 #endif
 
