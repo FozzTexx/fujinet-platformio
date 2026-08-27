@@ -4,7 +4,8 @@
 
 #include "bus.h"
 #include "FujiIWMPacket.h"
-#include "../../include/debug.h"
+#include "DaisyChain.h"
+#include "debug.h"
 
 // for ESP IWM-SLIP build, DEV_RELAY_SLIP should be defined in platformio.ini
 // for PC IWM-SLIP build DEV_RELAY_SLIP should be defined in fujinet_pc.cmake
@@ -201,6 +202,7 @@ public:
 class systemBus : public SystemBusBase
 {
 private:
+  DaisyChain _daisyChain;
   virtualDevice *_activeDev = nullptr;
   ByteBuffer _transaction_response;
 
@@ -246,7 +248,9 @@ private:
   int new_track = -1;
 
 public:
+#ifdef OBSOLETE
   std::forward_list<virtualDevice *> _daisyChain;
+#endif /* OBSOLETE */
 
   cmdPacket_t command_packet;
   bool iwm_decode_data_packet(uint8_t *a, int &n);
@@ -270,6 +274,7 @@ public:
   using SystemBusBase::transaction_send;
   void transaction_send(const void *data, size_t len, bool is_error=false) override;
 
+#ifdef OBSOLETE
   int numDevices();
   void addDevice(virtualDevice *pDevice, iwm_fujinet_type_t deviceType); // todo: probably get called by handle_init()
   void remDevice(virtualDevice *pDevice);
@@ -279,6 +284,18 @@ public:
   void disableDevice(uint8_t device_id);
   void changeDeviceId(virtualDevice *p, int device_id);
   iwmPrinter *getPrinter() { return _printerdev; }
+#else
+  fujiDeviceID_t remapDeviceType(iwm_fujinet_type_t deviceType);
+  fujiDeviceID_t remapDeviceAddress(uint8_t address, uint8_t unit);
+  void addDevice(virtualDevice *pDevice, iwm_fujinet_type_t deviceType);
+  iwmPrinter *getPrinter();
+  void changeDeviceID(virtualDevice *device, fujiDeviceID_t newID) {
+    _daisyChain.changeDeviceID(device, newID);
+  }
+  void enableDevice(uint8_t device_id);
+  void disableDevice(uint8_t device_id);
+#endif /* OBSOLETE */
+
   bool shuttingDown = false;                                  // TRUE if we are in shutdown process
   bool getShuttingDown() { return shuttingDown; };
   bool en35Host = false; // TRUE if we are connected to a host that supports the /EN35 signal

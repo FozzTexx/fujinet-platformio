@@ -361,11 +361,11 @@ void fujiDevice::fujicmd_image_rotate()
         {
             fujiDeviceID_t swap = (fujiDeviceID_t)get_disk_dev(n - 1)->id();
             Debug_printf("setting slot %d to ID %hx\n", n, swap);
-            SYSTEM_BUS.changeDeviceId(get_disk_dev(n), swap);
+            SYSTEM_BUS.changeDeviceID(get_disk_dev(n), swap);
         }
 
         // The first slot gets the device ID of the last slot
-        SYSTEM_BUS.changeDeviceId(get_disk_dev(0), last_id);
+        SYSTEM_BUS.changeDeviceID(get_disk_dev(0), last_id);
 
         // Blink out which slot is now drive 1, then let the platform announce it
         int rotate_slot = get_rotate_slot();

@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
+typedef enum class FUJI_DEVICEID : uint8_t {
 #if defined(BUILD_ADAM)
-enum fujiDeviceID_t : uint8_t {
   FUJI_DEVICEID_FUJINET      = 0x0F,
 
   FUJI_DEVICEID_KEYBOARD     = 0x01,
@@ -17,9 +17,7 @@ enum fujiDeviceID_t : uint8_t {
   FUJI_DEVICEID_TAPE         = 0x08,
   FUJI_DEVICEID_NETWORK      = 0x09,
   FUJI_DEVICEID_NETWORK_LAST = 0x0E,
-};
 #else
-enum fujiDeviceID_t : uint8_t {
   FUJI_DEVICEID_FUJINET      = 0x70,
 
   FUJI_DEVICEID_DISK         = 0x31,
@@ -41,7 +39,7 @@ enum fujiDeviceID_t : uint8_t {
   FUJI_DEVICEID_NETWORK_LAST = 0x78,
   FUJI_DEVICEID_MIDI         = 0x99,
   FUJI_DEVICEID_DBC          = 0xFF,
-};
 #endif /* BUILD_ADAM */
+} fujiDeviceID_t;
 
 #endif /* FUJI_DEVICES_H */
