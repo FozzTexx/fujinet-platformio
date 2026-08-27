@@ -529,7 +529,7 @@ if(FUJINET_TARGET STREQUAL "LYNX")
     lib/device/comlynx/disk.cpp lib/device/comlynx/disk.h
     lib/device/comlynx/lynxFuji.cpp lib/device/comlynx/lynxFuji.h
     lib/device/comlynx/netstream.cpp lib/device/comlynx/netstream.h
-    lib/device/comlynx/network.cpp lib/device/comlynx/network.h
+    lib/device/comlynx/lynxNetwork.cpp lib/device/comlynx/lynxNetwork.h
     lib/device/comlynx/printer.cpp lib/device/comlynx/printer.h
     lib/device/comlynx/printerlist.cpp lib/device/comlynx/printerlist.h
     lib/device/comlynx/redeye.cpp lib/device/comlynx/redeye.h

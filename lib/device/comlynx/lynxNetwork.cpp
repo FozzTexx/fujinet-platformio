@@ -1,6 +1,6 @@
 #ifdef BUILD_LYNX
 
-#include "network.h"
+#include "lynxNetwork.h"
 
 void lynxNetwork::fujidev_read(const FUJI_COMMAND_PACKET &packet)
 {
