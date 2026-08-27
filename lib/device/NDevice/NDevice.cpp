@@ -389,7 +389,7 @@ NDeviceStatus NDevice::current_status()
     nstatus.avail = std::min<size_t>(65535, fujicore_available());
     nstatus.conn = ns.connected;
     nstatus.err = ns.error;
-#if 1
+#if 0
     Debug_printf("NDevice::status avail=%d conn=%d err=%d\n",
                  nstatus.avail, nstatus.conn, nstatus.err);
 #endif
