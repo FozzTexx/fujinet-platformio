@@ -1,5 +1,16 @@
 #ifdef BUILD_LYNX
 
+#include "NDevice.h"
+
+class lynxNetwork : public NDevice
+{
+protected:
+    void comlynx_process(const FujiLynxPacket &packet) override {
+        processCommand(packet);
+    }
+};
+
+#ifdef OBSOLETE
 #ifndef NETWORK_H
 #define NETWORK_H
 
@@ -310,5 +321,6 @@ private:
 };
 
 #endif /* NETWORK_H */
+#endif /* OBSOLETE */
 
 #endif /* BUILD_LYNX */
