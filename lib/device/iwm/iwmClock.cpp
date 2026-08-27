@@ -156,8 +156,10 @@ void iwmClock::iwm_close(const iwm_decoded_cmd_t &cmd)
     SYSTEM_BUS.transaction_success();
 }
 
+#ifdef OBSOLETE
 void iwmClock::shutdown()
 {
 }
+#endif /* OBSOLETE */
 
 #endif /* BUILD_APPLE */
