@@ -1540,7 +1540,7 @@ void sioNetwork::sio_process(const FujiSIOPacket &packet)
     case CMD::NET_HSIO_INDEX:
         sio_high_speed();
         break;
-    defaut:
+    default:
         break;
     }
 }

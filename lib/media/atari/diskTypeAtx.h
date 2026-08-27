@@ -3,6 +3,8 @@
 
 #ifdef ESP_PLATFORM
 #include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include "../../include/PSRAMAllocator.h"
 #endif
 

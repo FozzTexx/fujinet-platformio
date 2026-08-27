@@ -788,6 +788,11 @@ void systemBus::sio_empty_ack()
         netsio_empty_sync();
     }
 }
+#else
+void systemBus::set_proceed(bool level)
+{
+    fnSystem.digital_write(PIN_PROC, level == true ? DIGI_HIGH : DIGI_LOW);
+}
 #endif
 
 void systemBus::setStreamHost(const char *hostname, int port)
