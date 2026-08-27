@@ -72,13 +72,16 @@
 class drivewireModem;     // declare here so can reference it, but define in modem.h
 class drivewireFuji;      // declare here so can reference it, but define in fuji.h
 class systemBus;          // declare early so can be friend
-class drivewireNetwork;   // declare here so can reference it, but define in network.h
 class drivewireNetStream; // declare here so can reference it, but define in netstream.h
 class drivewireCassette;  // Cassette forward-declaration.
 class drivewireCPM;       // CPM device.
 class drivewirePrinter;   // Printer device
 class drivewireDisk;      // See if you can guess what kind of device it is
 class fujiDevice;
+
+class NDevice;
+using drivewireNetwork = NDevice;
+//class drivewireNetwork;   // declare here so can reference it, but define in network.h
 
 class drivewireDevice
 {
