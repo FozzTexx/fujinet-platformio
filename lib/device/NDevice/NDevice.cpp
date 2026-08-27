@@ -265,24 +265,6 @@ void NDevice::fujidev_read(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
-    if (receiveBuffer == nullptr)
-    {
-#ifdef HAVE_LAST_ERROR
-        lastError = NDEV_STATUS::COULD_NOT_ALLOCATE_BUFFERS;
-#endif /* HAVE_LAST_ERROR */
-        SYSTEM_BUS.transaction_error();
-        return;
-    }
-
-    if (protocol == nullptr)
-    {
-#ifdef HAVE_LAST_ERROR
-        lastError = NDEV_STATUS::NOT_CONNECTED;
-#endif /* HAVE_LAST_ERROR */
-        SYSTEM_BUS.transaction_error();
-        return;
-    }
-
     uint16_t num_bytes = packet.param(0);
 
     if (!num_bytes)
@@ -387,7 +369,6 @@ NDeviceStatus NDevice::current_status()
     }
 
     NetworkStatus ns;
-    size_t avail = fujicore_available();
 
     switch (parserMode)
     {
@@ -404,12 +385,10 @@ NDeviceStatus NDevice::current_status()
         break;
     }
 
-    avail = std::min<size_t>(avail, 65535);
-
-    nstatus.avail = avail;
+    nstatus.avail = std::min<size_t>(65535, fujicore_available());
     nstatus.conn = ns.connected;
     nstatus.err = ns.error;
-#if 0
+#if 1
     Debug_printf("NDevice::status avail=%d conn=%d err=%d\n",
                  nstatus.avail, nstatus.conn, nstatus.err);
 #endif
