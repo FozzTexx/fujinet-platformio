@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-typedef enum FUJI_DEVICEID : uint8_t {
+typedef enum class FUJI_DEVICEID : uint8_t {
 #if defined(BUILD_ADAM)
   FUJINET      = 0x0F,
 

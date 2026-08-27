@@ -179,6 +179,7 @@ public:
 class systemBus : public SystemBusBase
 {
 private:
+  IWMBusIDMap _busMap;
   virtualDevice *_activeDev = nullptr;
   ByteBuffer _transaction_response;
 
@@ -222,8 +223,6 @@ private:
   int new_track = -1;
 
 public:
-  IWMBusIDMap _busMap;
-
   cmdPacket_t command_packet;
   bool iwm_decode_data_packet(uint8_t *a, int &n);
 
