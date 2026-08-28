@@ -21,7 +21,9 @@
 #include "Test.h"
 #include "TNFS.h"
 #include "UDP.h"
+#ifdef OBSOLETE
 #include "network_data.h"
+#endif /* OBSOLETE */
 
 #include <string>
 
@@ -30,12 +32,14 @@ class NetworkProtocolFactory
 public:
     static std::unique_ptr<NetworkProtocol> createProtocol(std::string scheme, std::string *receiveBuffer, std::string *transmitBuffer, std::string *specialBuffer, std::string *login, std::string *password);
 
+#ifdef OBSOLETE
     static std::unique_ptr<NetworkProtocol> createProtocol(const std::string &scheme, NetworkData &data)
     {
         return createProtocol(scheme,
                               &data.receiveBuffer, &data.transmitBuffer, &data.specialBuffer,
                               &data.login, &data.password);
     }
+#endif /* OBSOLETE */
 };
 
 #endif // NETWORK_PROTOCOL_FACTORY_H
