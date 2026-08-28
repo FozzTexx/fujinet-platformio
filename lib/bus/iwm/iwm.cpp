@@ -634,7 +634,7 @@ bool IRAM_ATTR systemBus::serviceSmartPort()
       }
 #else
       command.decode(command_packet.data);
-      auto devID = remapDeviceAddress(command_packet.dest, command.unit());
+      auto devID = remapDeviceAddress(command_packet.dest, command);
       _activeDev = _daisyChain.deviceWithFujiID(devID);
       if (_activeDev)
       {
@@ -664,14 +664,15 @@ bool IRAM_ATTR systemBus::serviceSmartPort()
   return true;
 }
 
-fujiDeviceID_t systemBus::remapDeviceAddress(uint8_t address, uint8_t unit)
+fujiDeviceID_t systemBus::remapDeviceAddress(uint8_t address, iwm_decoded_cmd_t &cmd)
 {
   virtualDevice *devicep = _daisyChain.deviceWithBusID(address);
   fujiDeviceID_t devID = _daisyChain.fujiIDForDevice(devicep).value_or((fujiDeviceID_t) 0);
 
-  if (devID >= FUJI_DEVICEID::NETWORK && devID <= FUJI_DEVICEID::NETWORK_LAST &&
-      unit <= ((unsigned) FUJI_DEVICEID::NETWORK_LAST) - ((unsigned) FUJI_DEVICEID::NETWORK))
-    devID = (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + unit);
+  if (devID >= FUJI_DEVICEID::NETWORK && devID <= FUJI_DEVICEID::NETWORK_LAST)
+  {
+    devID = (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + cmd.unit() - 1);
+  }
 
   return devID;
 }
@@ -904,7 +905,7 @@ void systemBus::handle_init()
   pDevice = _daisyChain.firstDeviceWithoutBusID();
   if (pDevice) {
     pDevice->switched = false; //reset switched condition on init
-    _daisyChain.assignBusIDForDevice(pDevice, command_packet.dest);
+    _daisyChain.assignBusIDToDevice(pDevice, command_packet.dest);
     if (_daisyChain.firstDeviceWithoutBusID() == nullptr)
       err = SP_ERR::ENDOFCHAIN;
     send_init_reply_packet(command_packet.dest, err);
@@ -916,7 +917,7 @@ void systemBus::handle_init()
 }
 
 // Add device to SIO bus
-void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType)
+void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType, bool assignBusID)
 {
   // SmartPort interface assigns device numbers to the devices in the
   // daisy chain one at a time as opposed to using standard or fixed
@@ -973,7 +974,7 @@ void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType)
   _daisyChain.push_front(pDevice);
   pDevice->_devnum = 0;
 #else
-  _daisyChain.addDevice(pDevice, deviceType);
+  _daisyChain.addDevice(pDevice, deviceType, assignBusID);
 #endif /* OBSOLETE */
 
   pDevice->_initialized = false;

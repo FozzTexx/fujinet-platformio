@@ -1,5 +1,7 @@
 #include "DaisyChain.h"
 
+#include "debug.h"
+
 virtualDevice *DaisyChain::deviceWithFujiID(fujiDeviceID_t devID)
 {
     auto it = std::find_if(_daisyChain.begin(), _daisyChain.end(),
@@ -20,9 +22,9 @@ std::optional<fujiDeviceID_t> DaisyChain::fujiIDForDevice(virtualDevice *device)
     return it != _daisyChain.end() ? std::optional<fujiDeviceID_t>(it->fujiID) : std::nullopt;
 }
 
-void DaisyChain::addDevice(virtualDevice *newDev, fujiDeviceID_t devID)
+void DaisyChain::addDevice(virtualDevice *newDev, fujiDeviceID_t devID, bool assignBusID)
 {
-    _daisyChain.push_back({newDev, devID, std::nullopt});
+    _daisyChain.push_back({newDev, devID, std::nullopt, assignBusID});
     return;
 }
 
@@ -67,12 +69,13 @@ void DaisyChain::resetAllBusIDs()
         entry.externalID.reset();
 }
 
-void DaisyChain::assignBusIDForDevice(virtualDevice *device, busDeviceID_t busID)
+void DaisyChain::assignBusIDToDevice(virtualDevice *device, busDeviceID_t busID)
 {
     for (auto &entry : _daisyChain)
     {
         if (entry.device == device)
         {
+            Debug_printf("ASSIGN device=0x%02x external=%d\n", entry.fujiID, busID);
             entry.externalID = busID;
             return;
         }
@@ -83,9 +86,10 @@ virtualDevice *DaisyChain::firstDeviceWithoutBusID()
 {
     for (auto &entry : _daisyChain)
     {
-        if (!entry.externalID.has_value())
+        if (entry.participatesInBusIDAssignment && !entry.externalID.has_value())
             return entry.device;
     }
 
+    Debug_printf("DAISY CHAIN END\n");
     return nullptr;
 }

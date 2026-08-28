@@ -184,7 +184,8 @@ void iwmFuji::setup()
          idx <= ((unsigned) FUJI_DEVICEID::NETWORK_LAST) - ((unsigned) FUJI_DEVICEID::NETWORK);
          idx++)
       SYSTEM_BUS.addDevice(new iwmNetwork(),
-                           (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + idx));
+                           (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + idx),
+                           idx == 0);
 
     // add ourselves as a device
     SYSTEM_BUS.addDevice(this, FUJI_DEVICEID::FUJINET);

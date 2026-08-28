@@ -108,6 +108,7 @@ class iwmPrinter;  // Printer device
 #define BLOCK_DATA_LEN      512
 #define MAX_DATA_LEN        767
 
+#ifdef OBSOLETE
 enum class iwm_smartport_type_t
 {
   Block_Device,
@@ -126,6 +127,7 @@ enum class iwm_fujinet_type_t
   Clock,
   Other
 };
+#endif /* OBSOLETE */
 
 enum class iwm_enable_state_t
 {
@@ -162,8 +164,10 @@ class virtualDevice
 
 protected:
   // set these things in constructor or initializer?
+#ifdef OBSOLETE
   iwm_smartport_type_t device_type;
   iwm_fujinet_type_t internal_type;
+#endif /* OBSOLETE */
 #ifdef OBSOLETE
   uint8_t _devnum; // assigned by Apple II during INIT
 #endif /* OBSOLETE */
@@ -294,8 +298,8 @@ public:
   iwmPrinter *getPrinter() { return _printerdev; }
 #else
   //fujiDeviceID_t remapDeviceType(iwm_fujinet_type_t deviceType);
-  fujiDeviceID_t remapDeviceAddress(uint8_t address, uint8_t unit);
-  void addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType);
+  fujiDeviceID_t remapDeviceAddress(uint8_t address, iwm_decoded_cmd_t &cmd);
+  void addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType, bool assignBusID=true);
   fujiDeviceID_t fujiIDForDevice(virtualDevice *device) {
     return _daisyChain.fujiIDForDevice(device).value_or((fujiDeviceID_t) 0);
   }

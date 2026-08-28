@@ -18,6 +18,7 @@ protected:
         virtualDevice *device;
         fujiDeviceID_t fujiID;
         std::optional<busDeviceID_t> externalID;
+        bool participatesInBusIDAssignment;
     };
 
     std::vector<DaisyChainEntry> _daisyChain;
@@ -26,7 +27,7 @@ public:
     virtualDevice *deviceWithFujiID(fujiDeviceID_t fujiID);
     std::optional<fujiDeviceID_t> fujiIDForDevice(virtualDevice *device);
 
-    void addDevice(virtualDevice *newDev, fujiDeviceID_t fujiID);
+    void addDevice(virtualDevice *newDev, fujiDeviceID_t fujiID, bool assignBusID=true);
     void swapDevices(virtualDevice *dev1, virtualDevice *dev2);
     void rotateMountedDisksFirstToLast();
     void rotateMountedDisksLastToFirst();
@@ -34,7 +35,7 @@ public:
     virtualDevice *deviceWithBusID(busDeviceID_t busID);
     std::optional<busDeviceID_t> busIDForDevice(virtualDevice *device);
     void resetAllBusIDs();
-    void assignBusIDForDevice(virtualDevice *device, busDeviceID_t busID);
+    void assignBusIDToDevice(virtualDevice *device, busDeviceID_t busID);
     virtualDevice *firstDeviceWithoutBusID();
 
     class iterator {
