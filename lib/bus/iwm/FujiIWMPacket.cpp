@@ -87,7 +87,7 @@ uint8_t FujiIWMPacket::unit() const
   if (frame.param_count == 5)
     return frame.char_rw.fuji.network_unit;
 
-  return 1;
+  return 0;
 }
 
 #endif /* BUILD_APPLE */

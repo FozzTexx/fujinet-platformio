@@ -215,6 +215,7 @@ private:
   DaisyChain _daisyChain;
   virtualDevice *_activeDev = nullptr;
   ByteBuffer _transaction_response;
+  unsigned _defaultNetworkUnit = 0;
 
 #ifdef OBSOLETE
   iwmPrinter *_printerdev = nullptr;
