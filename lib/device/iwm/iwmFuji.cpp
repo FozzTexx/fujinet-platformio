@@ -167,13 +167,16 @@ void iwmFuji::setup()
 
   // Build the device topology once, to avoid duplicating the daisy chain
   // and leaking the devices when setup() re-runs on an in-process restart.
-  if (theNetwork == nullptr)
+  if (!createdDevices)
   {
     // add ourselves as a device
     SYSTEM_BUS.addDevice(this, FUJI_DEVICEID::FUJINET);
 
-    theNetwork = new iwmNetwork();
-    SYSTEM_BUS.addDevice(theNetwork, FUJI_DEVICEID::NETWORK);
+    for (unsigned idx = 0;
+         idx <= ((unsigned) FUJI_DEVICEID::NETWORK_LAST) - ((unsigned) FUJI_DEVICEID::NETWORK);
+         idx++)
+      SYSTEM_BUS.addDevice(new iwmNetwork(),
+                           (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + idx));
 
     SYSTEM_BUS.addDevice(&platformClock, FUJI_DEVICEID::CLOCK);
 
@@ -187,6 +190,8 @@ void iwmFuji::setup()
       SYSTEM_BUS.addDevice(disk_dev,
                            (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::DISK) + idx));
     }
+
+    createdDevices = true;
   }
 
   if (boot_config)
