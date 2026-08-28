@@ -23,14 +23,17 @@ protected:
 
     std::vector<DaisyChainEntry> _daisyChain;
 
+    DaisyChainEntry *entryForDevice(virtualDevice *device);
+
 public:
     virtualDevice *deviceWithFujiID(fujiDeviceID_t fujiID);
     std::optional<fujiDeviceID_t> fujiIDForDevice(virtualDevice *device);
 
     void addDevice(virtualDevice *newDev, fujiDeviceID_t fujiID, bool assignBusID=true);
-    void swapDevices(virtualDevice *dev1, virtualDevice *dev2);
-    void rotateMountedDisksFirstToLast();
-    void rotateMountedDisksLastToFirst();
+    // Rotate the specified devices by the given index offset.
+    // Positive values increase each device's index; negative values decrease it.
+    // Indices wrap around within the supplied device sequence.
+    void rotate(const std::vector<virtualDevice *> &devices, int amount);
 
     virtualDevice *deviceWithBusID(busDeviceID_t busID);
     std::optional<busDeviceID_t> busIDForDevice(virtualDevice *device);

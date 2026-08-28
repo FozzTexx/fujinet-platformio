@@ -309,8 +309,11 @@ public:
   iwmPrinter *getPrinter();
   void enableDevice(fujiDeviceID_t device_id);
   void disableDevice(fujiDeviceID_t device_id);
-  void rotateMountedDisksFirstToLast() { _daisyChain.rotateMountedDisksFirstToLast(); }
-  void rotateMountedDisksLastToFirst() { _daisyChain.rotateMountedDisksLastToFirst(); }
+  void rotateDevices(const std::vector<virtualDevice *> &devices, int amount) {
+    _daisyChain.rotate(devices, amount);
+  }
+
+  void setDefaultNetworkUnit(unsigned unit);
 #endif /* OBSOLETE */
 
   bool shuttingDown = false;                                  // TRUE if we are in shutdown process

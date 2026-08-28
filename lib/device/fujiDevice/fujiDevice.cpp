@@ -348,7 +348,6 @@ void fujiDevice::fujicmd_image_rotate()
 {
     Debug_println("Fuji cmd: IMAGE ROTATE");
 
-    SYSTEM_BUS.rotateMountedDisksFirstToLast();
 #ifdef OBSOLETE
     int count = 0;
     while (count < (int)_totalDiskDevices && _fnDisks[count].fileh != nullptr)
@@ -379,6 +378,25 @@ void fujiDevice::fujicmd_image_rotate()
             fnLedManager.blink(LED_BUS, rotate_slot + 1);
             announce_rotation(rotate_slot);
         }
+    }
+#else
+    std::vector<virtualDevice *> mounted;
+    for (size_t idx = 0; idx < _totalDiskDevices; idx++)
+    {
+        if (_fnDisks[idx].fileh != nullptr)
+            mounted.push_back(get_disk_dev(idx));
+    }
+
+    // The first slot gets the device ID of the last slot
+    SYSTEM_BUS.rotateDevices(mounted, -1);
+
+    // Blink out which slot is now drive 1, then let the platform announce it
+    int rotate_slot = get_rotate_slot();
+    if (rotate_slot >= 0)
+    {
+        _active_rotate_slot = rotate_slot;
+        fnLedManager.blink(LED_BUS, rotate_slot + 1);
+        announce_rotation(rotate_slot);
     }
 #endif /* OBSOLETE */
 }
