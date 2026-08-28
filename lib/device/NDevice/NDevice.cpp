@@ -93,7 +93,8 @@ bool NDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
 {
     {
         uint8_t cmd = packet.command();
-        Debug_printf("NDevice processCommand: '%c' 0x%02x\n", isprint(cmd) ? cmd : '.', cmd);
+        Debug_printf("NDevice=0x%02x processCommand: '%c' 0x%02x\n",
+                     id(), isprint(cmd) ? cmd : '.', cmd);
     }
 
     auto it = dispatch_table.find(packet.command());
@@ -720,6 +721,8 @@ fujiError_t NDevice::write_channel(unsigned short num_bytes)
     switch (parserMode)
     {
     case PARSER::NONE:
+        if (!protocol)
+            return FUJI_ERROR::UNSPECIFIED;
         err = protocol->write(num_bytes);
         break;
     case PARSER::JSON:

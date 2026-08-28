@@ -640,7 +640,6 @@ fujiDeviceID_t systemBus::remapDeviceAddress(uint8_t address, iwm_decoded_cmd_t 
   virtualDevice *devicep = deviceWithBusID(address);
   fujiDeviceID_t devID = _daisyChain.fujiIDForDevice(devicep).value_or((fujiDeviceID_t) 0);
 
-#ifdef UNUSED
   if (devID >= FUJI_DEVICEID::NETWORK && devID <= FUJI_DEVICEID::NETWORK_LAST)
   {
     unsigned unit = cmd.unit();
@@ -648,7 +647,6 @@ fujiDeviceID_t systemBus::remapDeviceAddress(uint8_t address, iwm_decoded_cmd_t 
       unit = _defaultNetworkUnit;
     devID = (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + unit - 1);
   }
-#endif /* UNUSED */
 
   return devID;
 }
