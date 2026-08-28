@@ -319,6 +319,11 @@ void systemBus::send_status_dib_reply_packet()
                   &dib_packet, sizeof(dib_packet));
 }
 
+DaisyChain::busDeviceID_t virtualDevice::id()
+{
+  return SYSTEM_BUS.busIDForDevice(this);
+}
+
 void virtualDevice::iwm_return_badcmd(const iwm_decoded_cmd_t &cmd)
 {
   //Handle possible data packet to avoid crash extended and non-extended
@@ -546,8 +551,7 @@ bool IRAM_ATTR systemBus::serviceSmartPort()
     Debug_printf("\r\nReset");
 
     // clear all the device addresses
-    for (auto devicep : _daisyChain)
-      devicep->_devnum = 0;
+    _daisyChain.resetAllBusIDs();
 
 #ifndef DEV_RELAY_SLIP
     while (iwm_phases() == iwm_phases_t::reset)
@@ -631,7 +635,7 @@ bool IRAM_ATTR systemBus::serviceSmartPort()
 #else
       command.decode(command_packet.data);
       auto devID = remapDeviceAddress(command_packet.dest, command.unit());
-      _activeDev = _daisyChain.deviceWithID(devID);
+      _activeDev = _daisyChain.deviceWithFujiID(devID);
       if (_activeDev)
       {
         if (iwm_req_deassert_timeout(50000))
@@ -658,6 +662,18 @@ bool IRAM_ATTR systemBus::serviceSmartPort()
   }                     // switch (phasestate)
 
   return true;
+}
+
+fujiDeviceID_t systemBus::remapDeviceAddress(uint8_t address, uint8_t unit)
+{
+  virtualDevice *devicep = _daisyChain.deviceWithBusID(address);
+  fujiDeviceID_t devID = _daisyChain.fujiIDForDevice(devicep).value_or((fujiDeviceID_t) 0);
+
+  if (devID >= FUJI_DEVICEID::NETWORK && devID <= FUJI_DEVICEID::NETWORK_LAST &&
+      unit <= ((unsigned) FUJI_DEVICEID::NETWORK_LAST) - ((unsigned) FUJI_DEVICEID::NETWORK))
+    devID = (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + unit);
+
+  return devID;
 }
 
 #ifndef DEV_RELAY_SLIP
@@ -859,6 +875,7 @@ void systemBus::handle_init()
 
   // iwm_rddata_clr();
 
+#ifdef OBSOLETE
   // to do - get the next device in the daisy chain and assign ID
   for (auto it = _daisyChain.begin(); it != _daisyChain.end(); ++it)
   {
@@ -883,12 +900,23 @@ void systemBus::handle_init()
       return;
     }
   }
+#else
+  pDevice = _daisyChain.firstDeviceWithoutBusID();
+  if (pDevice) {
+    pDevice->switched = false; //reset switched condition on init
+    _daisyChain.assignBusIDForDevice(pDevice, command_packet.dest);
+    if (_daisyChain.firstDeviceWithoutBusID() == nullptr)
+      err = SP_ERR::ENDOFCHAIN;
+    send_init_reply_packet(command_packet.dest, err);
+    Debug_printf("\r\nDrive: %02x\r\n", pDevice->id());
+  }
+#endif /* OBSOLETE */
 
   fnLedManager.set(LED_BUS, false);
 }
 
 // Add device to SIO bus
-void systemBus::addDevice(virtualDevice *pDevice, iwm_fujinet_type_t deviceType)
+void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType)
 {
   // SmartPort interface assigns device numbers to the devices in the
   // daisy chain one at a time as opposed to using standard or fixed
@@ -928,20 +956,26 @@ void systemBus::addDevice(virtualDevice *pDevice, iwm_fujinet_type_t deviceType)
   // assign dedicated pointers to certain devices
   switch (deviceType)
   {
-  case iwm_fujinet_type_t::CPM:
+  case FUJI_DEVICEID::CPM:
     if ( !Config.get_cpm_enabled() )
       return;
     break;
-  case iwm_fujinet_type_t::Printer:
+#ifdef OBSOLETE
+  case FUJI_DEVICEID::PRINTER:
     _printerdev = (iwmPrinter *)pDevice;
     break;
+#endif /* OBSOLETE */
   default:
       break;
   }
 
-  _daisyChain.addDevice(pDevice, remapDeviceType(deviceType));
-
+#ifdef OBSOLETE
+  _daisyChain.push_front(pDevice);
   pDevice->_devnum = 0;
+#else
+  _daisyChain.addDevice(pDevice, deviceType);
+#endif /* OBSOLETE */
+
   pDevice->_initialized = false;
 }
 
@@ -994,7 +1028,24 @@ void systemBus::disableDevice(uint8_t device_id)
   virtualDevice *p = deviceById(device_id);
   p->device_active = false;
 }
+#else
+void systemBus::enableDevice(fujiDeviceID_t device_id)
+{
+  virtualDevice *p = _daisyChain.deviceWithFujiID(device_id);
+  p->device_active = true;
+}
+
+void systemBus::disableDevice(fujiDeviceID_t device_id)
+{
+  virtualDevice *p = _daisyChain.deviceWithFujiID(device_id);
+  p->device_active = false;
+}
 #endif /* OBSOLETE */
+
+iwmPrinter *systemBus::getPrinter()
+{
+  return dynamic_cast<iwmPrinter*>(_daisyChain.deviceWithFujiID(FUJI_DEVICEID::PRINTER));
+}
 
 // Give devices an opportunity to clean up before a reboot
 void systemBus::shutdown()
@@ -1003,7 +1054,7 @@ void systemBus::shutdown()
 
   for (auto devicep : _daisyChain)
   {
-    Debug_printf("Shutting down device %02x\n", (unsigned)devicep->id());
+    Debug_printf("Shutting down device %02x\n", devicep->id());
     devicep->shutdown();
   }
   Debug_printf("All devices shut down.\n");

@@ -46,7 +46,9 @@ fujiDevice::fujiDevice(unsigned int numDisk, std::string extension,
                        std::optional<std::string> lobbyURL)
     : _totalDiskDevices(numDisk), _diskImageExtension(extension), _lobbyDiskURL(lobbyURL)
 {
+#ifdef OBSOLETE
     bootdisk._devnum = FUJI_DEVICEID_DISK;
+#endif /* OBSOLETE */
     // Helpful for debugging
     for (int i = 0; i < MAX_HOSTS; i++)
         _fnHosts[i].slotid = i;
@@ -331,7 +333,7 @@ int fujiDevice::get_rotate_slot()
         return -1;
 
     for (int i = 0; i < count; i++)
-        if (get_disk_dev(i)->id() == FUJI_DEVICEID_DISK)
+        if (get_disk_id(i) == FUJI_DEVICEID::DISK)
             return i;
 
     return -1;
@@ -346,6 +348,8 @@ void fujiDevice::fujicmd_image_rotate()
 {
     Debug_println("Fuji cmd: IMAGE ROTATE");
 
+    SYSTEM_BUS.rotateMountedDisksFirstToLast();
+#ifdef OBSOLETE
     int count = 0;
     while (count < (int)_totalDiskDevices && _fnDisks[count].fileh != nullptr)
         count++;
@@ -355,11 +359,11 @@ void fujiDevice::fujicmd_image_rotate()
         count--;
 
         // Save the device ID of the disk in the last slot
-        fujiDeviceID_t last_id = (fujiDeviceID_t)get_disk_dev(count)->id();
+        fujiDeviceID_t last_id = get_disk_id(count);
 
         for (int n = count; n > 0; n--)
         {
-            fujiDeviceID_t swap = (fujiDeviceID_t)get_disk_dev(n - 1)->id();
+            fujiDeviceID_t swap = get_disk_id(n - 1);
             Debug_printf("setting slot %d to ID %hx\n", n, swap);
             SYSTEM_BUS.changeDeviceID(get_disk_dev(n), swap);
         }
@@ -376,6 +380,7 @@ void fujiDevice::fujicmd_image_rotate()
             announce_rotation(rotate_slot);
         }
     }
+#endif /* OBSOLETE */
 }
 
 // ============ Validation of inputs ============

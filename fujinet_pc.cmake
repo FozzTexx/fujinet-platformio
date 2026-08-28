@@ -296,6 +296,7 @@ set(SOURCES src/main.cpp
     lib/fuji/fujiHost.h lib/fuji/fujiHost.cpp
     lib/fuji/fujiDisk.h lib/fuji/fujiDisk.cpp
     lib/bus/bus.h lib/bus/bus.cpp
+    lib/bus/DaisyChain.h lib/bus/DaisyChain.cpp
     lib/device/device.h
     lib/device/disk.h
     lib/device/printer.h

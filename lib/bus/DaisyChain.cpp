@@ -1,33 +1,77 @@
 #include "DaisyChain.h"
 
-virtualDevice *DaisyChain::deviceWithID(fujiDeviceID_t devID)
+virtualDevice *DaisyChain::deviceWithFujiID(fujiDeviceID_t devID)
 {
-    auto it = _daisyChain.find(devID);
-    if (it != _daisyChain.end())
-        return it->second;
-    return nullptr;
+    auto it = std::find_if(_daisyChain.begin(), _daisyChain.end(),
+                           [devID](const DaisyChainEntry &entry) {
+                               return entry.fujiID == devID;
+                           });
+
+    return it != _daisyChain.end() ? it->device : nullptr;
+}
+
+std::optional<fujiDeviceID_t> DaisyChain::fujiIDForDevice(virtualDevice *device)
+{
+    auto it = std::find_if(_daisyChain.begin(), _daisyChain.end(),
+                           [device](const DaisyChainEntry &entry) {
+                               return entry.device == device;
+                           });
+
+    return it != _daisyChain.end() ? std::optional<fujiDeviceID_t>(it->fujiID) : std::nullopt;
 }
 
 void DaisyChain::addDevice(virtualDevice *newDev, fujiDeviceID_t devID)
 {
-    newDev->_devnum = devID;
-    _daisyChain[devID] = newDev;
+    _daisyChain.push_back({newDev, devID, std::nullopt});
     return;
 }
 
-void DaisyChain::changeDeviceID(virtualDevice *device, fujiDeviceID_t newID)
+void DaisyChain::swapDevices(virtualDevice *dev1, virtualDevice *dev2)
 {
-    for (auto it = _daisyChain.begin(); it != _daisyChain.end(); ++it)
-    {
-        if (it->second == device)
-        {
-            auto nodeHandler = _daisyChain.extract(it);
-            nodeHandler.key() = newID;
-            device->_devnum = (fujiDeviceID_t) newID;
-            _daisyChain.insert(std::move(nodeHandler));
-            break;
-        }
-    }
+    abort();
+}
 
-    return;
+void DaisyChain::rotateMountedDisksFirstToLast()
+{
+    abort();
+}
+
+void DaisyChain::rotateMountedDisksLastToFirst()
+{
+    abort();
+}
+
+virtualDevice *DaisyChain::deviceWithBusID(busDeviceID_t busID)
+{
+    auto it = std::find_if(_daisyChain.begin(), _daisyChain.end(),
+                           [busID](const DaisyChainEntry &entry) {
+                               return entry.externalID == busID;
+                           });
+
+    return it != _daisyChain.end() ? it->device : nullptr;
+}
+
+std::optional<DaisyChain::busDeviceID_t> DaisyChain::busIDForDevice(virtualDevice *device)
+{
+    auto it = std::find_if(_daisyChain.begin(), _daisyChain.end(),
+                           [device](const DaisyChainEntry &entry) {
+                               return entry.device == device;
+                           });
+
+    return it != _daisyChain.end() ? it->externalID : std::nullopt;
+}
+
+void DaisyChain::resetAllBusIDs()
+{
+    abort();
+}
+
+void DaisyChain::assignBusIDForDevice(virtualDevice *device, busDeviceID_t busID)
+{
+    abort();
+}
+
+virtualDevice *DaisyChain::firstDeviceWithoutBusID()
+{
+    abort();
 }

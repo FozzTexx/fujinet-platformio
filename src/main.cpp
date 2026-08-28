@@ -430,11 +430,11 @@ void main_setup(int argc, char *argv[])
     iwmModem *sioR;
     FileSystem *ptrfs = fnSDFAT.running() ? (FileSystem *)&fnSDFAT : (FileSystem *)&fsFlash;
     sioR = new iwmModem(ptrfs, Config.get_modem_sniffer_enabled());
-    SYSTEM_BUS.addDevice(sioR,iwm_fujinet_type_t::Modem);
+    SYSTEM_BUS.addDevice(sioR, FUJI_DEVICEID::SERIAL);
     iwmPrinter::printer_type ptype = Config.get_printer_type(0);
     iwmPrinter *ptr = new iwmPrinter(ptrfs, ptype);
     fnPrinters.set_entry(0, ptr, ptype, Config.get_printer_port(0));
-    SYSTEM_BUS.addDevice(ptr, iwm_fujinet_type_t::Printer);
+    SYSTEM_BUS.addDevice(ptr, FUJI_DEVICEID::PRINTER);
 
     theFuji->setup();
     SYSTEM_BUS.setup(); // save device unit SP address somewhere and restore it after reboot?

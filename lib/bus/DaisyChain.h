@@ -3,53 +3,70 @@
 
 #include "fujiDeviceID.h"
 
-#include <map>
+#include <optional>
+#include <vector>
 
 class virtualDevice;
 
 class DaisyChain
 {
-protected:
-    std::map<fujiDeviceID_t, virtualDevice *> _daisyChain;
-
 public:
-    virtualDevice *deviceWithID(fujiDeviceID_t devID);
-    void addDevice(virtualDevice *newDev, fujiDeviceID_t devID);
-    void changeDeviceID(virtualDevice *device, fujiDeviceID_t newID);
+    using busDeviceID_t = unsigned;
 
-    struct Iterator {
-        // 1. Mandatory type aliases for STL algorithms and standard operators
-        using iterator_category = std::forward_iterator_tag;
-        using value_type        = virtualDevice*;
-        using difference_type   = std::ptrdiff_t;
-        using pointer           = virtualDevice**;
-        using reference         = virtualDevice*&;
-
-        std::map<fujiDeviceID_t, virtualDevice*>::const_iterator map_iter;
-
-        // 2. Dereference operators
-        virtualDevice* operator*() const { return map_iter->second; }
-        virtualDevice* operator->() const { return map_iter->second; }
-
-        // 3. Increment operators (Prefix and Postfix)
-        Iterator& operator++() {
-            ++map_iter;
-            return *this;
-        }
-        Iterator operator++(int) {
-            Iterator tmp = *this;
-            ++map_iter;
-            return tmp;
-        }
-
-        // 4. Comparison Operators (Now supporting BOTH == and !=)
-        bool operator==(const Iterator& other) const { return map_iter == other.map_iter; }
-        bool operator!=(const Iterator& other) const { return map_iter != other.map_iter; }
+protected:
+    struct DaisyChainEntry {
+        virtualDevice *device;
+        fujiDeviceID_t fujiID;
+        std::optional<busDeviceID_t> externalID;
     };
 
-    // Public entry hooks for your container loops
-    Iterator begin() const { return Iterator{_daisyChain.cbegin()}; }
-    Iterator end()   const { return Iterator{_daisyChain.cend()}; }
+    std::vector<DaisyChainEntry> _daisyChain;
+
+public:
+    virtualDevice *deviceWithFujiID(fujiDeviceID_t fujiID);
+    std::optional<fujiDeviceID_t> fujiIDForDevice(virtualDevice *device);
+
+    void addDevice(virtualDevice *newDev, fujiDeviceID_t fujiID);
+    void swapDevices(virtualDevice *dev1, virtualDevice *dev2);
+    void rotateMountedDisksFirstToLast();
+    void rotateMountedDisksLastToFirst();
+
+    virtualDevice *deviceWithBusID(busDeviceID_t busID);
+    std::optional<busDeviceID_t> busIDForDevice(virtualDevice *device);
+    void resetAllBusIDs();
+    void assignBusIDForDevice(virtualDevice *device, busDeviceID_t busID);
+    virtualDevice *firstDeviceWithoutBusID();
+
+    class iterator {
+        friend class DaisyChain;
+
+        using InternalIterator = std::vector<DaisyChainEntry>::iterator;
+
+        InternalIterator _it;
+        iterator(InternalIterator it) : _it(it) {}
+
+    public:
+        virtualDevice *operator*() const {
+            return _it->device;
+        }
+
+        iterator &operator++() {
+            ++_it;
+            return *this;
+        }
+
+        bool operator!=(const iterator &other) const {
+            return _it != other._it;
+        }
+    };
+
+    iterator begin() {
+        return iterator(_daisyChain.begin());
+    }
+
+    iterator end() {
+        return iterator(_daisyChain.end());
+    }
 };
 
 #endif /* DAISYCHAIN_H */
