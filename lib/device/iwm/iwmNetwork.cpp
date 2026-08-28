@@ -983,6 +983,16 @@ void iwmNetwork::iwm_ctrl(const iwm_decoded_cmd_t &cmd)
     // Let the base class handle standard commands
     if (NDevice::processCommand(cmd))
         return;
+
+    switch (cmd.command())
+    {
+    case CMD::NET_SET_UNIT:
+      SYSTEM_BUS.setDefaultNetworkUnit(cmd.param(0));
+      // control command still needs a bus reply or the host times out
+      SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+      SYSTEM_BUS.transaction_success();
+      break;
+    }
 }
 
 void iwmNetwork::iwm_write(const iwm_decoded_cmd_t &cmd)

@@ -963,6 +963,12 @@ iwmPrinter *systemBus::getPrinter()
   return dynamic_cast<iwmPrinter*>(_daisyChain.deviceWithFujiID(FUJI_DEVICEID::PRINTER));
 }
 
+void systemBus::setDefaultNetworkUnit(unsigned unit)
+{
+  if (unit <= ((unsigned) FUJI_DEVICEID::NETWORK_LAST) - ((unsigned) FUJI_DEVICEID::NETWORK))
+    _defaultNetworkUnit = unit;
+}
+
 // Give devices an opportunity to clean up before a reboot
 void systemBus::shutdown()
 {
