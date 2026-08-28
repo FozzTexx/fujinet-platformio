@@ -63,15 +63,29 @@ std::optional<DaisyChain::busDeviceID_t> DaisyChain::busIDForDevice(virtualDevic
 
 void DaisyChain::resetAllBusIDs()
 {
-    abort();
+    for (auto &entry : _daisyChain)
+        entry.externalID.reset();
 }
 
 void DaisyChain::assignBusIDForDevice(virtualDevice *device, busDeviceID_t busID)
 {
-    abort();
+    for (auto &entry : _daisyChain)
+    {
+        if (entry.device == device)
+        {
+            entry.externalID = busID;
+            return;
+        }
+    }
 }
 
 virtualDevice *DaisyChain::firstDeviceWithoutBusID()
 {
-    abort();
+    for (auto &entry : _daisyChain)
+    {
+        if (!entry.externalID.has_value())
+            return entry.device;
+    }
+
+    return nullptr;
 }
