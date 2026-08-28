@@ -2,7 +2,9 @@
 #define NDEVICE_H
 
 #include "bus.h"
+#ifdef OBSOLETE
 #include "network_data.h"
+#endif /* OBSOLETE */
 #include "Protocol.h"
 #include "FS.h"
 
@@ -14,6 +16,17 @@ typedef struct {
     nDevStatus_t err;
 } NDeviceStatus;
 static_assert(sizeof(NDeviceStatus) == 4, "NDeviceStatus must be 4 bytes");
+
+/******* Belongs in Parser.h *******/
+typedef enum class PARSER {
+    NONE = 0,
+    JSON = 1,
+    SGML = 2,
+} parserMode_t;
+
+/******* Belongs in the individual parsers *******/
+class FNJSON;
+class FNSGML;
 
 class NDevice : public virtualDevice
 {

@@ -2,6 +2,8 @@
 #ifndef NETWORK_DATA_H
 #define NETWORK_DATA_H
 
+#error "OBSOLETE - DO NOT USE"
+
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -13,12 +15,6 @@ class NetworkProtocol;
 class FNJSON;
 class FNSGML;
 class PeoplesUrlParser;
-
-typedef enum class PARSER {
-    NONE = 0,
-    JSON = 1,
-    SGML = 2,
-} parserMode_t;
 
 struct NetworkData {
     std::unique_ptr<NetworkProtocol> protocol;
