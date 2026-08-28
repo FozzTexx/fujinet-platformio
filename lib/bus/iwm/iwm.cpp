@@ -669,11 +669,17 @@ fujiDeviceID_t systemBus::remapDeviceAddress(uint8_t address, iwm_decoded_cmd_t 
   virtualDevice *devicep = _daisyChain.deviceWithBusID(address);
   fujiDeviceID_t devID = _daisyChain.fujiIDForDevice(devicep).value_or((fujiDeviceID_t) 0);
 
+  Debug_printf("ADDRESS=%d INPUT DEV=0x%02x\n", address, devID);
   if (devID >= FUJI_DEVICEID::NETWORK && devID <= FUJI_DEVICEID::NETWORK_LAST)
   {
-    devID = (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + cmd.unit() - 1);
+    unsigned unit = cmd.unit();
+    Debug_printf("PACKET UNIT=%d\n", unit);
+    if (!unit)
+      unit = _defaultNetworkUnit;
+    devID = (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::NETWORK) + unit - 1);
   }
 
+  Debug_printf("PACKET FOR FUJI_DEVICE 0x%02x\n", devID);
   return devID;
 }
 
@@ -1050,7 +1056,9 @@ iwmPrinter *systemBus::getPrinter()
 
 void systemBus::setDefaultNetworkUnit(unsigned unit)
 {
-  if (unit <= ((unsigned) FUJI_DEVICEID::NETWORK_LAST) - ((unsigned) FUJI_DEVICEID::NETWORK))
+  const unsigned NET_HIGHEST =
+    ((unsigned) FUJI_DEVICEID::NETWORK_LAST) - ((unsigned) FUJI_DEVICEID::NETWORK);
+  if (unit > 0 && unit <= NET_HIGHEST)
     _defaultNetworkUnit = unit;
 }
 
