@@ -182,7 +182,7 @@ private:
   IWMBusIDMap _busMap;
   virtualDevice *_activeDev = nullptr;
   ByteBuffer _transaction_response;
-  unsigned _defaultNetworkUnit = 0;
+  unsigned _defaultNetworkUnit = 1;
 
   #ifndef DEV_RELAY_SLIP
   bool iwm_phase_val(uint8_t p);
