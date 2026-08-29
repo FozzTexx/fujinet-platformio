@@ -17,6 +17,10 @@
 #include "utils.h"
 #include "debug.h"
 
+#define IS_DIR_MODE(access_mode)                                            \
+    ({fileAccessMode_t _am = static_cast<fileAccessMode_t>(access_mode);    \
+        _am == ACCESS_MODE::DIRECTORY || _am == ACCESS_MODE::DIRECTORY_ALT;})
+
 const std::unordered_map<uint8_t, NDevice::CommandEntry> NDevice::dispatch_table = {
     { NETCMD_OPEN,             {&NDevice::fujidev_open}                   },
     { NETCMD_CLOSE,            {&NDevice::fujidev_close}                  },
@@ -182,10 +186,8 @@ void NDevice::fujidev_open(const FUJI_COMMAND_PACKET &packet)
         json = nullptr;
     }
 
-    bool is_dir = access == ACCESS_MODE::DIRECTORY;
-
     std::unique_ptr<PeoplesUrlParser> url;
-    if (!parse_and_instantiate_protocol(spec, is_dir, url))
+    if (!parse_and_instantiate_protocol(spec, IS_DIR_MODE(access), url))
     {
         SYSTEM_BUS.transaction_error();
         return;
@@ -740,7 +742,6 @@ void NDevice::fs_op(const FUJI_COMMAND_PACKET &packet, fujiError_t (NetworkProto
 {
     uint8_t mode = packet.param(0);
     uint8_t unused = packet.param(1);
-    bool is_dir = static_cast<fileAccessMode_t>(mode) == ACCESS_MODE::DIRECTORY;
 
     std::string spec(256, 0);
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
@@ -748,7 +749,7 @@ void NDevice::fs_op(const FUJI_COMMAND_PACKET &packet, fujiError_t (NetworkProto
     spec.resize(strlen(spec.c_str()));
 
     std::unique_ptr<PeoplesUrlParser> url;
-    if (!parse_and_instantiate_protocol(spec, is_dir, url))
+    if (!parse_and_instantiate_protocol(spec, IS_DIR_MODE(mode), url))
     {
         SYSTEM_BUS.transaction_error();
         return;
