@@ -739,6 +739,7 @@ fujiError_t NDevice::write_channel(unsigned short num_bytes)
 void NDevice::fs_op(const FUJI_COMMAND_PACKET &packet, fujiError_t (NetworkProtocolFS::*op)(PeoplesUrlParser *))
 {
     uint8_t mode = packet.param(0);
+    uint8_t unused = packet.param(1);
     bool is_dir = static_cast<fileAccessMode_t>(mode) == ACCESS_MODE::DIRECTORY;
 
     std::string spec(256, 0);
