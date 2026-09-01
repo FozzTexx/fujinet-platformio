@@ -418,6 +418,12 @@ void NDevice::fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet)
     }
     else
     {
+        // Append trailing slash if not found
+        if (prefixSpec_str.back() != '/')
+        {
+            prefixSpec_str += "/";
+        }
+
         if (!prefix.empty() && prefix.back() != '/')
             prefix += "/";
 

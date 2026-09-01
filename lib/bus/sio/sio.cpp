@@ -560,7 +560,8 @@ void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t device_id)
     }
     else if (device_id >= FUJI_DEVICEID::NETWORK && device_id <= FUJI_DEVICEID::NETWORK_LAST)
     {
-        _netDev[device_id - FUJI_DEVICEID::NETWORK] = (sioNetwork *)pDevice;
+        unsigned idx = ((unsigned) device_id) - ((unsigned) FUJI_DEVICEID::NETWORK);
+        _netDev[idx] = (sioNetwork *)pDevice;
     }
     else if (device_id == FUJI_DEVICEID::MIDI)
     {

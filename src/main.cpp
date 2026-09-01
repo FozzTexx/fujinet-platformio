@@ -273,7 +273,7 @@ void main_setup(int argc, char *argv[])
     sioPrinter *ptr = new sioPrinter(ptrfs, ptype);
     fnPrinters.set_entry(0, ptr, ptype, Config.get_printer_port(0));
 
-    SYSTEM_BUS.addDevice(ptr, (fujiDeviceID_t) (FUJI_DEVICEID::PRINTER
+    SYSTEM_BUS.addDevice(ptr, (fujiDeviceID_t) (((unsigned) FUJI_DEVICEID::PRINTER)
                                                 + fnPrinters.get_port(0))); // P:
 
     sioR = new modem(ptrfs, Config.get_modem_sniffer_enabled()); // Config/User selected sniffer enable

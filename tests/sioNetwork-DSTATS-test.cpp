@@ -39,7 +39,7 @@ TEST_CASE("every recognized command has a DSTATS direction")
             continue;
 
         char buf[8];
-        std::snprintf(buf, sizeof(buf), "0x%02X", command);
+        std::snprintf(buf, sizeof(buf), "0x%02X", (uint8_t) command);
         INFO("command = " << buf);
         CHECK(dev.get_dstats_for_command(command) != SIO_DIRECTION::INVALID);
     }
@@ -92,6 +92,7 @@ void systemBus::transaction_success() {}
 void systemBus::transaction_error() {}
 success_is_true systemBus::transaction_get(void *data, size_t len) { RETURN_ERROR_AS_FALSE(); }
 void systemBus::transaction_send(const void *data, size_t len, bool is_error) {}
+void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t device_id) {}
 
 #include "fnjson.h"
 
@@ -114,6 +115,8 @@ bool FNSGML::readValue(uint8_t *buf, unsigned short len) { return false; }
 bool FNSGML::parse() { return false; }
 
 void util_debug_printf(const char *fmt, ...) {}
+std::string util_hexdump(const void *buf, size_t len) { return ""; }
+std::string util_remove_n_prefix(std::string url) { return url; }
 std::string util_get_canonical_path(std::string path) { return ""; }
 std::string util_devicespec_fix_for_parsing(std::string deviceSpec, std::string prefix, bool is_directory_read, bool process_fs_dot) { return ""; }
 
@@ -230,3 +233,6 @@ fnUDP::~fnUDP() {}
 int fnUDP::available() { return 0; }
 
 uint16_t FujiSIOPacket::getParam(size_t index, size_t psize) const { return 0; }
+
+void DaisyChain::addDevice(virtualDevice *newDev, fujiDeviceID_t fujiID) {}
+void DaisyChain::assignFujiIDToDevice(virtualDevice *device, fujiDeviceID_t fujiID) {}

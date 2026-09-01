@@ -567,11 +567,12 @@ void sioFuji::setup()
 
     // Add our devices to the SIO bus
     for (int i = 0; i < MAX_DISK_DEVICES; i++)
-        SYSTEM_BUS.addDevice(&_fnDisks[i].disk_dev, (fujiDeviceID_t) (FUJI_DEVICEID::DISK + i));
+        SYSTEM_BUS.addDevice(&_fnDisks[i].disk_dev,
+                             (fujiDeviceID_t) (((uint8_t) FUJI_DEVICEID::DISK) + i));
 
     for (int i = 0; i < MAX_NETWORK_DEVICES; i++)
         SYSTEM_BUS.addDevice(sioNetDevs[i].get(),
-                             (fujiDeviceID_t) (FUJI_DEVICEID::NETWORK + i));
+                             (fujiDeviceID_t) (((uint8_t) FUJI_DEVICEID::NETWORK) + i));
 
     SYSTEM_BUS.addDevice(&_cassetteDev, FUJI_DEVICEID::CASSETTE);
     SYSTEM_BUS.addDevice(&sioZ, FUJI_DEVICEID::CPM);

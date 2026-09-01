@@ -101,4 +101,13 @@ AtariSIODirection sioNetwork::get_dstats_for_command(fujiCommandID_t command)
     }
 }
 
+void sioNetwork::fujidev_get_prefix(const FUJI_COMMAND_PACKET &packet)
+{
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+    std::string buffer = prefix + SYSTEM_BUS.nativeEOL();
+    buffer.resize(256);
+    SYSTEM_BUS.transaction_send(buffer);
+}
+
+
 #endif /* BUILD_ATARI */

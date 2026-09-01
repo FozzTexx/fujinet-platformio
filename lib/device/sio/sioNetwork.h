@@ -23,6 +23,8 @@ protected:
      * @return The DSTATS byte value (0x00, 0x40, 0x80, or 0xFF for invalid)
      */
     AtariSIODirection get_dstats_for_command(fujiCommandID_t command);
+
+    void fujidev_get_prefix(const FUJI_COMMAND_PACKET &packet) override;
 };
 
 #endif /* SIONETWORK_H */
