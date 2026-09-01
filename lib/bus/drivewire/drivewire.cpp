@@ -1004,9 +1004,11 @@ void systemBus::transaction_accept(transState_t expectMoreData)
 
 void systemBus::transaction_success()
 {
+    virtualDevice *fujiDev = dynamic_cast<virtualDevice *>(_activeDev);
+
     assert(_transaction_state == TRANS_STATE::NO_GET
            || _transaction_state == TRANS_STATE::DID_GET);
-    _activeDev->_errorCode = NDEV_STATUS::SUCCESS;
+    fujiDev->setErrorCode(NDEV_STATUS::SUCCESS);
     _transaction_response.clear();
     _transaction_response.shrink_to_fit();
     _transaction_state = TRANS_STATE::INVALID;
@@ -1014,7 +1016,9 @@ void systemBus::transaction_success()
 
 void systemBus::transaction_error()
 {
-    _activeDev->_errorCode = NDEV_STATUS::GENERAL;
+    virtualDevice *fujiDev = dynamic_cast<virtualDevice *>(_activeDev);
+
+    fujiDev->setErrorCode(NDEV_STATUS::GENERAL);
     _transaction_state = TRANS_STATE::INVALID;
 }
 

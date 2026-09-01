@@ -89,7 +89,6 @@ class drivewireDevice
     friend fujiDevice;
 
 protected:
-    nDevStatus_t _errorCode;
     fujiDeviceID_t _devnum;
 
     // Optional shutdown/reboot cleanup routine
