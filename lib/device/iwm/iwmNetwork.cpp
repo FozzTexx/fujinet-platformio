@@ -28,9 +28,12 @@ iwm_device_info_block_t iwmNetwork::create_dib_reply_packet()
 void iwmNetwork::iwm_status(const iwm_decoded_cmd_t &cmd)
 {
 #ifdef DEBUG
+  {
+    uint8_t pcmd = (uint8_t) cmd.command();
     Debug_printf("\r\n[NETWORK] Device %02x Status Code %02x('%c') net_unit %02x\r\n",
-                 id(), cmd.command(), isprint(cmd.command())
-                 ? (char) cmd.command() : '.', cmd.unit());
+                 id(), pcmd, isprint(pcmd)
+                 ? (char) pcmd : '.', cmd.unit());
+  }
 #endif
 
     // Let the base class handle standard commands
@@ -40,9 +43,12 @@ void iwmNetwork::iwm_status(const iwm_decoded_cmd_t &cmd)
 
 void iwmNetwork::iwm_ctrl(const iwm_decoded_cmd_t &cmd)
 {
+  {
+    uint8_t pcmd = (uint8_t) cmd.command();
     Debug_printf("\r\n[NETWORK] Device %02x Control Code %02x('%c') net_unit %02x",
-                 id(), cmd.command(), isprint(cmd.command())
-                 ? (char)cmd.command() : '.', cmd.unit());
+                 id(), pcmd, isprint(pcmd)
+                 ? (char)pcmd : '.', cmd.unit());
+  }
 
     // Let the base class handle standard commands
     if (NDevice::processCommand(cmd))

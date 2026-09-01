@@ -243,13 +243,19 @@ public:
       device->device_active = enabled;
   }
   fujiDeviceID_t remapDeviceAddress(uint8_t address, iwm_decoded_cmd_t &cmd);
-  void addDevice(virtualDevice *device, fujiDeviceID_t deviceType) override;
+  void addDevice(virtualDevice *device, fujiDeviceID_t deviceType) override {
+    addDevice(device, deviceType, true);
+  }
+  void addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType,
+                 bool participatesInBusIDAssignment);
   void assignFujiIDToDevice(virtualDevice *device, fujiDeviceID_t fujiID) override;
   std::optional<IWMBusIDMap::busDeviceID_t> busIDForDevice(virtualDevice *device);
   virtualDevice *deviceWithBusID(IWMBusIDMap::busDeviceID_t busID);
   virtualDevice *firstDeviceWithNoBusID();
   void resetAllBusIDs() { _busMap.resetAllBusIDs(); }
   iwmPrinter *getPrinter();
+
+  void setDefaultNetworkUnit(unsigned unit);
 
   bool shuttingDown = false;                                  // TRUE if we are in shutdown process
   bool getShuttingDown() { return shuttingDown; };

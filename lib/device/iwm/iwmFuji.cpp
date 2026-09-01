@@ -181,8 +181,7 @@ void iwmFuji::setup()
 
     SYSTEM_BUS.addDevice(&platformClock, FUJI_DEVICEID::CLOCK);
 
-    theCPM = new iwmCPM();
-    SYSTEM_BUS.addDevice(theCPM, FUJI_DEVICEID::CPM);
+    SYSTEM_BUS.addDevice(new iwmCPM(), FUJI_DEVICEID::CPM);
 
     for (int idx = MAX_SPDISK_DEVICES - 1; idx >= 0; idx--)
     {

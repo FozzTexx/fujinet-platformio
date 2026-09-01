@@ -867,7 +867,8 @@ void systemBus::handle_init()
 }
 
 // Add device to IWM bus
-void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType)
+void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType,
+                          bool participatesInBusIDAssignment=true)
 {
   // SmartPort interface assigns device numbers to the devices in the
   // daisy chain one at a time as opposed to using standard or fixed
