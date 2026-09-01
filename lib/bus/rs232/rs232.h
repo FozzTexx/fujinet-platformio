@@ -59,14 +59,6 @@ class virtualDevice
 protected:
     bool listen_to_type3_polls = false;
 
-#ifdef OBSOLETE
-    /**
-     * @brief All RS232 commands by convention should return a status command to return
-     * four bytes of status information to be put into DVSTAT ($02EA)
-     */
-    virtual void rs232_status(FujiStatusReq reqType) = 0;
-#endif /* OBSOLETE */
-
     /**
      * @brief All RS232 devices repeatedly call this routine to fan out to other methods for each command.
      * This is typcially implemented as a switch() statement.

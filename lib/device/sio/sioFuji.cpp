@@ -6,13 +6,6 @@
 #include "fsFlash.h"
 #include "compat_string.h"
 #include "utils.h"
-#ifdef OBSOLETE
-#include "fnFsSD.h"
-#include "base64.h"
-#include "fuji_endian.h"
-
-#include <cstring>
-#endif /* OBSOLETE */
 
 extern sioCPM sioZ;
 

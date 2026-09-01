@@ -24,11 +24,6 @@
 #include "IECConfig.h"
 #include <stdint.h>
 
-#ifdef OBSOLETE
-#include "bus.h"
-#include "global_types.h"
-#endif /* OBSOLETE */
-
 class IECBusHandler;
 
 class IECDevice

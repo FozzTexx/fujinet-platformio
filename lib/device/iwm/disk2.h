@@ -11,9 +11,6 @@ class iwmDisk2 : public iwmDisk
 protected:
     MediaType *_disk = nullptr;
 
-#ifdef OBSOLETE
-    void shutdown() override;
-#endif /* OBSOLETE */
     char disk_num;
     int track_pos;
     int old_pos;

@@ -92,15 +92,6 @@ typedef enum class SP_ERR {
 #define SP_SUBTYPE_BYTE_FUJINET_PRINTER 0x00
 #define SP_SUBTYPE_BYTE_FUJINET_MODEM 0x00
 
-#ifdef OBSOLETE
-// class def'ns
-class iwmFuji;     // declare here so can reference it, but define in fuji.h
-class iwmModem;    // declare here so can reference it, but define in modem.h
-class iwmNetwork;  // declare here so can reference it, but define in network.h
-class iwmDisk;     // disk device cause I need to use "iwmDisk smort" for prototyping in systemBus::service()
-class iwmCPM;      // CPM Virtual Device
-class iwmClock;    // Real Time Clock Device
-#endif /* OBSOLETE */
 class systemBus;      // forward declare bus so can be friend
 class fujiDevice;
 class iwmPrinter;  // Printer device

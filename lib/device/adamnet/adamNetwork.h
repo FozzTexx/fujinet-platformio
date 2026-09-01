@@ -28,14 +28,6 @@ protected:
 
     // Adam uses variable length packets, no length parameter is passed
     void fujidev_write(const FUJI_COMMAND_PACKET &packet) override;
-
-#ifdef OBSOLETE
-    // Adam does not send status type parameter
-    void status(const FUJI_COMMAND_PACKET &packet) override;
-
-    // Adam does not send parser transform flags
-    void set_query(const FUJI_COMMAND_PACKET &packet) override;
-#endif /* OBSOLETE */
 };
 
 #endif /* ADAMNETWORK_H */

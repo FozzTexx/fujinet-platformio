@@ -21,12 +21,6 @@ iwmDisk2::~iwmDisk2()
 {
 }
 
-#ifdef OBSOLETE
-void iwmDisk2::shutdown()
-{
-}
-#endif /* OBSOLETE */
-
 iwmDisk2::iwmDisk2()
 {
   track_pos = 80;

@@ -39,11 +39,6 @@ private:
 #endif
     bool createdDevices = false;
 
-#ifdef OBSOLETE
-    iwmNetwork *theNetwork;
-    iwmCPM *theCPM;
-#endif /* OBSOLETE */
-
     char _appkeyfilename[30]; // Temp storage for appkey filename, populated by open and read by read/write
     // map appkey open modes to key sizes. The open will set the appkey_size to correct value for subsequent reads to ensure the returned block is the correct size
     int appkey_size = 64;

@@ -46,12 +46,8 @@ void adamNetwork::fujidev_write(const FUJI_COMMAND_PACKET &packet)
 void adamNetwork::adamnet_control_receive()
 {
     ByteBuffer buf;
-#ifdef UNUSED
-    size_t avail = std::min<size_t>(fujicore_available(), MAX_ADAM_PACKET_LEN);
-#else
     NDeviceStatus nstatus = fujicore_status();
     size_t avail = nstatus.avail;
-#endif /* UNUSED */
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
 
@@ -70,23 +66,5 @@ void adamNetwork::adamnet_control_receive()
     Debug_printf("adamnetNetwork::read len=%d\n", buf.size());
     SYSTEM_BUS.transaction_send(buf);
 }
-
-#ifdef OBSOLETE
-void adamNetwork::status(const FUJI_COMMAND_PACKET &packet)
-{
-    auto nstatus = NDevice::status(0);
-    Debug_printf("adamNetwork::status avail=%d conn=%d err=%d\n",
-                 nstatus.avail, nstatus.conn, nstatus.err);
-    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    SYSTEM_BUS.transaction_send(&nstatus, sizeof(nstatus), false);
-}
-
-void adamNetwork::set_query(const FUJI_COMMAND_PACKET &packet)
-{
-    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-    NDevice::set_query(packet.dataAsString().value_or(""), 0);
-    SYSTEM_BUS.transaction_success();
-}
-#endif /* OBSOLETE */
 
 #endif /* BUILD_ADAM */

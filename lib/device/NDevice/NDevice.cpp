@@ -34,10 +34,6 @@ const std::unordered_map<fujiCommandID_t, NDevice::CommandEntry> NDevice::dispat
     { CMD::NET_TRANSLATION,      {&NDevice::fujidev_set_translation}        },
     { CMD::NET_SET_EOL,          {&NDevice::fujidev_set_eol}                },
     { CMD::NET_SET_INT_RATE,     {&NDevice::fujidev_set_timer_rate}         },
-#ifdef UNUSED
-    { CMD::NET_HSIO_INDEX,       {&NDevice::fujidev_high_speed_index}       },
-    { CMD::NET_GET_DSTATS_VALUE, {&NDevice::fujidev_get_dstats_value}       },
-#endif /* UNUSED */
     { CMD::NET_SEEK,             {&NDevice::fujidev_seek}                   },
     { CMD::NET_TELL,             {&NDevice::fujidev_tell}                   },
 
@@ -127,18 +123,6 @@ std::string NDevice::network_eol() const
 {
     return network_eol_override.empty() ? SYSTEM_BUS.nativeEOL() : network_eol_override;
 }
-
-#ifdef UNUSED
-std::string NDevice::create_devicespec(bool is_dir)
-{
-    uint8_t buf[256];
-
-    SYSTEM_BUS.transaction_get(buf, sizeof(buf));
-
-    std::string spec((char *)buf);
-    return util_devicespec_fix_for_parsing(spec, prefix, is_dir, true);
-}
-#endif /* UNUSED */
 
 #ifdef HAVE_LAST_ERROR
 NDeviceStatus NDevice::status_local(uint8_t mode)
@@ -931,19 +915,3 @@ void NDevice::fujidev_set_timer_rate(const FUJI_COMMAND_PACKET &packet)
     timerRate = (uint8_t) packet.param(0);
     SYSTEM_BUS.transaction_success();
 }
-
-#ifdef UNUSED
-// ============================ optional: DSTATS ==============================
-
-void NDevice::fujidev_get_dstats_value(const FUJI_COMMAND_PACKET &packet)
-{
-    uint8_t queried_command = packet.param(0);
-
-    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-
-    auto it = dispatch_table.find(queried_command);
-    AtariSIODirection dir = (it == dispatch_table.end()) ? SIO_DIRECTION_INVALID : it->second.direction;
-
-    SYSTEM_BUS.transaction_send((uint8_t)dir, false);
-}
-#endif /* UNUSED */

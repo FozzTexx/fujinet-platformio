@@ -12,34 +12,6 @@
 
 #include <queue>
 
-#ifdef OBSOLETE
-
-
-#include "drivewire.h"
-#include "drivewire/drivewireFuji.h"
-#include "drivewire/drivewireClock.h"
-
-#include "../../include/debug.h"
-
-#include "modem.h"
-#include "cassette.h"
-#include "printer.h"
-#include "../../lib/device/drivewire/cpm.h"
-
-#include "fnSystem.h"
-#include "fnConfig.h"
-#include "fnDNS.h"
-#include "utils.h"
-
-#ifdef ESP_PLATFORM
-#include <freertos/queue.h>
-#include <freertos/task.h>
-#endif
-
-#include "../../include/pinmap.h"
-#include "../../include/debug.h"
-#endif /* OBSOLETE */
-
 #ifdef ESP_PLATFORM
 static QueueHandle_t drivewire_evt_queue = NULL;
 #endif

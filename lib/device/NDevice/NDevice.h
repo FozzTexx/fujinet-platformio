@@ -2,9 +2,6 @@
 #define NDEVICE_H
 
 #include "bus.h"
-#ifdef OBSOLETE
-#include "network_data.h"
-#endif /* OBSOLETE */
 #include "Protocol.h"
 #include "FS.h"
 
@@ -112,12 +109,6 @@ protected:
     /** The line ending network_eol_override resolves to when unset. */
     std::string network_eol() const;
 
-#ifdef OBSOLETE
-    /** Pull+fix up a devicespec off the bus. SIO/RS232 override to
-        also strip embedded ATASCII EOL bytes. */
-    virtual std::string create_devicespec(bool is_dir);
-#endif /* OBSOLETE */
-
     /** Column width for LONG-format directory listings, or 0 to skip
         calling protocol->setDirLongWidth() at all. */
     virtual int dir_long_width() const { return 0; }
@@ -195,26 +186,9 @@ protected:
     }
     void fujidev_set_timer_rate(const FUJI_COMMAND_PACKET &packet);
 
-#ifdef UNUSED
-    /** NETCMD_HSIO_INDEX. SIO-only concept. Default reports unsupported. */
-    virtual void fujidev_high_speed_index(const FUJI_COMMAND_PACKET &packet) { (void)packet; SYSTEM_BUS.transaction_error(); }
-
-    /** NETCMD_GET_DSTATS_VALUE: looks up the queried command's direction straight out of dispatch_table. */
-    void fujidev_get_dstats_value(const FUJI_COMMAND_PACKET &packet);
-#endif /* UNUSED */
-
 private:
     using Handler = void (NDevice::*)(const FUJI_COMMAND_PACKET &);
-
-    struct CommandEntry
-    {
-        Handler handler;
-#ifdef UNUSED
-        AtariSIODirection direction;
-#endif /* UNUSED */
-    };
-
-    static const std::unordered_map<fujiCommandID_t, CommandEntry> dispatch_table;
+    static const std::unordered_map<fujiCommandID_t, Handler> dispatch_table;
 
     /**
      * Shared plumbing for the six fs ops: WILL_GET-accept, parse the

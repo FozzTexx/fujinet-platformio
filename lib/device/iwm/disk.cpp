@@ -230,12 +230,6 @@ void iwmDisk::iwm_format(const iwm_decoded_cmd_t &cmd)
   SYSTEM_BUS.transaction_success();
 }
 
-#ifdef OBSOLETE
-void iwmDisk::shutdown()
-{
-}
-#endif /* OBSOLETE */
-
 iwmDisk::iwmDisk()
 {
   Debug_printf("iwmDisk::iwmDisk()\n");
@@ -469,20 +463,20 @@ error_is_true iwmDisk::prodos_write_directory_sectors(fnFile *f, uint16_t numBlo
     memset(block,0,sizeof(block));
 
     /* block link pointers */
-    if (b > VOL_DIR_KEY_BLOCK) 
+    if (b > VOL_DIR_KEY_BLOCK)
     {
       block[0] = (unsigned char)((b - 1u) & 0xFFu);
       block[1] = (unsigned char)((b - 1u) >> 8);
     }
-    
-    if (b < VOL_DIR_KEY_BLOCK + VOL_DIR_NUM_BLOCKS - 1u) 
+
+    if (b < VOL_DIR_KEY_BLOCK + VOL_DIR_NUM_BLOCKS - 1u)
     {
       block[2] = (unsigned char)((b + 1u) & 0xFFu);
       block[3] = (unsigned char)((b + 1u) >> 8);
     }
 
     /* Volume Directory Header – key block only */
-    if (b == VOL_DIR_KEY_BLOCK) 
+    if (b == VOL_DIR_KEY_BLOCK)
     {
       unsigned char *h = &block[4];   /* h[N] = entry offset +N */
 
@@ -588,7 +582,7 @@ error_is_true iwmDisk::prodos_write_data_blocks(fnFile *f, uint16_t numBlocks)
 {
   unsigned char buf[PRODOS_BLOCK_SIZE];
   unsigned long offset = (numBlocks - 1) * PRODOS_BLOCK_SIZE;
-  
+
   memset(&buf,0,sizeof(buf));
 
   fnio::fseek(f,offset,SEEK_SET);
@@ -682,7 +676,7 @@ error_is_true iwmDisk::write_blank(fnFile *f, uint16_t numBlocks, uint8_t blank_
     Debug_printf("Writing 2MG Header\n");
 
     header.numBlocks = numBlocks;
-    
+
     fnio::fwrite(&header,sizeof(header),1,f);
   }
 

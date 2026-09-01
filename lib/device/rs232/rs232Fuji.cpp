@@ -23,9 +23,6 @@
 
 rs232Fuji platformFuji;
 fujiDevice *theFuji = &platformFuji;
-#ifdef OBSOLETE
-rs232Network rs232NetDevs[MAX_NETWORK_DEVICES];
-#endif /* OBSOLETE */
 
 rs232Fuji::rs232Fuji() : fujiDevice(MAX_DISK_DEVICES, IMAGE_EXTENSION, LOBBY_URL)
 {}
@@ -52,12 +49,6 @@ void rs232Fuji::setup()
         for (int i = 0; i < MAX_DISK_DEVICES; i++)
             SYSTEM_BUS.addDevice(&_fnDisks[i].disk_dev,
                                  static_cast<fujiDeviceID_t>(FUJI_DEVICEID::DISK + i));
-
-#ifdef OBSOLETE
-        for (int i = 0; i < MAX_NETWORK_DEVICES; i++)
-            SYSTEM_BUS.addDevice(&rs232NetDevs[i],
-                                 static_cast<fujiDeviceID_t>(FUJI_DEVICEID::NETWORK + i));
-#endif /* OBSOLETE */
     }
 }
 

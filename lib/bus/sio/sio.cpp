@@ -10,15 +10,6 @@
 #include "led.h"
 #include "debug.h"
 
-#ifdef OBSOLETE
-#include "../../include/debug.h"
-
-#include "netstream.h"
-
-#include "fnDNS.h"
-#include "utils.h"
-#endif /* OBSOLETE */
-
 #ifdef ESP_PLATFORM
 #define SIO_UART_DEVICE FN_UART_BUS
 #else /* !ESP_PLATFORM */
