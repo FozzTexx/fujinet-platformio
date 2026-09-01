@@ -21,7 +21,7 @@
     ({fileAccessMode_t _am = static_cast<fileAccessMode_t>(access_mode);    \
         _am == ACCESS_MODE::DIRECTORY || _am == ACCESS_MODE::DIRECTORY_ALT;})
 
-const std::unordered_map<fujiCommandID_t, NDevice::CommandEntry> NDevice::dispatch_table = {
+const std::unordered_map<fujiCommandID_t, NDevice::Handler> NDevice::dispatch_table = {
     { CMD::NET_OPEN,             {&NDevice::fujidev_open}                   },
     { CMD::NET_CLOSE,            {&NDevice::fujidev_close}                  },
     { CMD::NET_READ,             {&NDevice::fujidev_read}                   },
@@ -105,7 +105,7 @@ bool NDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
         return false;
     }
 
-    (this->*(it->second.handler))(packet);
+    (this->*(it->second))(packet);
     return true;
 }
 
@@ -408,6 +408,8 @@ void NDevice::fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet)
 
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
     SYSTEM_BUS.transaction_get(prefixSpec_str);
+    prefixSpec_str.resize(strlen(prefixSpec_str.c_str()));
+    prefixSpec_str = util_remove_n_prefix(prefixSpec_str);
     Debug_printf("NDevice::set_prefix(%s)\n", prefixSpec_str.c_str());
 
     if (prefixSpec_str.empty()) // Nn: with nothing after it clears the prefix completely
@@ -443,7 +445,7 @@ void NDevice::fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet)
                 prefix = prefix.substr(0, pos);
             prefix += prefixSpec_str;
         }
-        else if (prefixSpec_str.find_first_of(":") != std::string::npos) // Nn:SCHEME://host/... -- reset entirely
+        else if (prefixSpec_str.find_first_of(":") != std::string::npos) // SCHEME://host/... -- reset entirely
         {
             prefix = prefixSpec_str;
             if (prefix.back() != '/')
@@ -509,8 +511,7 @@ bool NDevice::parse_and_instantiate_protocol(std::string &deviceSpec, bool is_di
                                              std::unique_ptr<PeoplesUrlParser> &url_out)
 {
     deviceSpec = util_devicespec_fix_for_parsing(deviceSpec, prefix, is_dir, true);
-    std::string url_str = deviceSpec.substr(deviceSpec.find(":") + 1);
-    url_out = PeoplesUrlParser::parseURL(url_str);
+    url_out = PeoplesUrlParser::parseURL(deviceSpec);
 
     if (!url_out->isValidUrl())
     {

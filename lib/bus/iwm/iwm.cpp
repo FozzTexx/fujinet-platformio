@@ -917,7 +917,7 @@ void systemBus::addDevice(virtualDevice *pDevice, fujiDeviceID_t deviceType,
   }
 
   _daisyChain.addDevice(pDevice, deviceType);
-  _busMap.addFujiID(deviceType, true);
+  _busMap.addFujiID(deviceType, participatesInBusIDAssignment);
 
   pDevice->_initialized = false;
 }
