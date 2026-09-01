@@ -1,7 +1,7 @@
 #ifdef BUILD_COCO
 
 #include "drivewireFuji.h"
-#include "drivewireNetwork.h"
+#include "NDevice.h"
 #include "compat_string.h"
 
 #define IMAGE_EXTENSION ".dsk"
@@ -11,7 +11,7 @@ drivewireFuji platformFuji;
 fujiDevice *theFuji = &platformFuji; // Global fuji object.
 
 // drivewireDisk drivewireDiskDevs[MAX_HOSTS];
-drivewireNetwork drivewireNetDevs[MAX_NETWORK_DEVICES];
+NDevice drivewireNetDevs[MAX_NETWORK_DEVICES];
 
 /**
  * Say the numbers 1-8 using phonetic tweaks.
