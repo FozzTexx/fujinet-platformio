@@ -72,7 +72,6 @@
 class drivewireModem;     // declare here so can reference it, but define in modem.h
 class drivewireFuji;      // declare here so can reference it, but define in fuji.h
 class systemBus;          // declare early so can be friend
-class drivewireNetwork;   // declare here so can reference it, but define in network.h
 class drivewireNetStream; // declare here so can reference it, but define in netstream.h
 class drivewireCassette;  // Cassette forward-declaration.
 class drivewireCPM;       // CPM device.
@@ -80,14 +79,19 @@ class drivewirePrinter;   // Printer device
 class drivewireDisk;      // See if you can guess what kind of device it is
 class fujiDevice;
 
+class NDevice;
+using drivewireNetwork = NDevice;
+//class drivewireNetwork;   // declare here so can reference it, but define in network.h
+
 class drivewireDevice
 {
     friend systemBus;
     friend fujiDevice;
 
 protected:
-    nDevStatus_t _errorCode;
+#ifdef OBSOLETE
     fujiDeviceID_t _devnum;
+#endif /* OBSOLETE */
 
     // Optional shutdown/reboot cleanup routine
     virtual void shutdown(){};
@@ -98,13 +102,20 @@ public:
      */
     bool device_active = true;
 
+#ifdef OBSOLETE
     fujiDeviceID_t id() { return _devnum; };
+#endif /* OBSOLETE */
 };
 
 class virtualDevice : public drivewireDevice
 {
+protected:
+    nDevStatus_t _errorCode = NDEV_STATUS::SUCCESS;
+
 public:
     virtual bool processCommand(const FujiDWPacket &packet) = 0;
+    virtual nDevStatus_t getErrorCode() { return _errorCode; }
+    virtual void setErrorCode(nDevStatus_t err) { _errorCode = err; }
 };
 
 enum drivewire_message : uint16_t
@@ -251,6 +262,7 @@ public:
     void transaction_accept(transState_t expectMoreData) override;
     void transaction_success() override;
     void transaction_error() override;
+    using SystemBusBase::transaction_get;
     success_is_true transaction_get(void *data, size_t len) override;
     using SystemBusBase::transaction_send;
     void transaction_send(const void *data, size_t len, bool is_error=false) override;
