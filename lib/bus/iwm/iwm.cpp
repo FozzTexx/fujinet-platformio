@@ -966,7 +966,7 @@ iwmPrinter *systemBus::getPrinter()
   return dynamic_cast<iwmPrinter*>(_daisyChain.deviceWithFujiID(FUJI_DEVICEID::PRINTER));
 }
 
-void systemBus::setDefaultNetworkUnit(unsigned unit)
+void systemBus::setDefaultNetworkUnit(uint8_t unit)
 {
   const unsigned NET_HIGHEST =
     ((unsigned) FUJI_DEVICEID::NETWORK_LAST) - ((unsigned) FUJI_DEVICEID::NETWORK);

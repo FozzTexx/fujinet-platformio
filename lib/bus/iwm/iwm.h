@@ -255,7 +255,7 @@ public:
   void resetAllBusIDs() { _busMap.resetAllBusIDs(); }
   iwmPrinter *getPrinter();
 
-  void setDefaultNetworkUnit(unsigned unit);
+  void setDefaultNetworkUnit(uint8_t unit);
 
   bool shuttingDown = false;                                  // TRUE if we are in shutdown process
   bool getShuttingDown() { return shuttingDown; };

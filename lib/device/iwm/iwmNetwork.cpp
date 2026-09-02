@@ -62,6 +62,9 @@ void iwmNetwork::iwm_ctrl(const iwm_decoded_cmd_t &cmd)
       SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
       SYSTEM_BUS.transaction_success();
       break;
+    default:
+      SYSTEM_BUS.transaction_error();
+      break;
     }
 }
 
