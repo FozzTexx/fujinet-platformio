@@ -58,6 +58,7 @@ TEST_CASE("an unrecognized command reports SIO_DIRECTION_INVALID")
     CHECK(dev.get_dstats_for_command(unknown_command) == SIO_DIRECTION::INVALID);
 }
 
+#ifdef ITS_A_UNIX_SYSTEM_I_KNOW_THIS
 void TTYChannel::updateFIFO() {}
 size_t TTYChannel::dataOut(const void *buffer, size_t length) { (void)buffer; (void)length; return 0; }
 void TTYChannel::end() {}
@@ -69,6 +70,7 @@ bool TTYChannel::getRTS() { return false; }
 void TTYChannel::setCTS(bool state) { (void)state; }
 bool TTYChannel::getDCD() { return false; }
 bool TTYChannel::getRI() { return false; }
+#endif /* ITS_A_UNIX_SYSTEM_I_KNOW_THIS */
 
 NetSIO::NetSIO()
     : _ip(0), _port(0), _baud(0), _baud_peer(0), _fd(-1),
