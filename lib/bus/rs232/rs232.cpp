@@ -125,11 +125,15 @@ void systemBus::_rs232_process_cmd()
                  tempFrame->device(), (uint8_t) tempFrame->command(),
                  tempFrame->data() ? tempFrame->data()->size() : -1);
 
-
     _activePacket = tempFrame.get();
     _activeDev = _daisyChain.deviceWithFujiID(tempFrame->device());
     if (_activeDev != nullptr)
         _activeDev->rs232_process(*tempFrame);
+    else
+    {
+        Debug_printf("No such device 0x%02x\n", tempFrame->device());
+        transaction_error();
+    }
 
     fnLedManager.set(eLed::LED_BUS, false);
 }

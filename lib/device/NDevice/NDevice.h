@@ -135,7 +135,7 @@ protected:
     virtual void fujidev_status(const FUJI_COMMAND_PACKET &packet);
     void fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet);
     virtual void fujidev_get_prefix(const FUJI_COMMAND_PACKET &packet);
-    void fujidev_set_query(const FUJI_COMMAND_PACKET &packet);
+    virtual void fujidev_set_query(const FUJI_COMMAND_PACKET &packet);
 
     error_is_true fujicore_write(const ByteBuffer &buf);
     error_is_true fujicore_read(ByteBuffer &buf, size_t len);
