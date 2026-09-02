@@ -268,7 +268,7 @@ void adamFuji::setup()
         theNetwork2 = new adamNetwork();
         theSerial = new adamSerial();
         SYSTEM_BUS.addDevice(theNetwork, FUJI_DEVICEID::NETWORK);  // temporary.
-        SYSTEM_BUS.addDevice(theNetwork2, static_cast<fujiDeviceID_t>(FUJI_DEVICEID::NETWORK + 1)); // temporary
+        SYSTEM_BUS.addDevice(theNetwork2, static_cast<fujiDeviceID_t>(static_cast<uint8_t>(FUJI_DEVICEID::NETWORK) + 1)); // temporary
         SYSTEM_BUS.addDevice(theFuji, FUJI_DEVICEID::FUJINET);    // Fuji becomes the gateway device.
     }
 }
