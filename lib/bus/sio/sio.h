@@ -118,7 +118,7 @@ public:
      * @brief Command 0x3F '?' intended to return a single byte to the atari via bus_to_computer(), which
      * signifies the high speed SIO divisor chosen by the user in their #FujiNet configuration.
      */
-    virtual void sio_high_speed();
+    void sio_high_speed();
 
     /**
      * @brief Is this virtualDevice holding the virtual disk drive used to boot CONFIG?
@@ -281,7 +281,7 @@ public:
     success_is_true transaction_get(void *data, size_t len) override;
     using SystemBusBase::transaction_send;
     void transaction_send(const void *data, size_t len, bool is_error=false) override;
-    virtual std::string nativeEOL() { return STR_ATASCII_EOL; }
+    std::string nativeEOL() override { return STR_ATASCII_EOL; }
 
     // Everybody thinks "oh I know how a serial port works, I'll just
     // access it directly and bypass the bus!" ಠ_ಠ
