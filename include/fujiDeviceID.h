@@ -42,4 +42,16 @@ typedef enum class FUJI_DEVICEID : uint8_t {
 #endif /* BUILD_ADAM */
 } fujiDeviceID_t;
 
+inline constexpr fujiDeviceID_t operator+(fujiDeviceID_t lhs, uint8_t rhs) {
+  return static_cast<fujiDeviceID_t>(static_cast<uint8_t>(lhs) + rhs);
+}
+
+inline constexpr uint8_t operator-(fujiDeviceID_t lhs, fujiDeviceID_t rhs) {
+  return static_cast<uint8_t>(lhs) - static_cast<uint8_t>(rhs);
+}
+
+inline constexpr uint8_t operator+(fujiDeviceID_t e) {
+  return static_cast<uint8_t>(e);
+}
+
 #endif /* FUJI_DEVICES_H */

@@ -89,7 +89,9 @@ class drivewireDevice
     friend fujiDevice;
 
 protected:
+#ifdef OBSOLETE
     fujiDeviceID_t _devnum;
+#endif /* OBSOLETE */
 
     // Optional shutdown/reboot cleanup routine
     virtual void shutdown(){};
@@ -100,7 +102,9 @@ public:
      */
     bool device_active = true;
 
+#ifdef OBSOLETE
     fujiDeviceID_t id() { return _devnum; };
+#endif /* OBSOLETE */
 };
 
 class virtualDevice : public drivewireDevice
@@ -320,6 +324,7 @@ public:
 
     // For compatibility with fujiDevice.cpp
     void rotateDevices(const std::vector<drivewireDisk *> &disks, int amount) {}
+    fujiDeviceID_t fujiIDForDevice(drivewireDisk *device);
 };
 
 extern systemBus SYSTEM_BUS;

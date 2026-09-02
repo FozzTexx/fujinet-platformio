@@ -225,11 +225,7 @@ public:
     fujiDisk *get_disk(int i) { return &_fnDisks[i]; }
     virtual DISK_DEVICE *get_disk_dev(int i) { return &_fnDisks[i].disk_dev; }
     fujiDeviceID_t get_disk_id(int drive_slot) {
-#if 0 // COCO
-        return _fnDisks[drive_slot].disk_dev.id();
-#else
         return SYSTEM_BUS.fujiIDForDevice(&_fnDisks[drive_slot].disk_dev);
-#endif
     }
 
     void populate_slots_from_config();
