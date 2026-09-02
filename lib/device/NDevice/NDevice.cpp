@@ -94,13 +94,13 @@ bool NDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
     {
         uint8_t cmd = (uint8_t) packet.command();
         Debug_printf("NDevice=0x%02x processCommand: '%c' 0x%02x\n",
-                     packet.device(), isprint(cmd) ? cmd : '.', cmd);
+                     (unsigned) packet.device(), isprint(cmd) ? cmd : '.', cmd);
     }
 
     auto it = dispatch_table.find(packet.command());
     if (it == dispatch_table.end())
     {
-        Debug_printf("NDevice::process() - unknown command: %02X\n", packet.command());
+        Debug_printf("NDevice::process() - unknown command: %02X\n", (unsigned) packet.command());
         SYSTEM_BUS.transaction_error();
         return false;
     }
@@ -186,7 +186,7 @@ void NDevice::fujidev_open(const FUJI_COMMAND_PACKET &packet)
         lastError = protocol->error;
 #endif /* HAVE_LAST_ERROR */
         Debug_printf("Protocol unable to make connection. Error: %d\n",
-                     protocol->last_error());
+                     (unsigned) protocol->last_error());
         protocol = nullptr;
         SYSTEM_BUS.transaction_error();
         return;
@@ -582,7 +582,7 @@ void NDevice::fujidev_set_parser(const FUJI_COMMAND_PACKET &packet)
         break;
 
     default:
-        Debug_printf("INVALID MODE = %02x\r\n", mode);
+        Debug_printf("INVALID MODE = %02x\r\n", (unsigned) mode);
         SYSTEM_BUS.transaction_error();
         return;
     }
