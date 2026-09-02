@@ -110,6 +110,7 @@ if(FUJINET_TARGET STREQUAL "ATARI")
     ${CMAKE_SOURCE_DIR}/components_pc/cJSON/
     ${CMAKE_SOURCE_DIR}/components_pc/mongoose/
     ${CMAKE_SOURCE_DIR}/components/gumbo-query/
+    ${MBEDTLS_INCLUDE_DIR}
     )
   target_link_libraries(sio_dstats_tests PRIVATE)
   add_test(NAME sio_dstats_tests COMMAND sio_dstats_tests)
