@@ -6,6 +6,7 @@
 #include "networkStatus.h"
 #include "peoples_url_parser.h"
 #include "global_types.h"
+#include "global_defines.h"
 
 #include <string>
 
@@ -27,13 +28,6 @@ enum netProtoTranslation_t {
     NETPROTO_TRANS_CRLF     = 3,
     NETPROTO_TRANS_PETSCII  = 4,
 };
-
-// End-of-line byte sequences shared by the translation code and the per-bus
-// network devices that assign native_eol.
-#define STR_ASCII_CR    "\x0d"
-#define STR_ASCII_LF    "\x0a"
-#define STR_ASCII_CRLF  "\x0d\x0a"
-#define STR_ATASCII_EOL "\x9b"
 
 /**
  * @brief Translate a buffer coming from FujiNet towards the computer.

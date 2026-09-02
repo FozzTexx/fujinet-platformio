@@ -1,19 +1,14 @@
 #ifdef BUILD_ATARI
 
 #include "sio.h"
-
-#include "../../include/debug.h"
-
 #include "sio/sioFuji.h"
-#include "netstream.h"
+#include "sio/sioNetwork.h"
 #include "modem.h"
 #include "siocpm.h"
-
 #include "fnSystem.h"
 #include "fnConfig.h"
-#include "fnDNS.h"
 #include "led.h"
-#include "utils.h"
+#include "debug.h"
 
 #ifdef ESP_PLATFORM
 #define SIO_UART_DEVICE FN_UART_BUS
@@ -472,11 +467,16 @@ void systemBus::service()
     }
 
     // Handle interrupts from network protocols
-    for (int i = 0; i < 8; i++)
+    bool hasUpdate = false;
+    for (int i = 0; i < 1; i++)
     {
-        if (_netDev[i] != nullptr)
-            _netDev[i]->sio_poll_interrupt();
+        if (_netDev[i] != nullptr && _netDev[i]->poll_interrupt())
+        {
+            hasUpdate = true;
+            break;
+        }
     }
+    set_proceed(!hasUpdate);
 }
 
 #ifdef ESP_PLATFORM
@@ -778,6 +778,11 @@ void systemBus::sio_empty_ack()
     {
         netsio_empty_sync();
     }
+}
+#else
+void systemBus::set_proceed(bool level)
+{
+    fnSystem.digital_write(PIN_PROC, level == true ? DIGI_HIGH : DIGI_LOW);
 }
 #endif
 

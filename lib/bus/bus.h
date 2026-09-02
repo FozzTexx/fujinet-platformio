@@ -68,6 +68,13 @@ public:
     // the transaction cannot be completed successfully.
     virtual success_is_true transaction_get(void *data, size_t len) = 0;
 
+    inline success_is_true transaction_get(ByteBuffer &buffer) {
+        return transaction_get(buffer.data(), buffer.size());
+    }
+    inline success_is_true transaction_get(std::string &buffer) {
+        return transaction_get(buffer.data(), buffer.size());
+    }
+
     // Send response data and complete the transaction. If is_error is true,
     // the response represents a protocol-defined error.
     virtual void transaction_send(const void *data, size_t len, bool is_error=false) = 0;
@@ -100,6 +107,7 @@ public:
     virtual std::string unicodeTextToNative(const std::string &unicode) {
         return unicode;
     }
+    virtual std::string nativeEOL() { return "\r"; }
 };
 
 #ifdef BUILD_ATARI
