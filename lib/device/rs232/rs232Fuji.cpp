@@ -78,7 +78,7 @@ void rs232Fuji::rs232_status(FujiStatusReq reqType)
     {
         char ret[4] = {0};
 
-        Debug_printf("Status for what? %08x\n", reqType);
+        Debug_printf("Status for what? %08x\n", (unsigned) reqType);
         SYSTEM_BUS.transaction_send((uint8_t *)ret, sizeof(ret), false);
     }
     return;
