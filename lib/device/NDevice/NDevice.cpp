@@ -293,18 +293,18 @@ void NDevice::fujidev_write(const FUJI_COMMAND_PACKET &packet)
         return;
     }
 
+    ByteBuffer buf(num_bytes);
+    if (SYSTEM_BUS.transaction_get(buf).is_error())
+    {
+        SYSTEM_BUS.transaction_error();
+        return;
+    }
+
     if ((protocol == nullptr) || (transmitBuffer == nullptr))
     {
 #ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::NOT_CONNECTED;
 #endif /* HAVE_LAST_ERROR */
-        SYSTEM_BUS.transaction_error();
-        return;
-    }
-
-    ByteBuffer buf(num_bytes);
-    if (SYSTEM_BUS.transaction_get(buf).is_error())
-    {
         SYSTEM_BUS.transaction_error();
         return;
     }
