@@ -116,7 +116,7 @@ typedef enum class CMD : uint8_t {
     NET_USERNAME                    = 0xFD,
     NET_CHANNEL_MODE                = 0xFC,
     NET_SET_PARAMETERS              = 0xFB,
-    NET_SET_CHANNEL                 = 0xFA,
+    NET_SET_UNIT                    = 0xFA,
     NET_SET_HSIO_INDEX              = 0xE3,
     NET_QUERY_ALT                   = 0x81,
     NET_PARSE_ALT                   = 0x80,
