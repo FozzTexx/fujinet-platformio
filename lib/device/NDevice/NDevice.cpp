@@ -276,6 +276,9 @@ error_is_true NDevice::fujicore_write(const ByteBuffer &buf)
     Debug_printf("writing\n%s", util_hexdump(buf.data(), buf.size()).c_str());
 #endif // DEBUG_RAW_WRITE
 
+    if (protocol == nullptr || transmitBuffer == nullptr)
+        RETURN_ERROR_AS_TRUE();
+
     std::string_view view(reinterpret_cast<const char*>(buf.data()), buf.size());
     *transmitBuffer += view;
     RETURN_ERROR_IF(write_channel(view.size()) != FUJI_ERROR::NONE);
@@ -300,7 +303,7 @@ void NDevice::fujidev_write(const FUJI_COMMAND_PACKET &packet)
         return;
     }
 
-    if ((protocol == nullptr) || (transmitBuffer == nullptr))
+    if (protocol == nullptr || transmitBuffer == nullptr)
     {
 #ifdef HAVE_LAST_ERROR
         lastError = NDEV_STATUS::NOT_CONNECTED;
