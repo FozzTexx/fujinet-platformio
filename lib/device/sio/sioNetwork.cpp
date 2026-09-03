@@ -3,50 +3,6 @@
 #include "sioNetwork.h"
 #include "fnSystem.h"
 
-/**
- * We were passed a COPY arg from DOS 2. This is complex, because we
- * need to parse the comma, and figure out one of three states:
- *
- * (1) we were passed D1:FOO.TXT,N:FOO.TXT, the second arg is ours.
- * (2) we were passed N:FOO.TXT,D1:FOO.TXT, the first arg is ours.
- * (3) we were passed N1:FOO.TXT,N2:FOO.TXT, get whichever one corresponds to our device ID.
- *
- * DeviceSpec will be transformed to only contain the relevant part of
- * the deviceSpec, sans comma.
- */
-void sioNetwork::processCommaFromDevicespec(fujiDeviceID_t device)
-{
-    size_t comma_pos = deviceSpec.find(",");
-    vector<string> tokens;
-
-#error "This needs to be connected to something"
-
-    if (comma_pos == string::npos)
-        return; // no comma
-
-    tokens = util_tokenize(deviceSpec, ',');
-
-    for (vector<string>::iterator it = tokens.begin(); it != tokens.end(); ++it)
-    {
-        string item = *it;
-
-        Debug_printf("processCommaFromDeviceSpec() found one.\n");
-
-        if (item[0] != 'N')
-            continue;                                       // not us.
-        else if (item[1] == ':' && device != FUJI_DEVICEID::NETWORK) // N: but we aren't N1:
-            continue;                                       // also not us.
-        else
-        {
-            // This is our deviceSpec.
-            deviceSpec = item;
-            break;
-        }
-    }
-
-    Debug_printf("Passed back deviceSpec %s\n", deviceSpec.c_str());
-}
-
 void sioNetwork::sio_process(const FujiSIOPacket &packet)
 {
     // Let the base class handle standard commands
