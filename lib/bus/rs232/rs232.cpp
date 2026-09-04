@@ -79,8 +79,10 @@ success_is_true systemBus::transaction_get(void *data, size_t len)
     memcpy(data, optional_data.value().data() + _activePacketDataPosition, avail);
     _activePacketDataPosition += avail;
 
+#ifdef OBSOLETE
     if (avail != len)
         RETURN_ERROR_AS_FALSE();
+#endif /* OBSOLETE */
     RETURN_SUCCESS_AS_TRUE();
 }
 
