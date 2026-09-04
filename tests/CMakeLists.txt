@@ -69,6 +69,7 @@ add_test(
             ${CMAKE_CURRENT_SOURCE_DIR}/check_no_build_ifdefs.py
             ${CMAKE_SOURCE_DIR}/lib/device/fujiDevice
             ${CMAKE_SOURCE_DIR}/lib/device/fujiClock
+            ${CMAKE_SOURCE_DIR}/lib/device/NDevice
 )
 
 if(FUJINET_TARGET STREQUAL "ATARI")
