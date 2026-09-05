@@ -19,6 +19,7 @@
 
 #include <type_traits>
 
+#ifdef UNUSED
 // Compile-time check for packet.setDataLength(...)
 template <typename T, typename = void>
 struct has_setDataLength : std::false_type {};
@@ -26,6 +27,7 @@ struct has_setDataLength : std::false_type {};
 template <typename T>
 struct has_setDataLength<T, std::void_t<decltype(std::declval<T>().setDataLength(std::declval<uint16_t>()))>>
     : std::true_type {};
+#endif /* UNUSED */
 
 #define IS_DIR_MODE(access_mode)                                            \
     ({fileAccessMode_t _am = static_cast<fileAccessMode_t>(access_mode);    \
@@ -614,6 +616,7 @@ void NDevice::fujidev_set_eol(const FUJI_COMMAND_PACKET &packet)
 {
     std::string eol;
 
+#ifdef UNUSED
     if constexpr (has_setDataLength<FUJI_COMMAND_PACKET>::value) {
         SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
         uint16_t len = packet.param(0);
@@ -624,6 +627,16 @@ void NDevice::fujidev_set_eol(const FUJI_COMMAND_PACKET &packet)
         SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
         eol = packet.dataAsString().value_or("");
     }
+#else
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
+    auto data = SYSTEM_BUS.transaction_getAsString(packet);
+    if (!data.has_value())
+    {
+        SYSTEM_BUS.transaction_error();
+        return;
+    }
+    eol = data.value();
+#endif /* UNUSED */
 
     // Rest of your logic stays exactly the same
     network_eol_override.clear();
