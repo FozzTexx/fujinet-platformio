@@ -13,6 +13,7 @@
 #include "NetworkProtocolFactory.h"
 #include "Parser.h"
 #include "JSONParser.h"
+#include "SGMLParser.h"
 #ifdef OBSOLETE
 #include "fnjson.h"
 #include "fnsgml.h"
@@ -665,11 +666,9 @@ void NDevice::fujidev_set_parser(const FUJI_COMMAND_PACKET &packet)
         _parser = std::make_unique<JSONParser>(_protocol.get());
         break;
 
-#if 0
     case PARSER::SGML:
         _parser = std::make_unique<SGMLParser>(_protocol.get());
         break;
-#endif
 #endif /* OBSOLETE */
 
     default:
