@@ -1,3 +1,6 @@
+#ifndef PARSER_H
+#define PARSER_H
+
 #include "Protocol.h"
 
 class Parser
@@ -9,13 +12,15 @@ public:
     Parser(NetworkProtocol *protocol) : _protocol(protocol) {}
     virtual ~Parser() = default;
 
-    fujiError_t read(std::string &buffer, size_t length);
-    fujiError_t write(std::string &buffer);
-    size_t available();
-    off_t seek(off_t offset, int whence);
+    virtual fujiError_t read(std::string &buffer, size_t length);
+    virtual fujiError_t write(std::string &buffer);
+    virtual size_t available();
+    virtual off_t seek(off_t offset, int whence);
 
-    error_is_true setQuery(const std::string &query);
-    error_is_true parse();
+    virtual error_is_true setQuery(const std::string &query);
+    virtual error_is_true parse();
 
-    NetworkStatus status();
+    virtual NetworkStatus status();
 };
+
+#endif /* PARSER_H */

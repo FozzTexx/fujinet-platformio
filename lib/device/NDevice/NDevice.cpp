@@ -12,6 +12,7 @@
 #include "NDevice.h"
 #include "NetworkProtocolFactory.h"
 #include "Parser.h"
+#include "JSONParser.h"
 #ifdef OBSOLETE
 #include "fnjson.h"
 #include "fnsgml.h"
@@ -324,6 +325,9 @@ error_is_true NDevice::fujicore_write(const ByteBuffer &buf)
 #else
 error_is_true NDevice::fujicore_write(const ByteBuffer &buf)
 {
+    if (_parser == nullptr)
+        RETURN_ERROR_AS_TRUE();
+
     fujiError_t err;
     std::string strbuf(buf.begin(), buf.end());
     err = _parser->write(strbuf);
@@ -560,7 +564,11 @@ void NDevice::fujicore_set_query(const std::string &query, uint8_t parseFlags)
 #else
 error_is_true NDevice::fujicore_set_query(const std::string &query, uint8_t parseFlags)
 {
-    return _parser->setQuery(query);
+    error_is_true err = error_is_true(false);
+    err = _parser->setQuery(query);
+    if (err.is_success())
+        Debug_printf("Query set to >%s<\r\n", query.c_str());
+    return err;
 }
 #endif /* OBSOLETE */
 
@@ -653,13 +661,13 @@ void NDevice::fujidev_set_parser(const FUJI_COMMAND_PACKET &packet)
         _parser = std::make_unique<Parser>(_protocol.get());
         break;
 
-#if 0
     case PARSER::JSON:
-        _parser = std::make_unique<JSONParser>(_protocol);
+        _parser = std::make_unique<JSONParser>(_protocol.get());
         break;
 
+#if 0
     case PARSER::SGML:
-        _parser = std::make_unique<SGMLParser>(_protocol);
+        _parser = std::make_unique<SGMLParser>(_protocol.get());
         break;
 #endif
 #endif /* OBSOLETE */

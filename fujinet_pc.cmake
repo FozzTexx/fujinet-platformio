@@ -318,6 +318,7 @@ set(SOURCES src/main.cpp
     lib/device/fujiDevice/AppKeyMixin.h lib/device/fujiDevice/AppKeyMixin.cpp
     lib/device/NDevice/NDevice.h lib/device/NDevice/NDevice.cpp
     lib/device/NDevice/Parser.h lib/device/NDevice/Parser.cpp
+    lib/device/NDevice/JSONParser.h lib/device/NDevice/JSONParser.cpp
     lib/device/netstream.h
     lib/device/siocpm.h
     lib/modem-sniffer/modem-sniffer.h lib/modem-sniffer/modem-sniffer.cpp
