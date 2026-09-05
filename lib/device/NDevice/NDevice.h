@@ -16,16 +16,19 @@ typedef struct {
 } NDeviceStatus;
 static_assert(sizeof(NDeviceStatus) == 4, "NDeviceStatus must be 4 bytes");
 
-/******* Belongs in Parser.h *******/
 typedef enum class PARSER {
     NONE = 0,
     JSON = 1,
     SGML = 2,
 } parserMode_t;
 
+#ifdef OBSOLETE
 /******* Belongs in the individual parsers *******/
 class FNJSON;
 class FNSGML;
+#endif /* OBSOLETE */
+
+class Parser;
 
 class NDevice : public virtualDevice
 {
@@ -57,19 +60,23 @@ protected:
     uint8_t timerRate = 20;
 #endif
 
+#ifdef OBSOLETE
     /**
      * The channel mode for the currently open N: device. By default it is
      * PROTOCOL, which passes read/write/status through to the protocol
      * adapter. JSON routes them to the fnJSON parser instead.
      */
     parserMode_t parserMode = PARSER::NONE;
+#endif /* OBSOLETE */
+    std::unique_ptr<Parser> _parser;
 
+    // FIMXME - NetworkProtocol should manage its own buffers
     std::string *receiveBuffer = nullptr;
     std::string *transmitBuffer = nullptr;
     std::string *specialBuffer = nullptr;
 
     /** Instance of the currently open network protocol, if any. */
-    std::unique_ptr<NetworkProtocol> protocol = nullptr;
+    std::unique_ptr<NetworkProtocol> _protocol = nullptr;
 
     uint64_t readAck = 0;
 
@@ -95,6 +102,7 @@ protected:
      */
     std::string network_eol_override;
 
+#ifdef OBSOLETE
     /** fnJSON wrapper, lazily created in open(), destroyed in close(). */
     FNJSON *json = nullptr;
 
@@ -106,6 +114,7 @@ protected:
 
     /** Bytes remaining of current SGML query result. */
     unsigned short sgml_bytes_remaining = 0;
+#endif /* OBSOLETE */
 
     // ---- hooks: override only where the hardware genuinely differs -------
     /** The line ending network_eol_override resolves to when unset. */
@@ -115,9 +124,11 @@ protected:
         calling protocol->setDirLongWidth() at all. */
     virtual int dir_long_width() const { return 0; }
 
+#ifdef OBSOLETE
     /** Line-ending byte the fnJSON wrapper null/line-terminates values with. */
     virtual std::string json_line_ending() const { return std::string(1, '\x0a'); }
     virtual std::string sgml_line_ending() const { return std::string(1, '\x0a'); }
+#endif /* OBSOLETE */
 
 #ifdef HAVE_LAST_ERROR
     /**
@@ -141,7 +152,7 @@ protected:
     error_is_true fujicore_read(ByteBuffer &buf, size_t len);
     size_t fujicore_available();
     NDeviceStatus fujicore_status();
-    void fujicore_set_query(const std::string &query, uint8_t parseFlags);
+    error_is_true fujicore_set_query(const std::string &query, uint8_t parseFlags);
 
     /**
      * Parse a devicespec into a URL and instantiate the matching protocol.
