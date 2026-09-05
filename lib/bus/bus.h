@@ -93,7 +93,7 @@ public:
     // Expects that transaction_accept(TRANS_STATE::WILL_GET) has already
     // been called.
     template <typename PacketType>
-    std::optional<ByteBuffer> transaction_get(const PacketType &packet) {
+    std::optional<ByteBuffer> transaction_get_varlen_data(const PacketType &packet) {
         ByteBuffer data;
 
         if constexpr (has_setDataLength<PacketType>::value) {
@@ -109,8 +109,8 @@ public:
         return data;
     }
     template <typename PacketType>
-    std::optional<std::string> transaction_getAsString(const PacketType &packet)  {
-        auto buf = transaction_get(packet);
+    std::optional<std::string> transaction_get_varlen_string(const PacketType &packet)  {
+        auto buf = transaction_get_varlen_data(packet);
         if (buf.has_value())
             return std::string(reinterpret_cast<const char *>(buf->data()), buf->size());
         return std::nullopt;

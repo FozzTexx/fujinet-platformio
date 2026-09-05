@@ -629,7 +629,7 @@ void NDevice::fujidev_set_eol(const FUJI_COMMAND_PACKET &packet)
     }
 #else
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
-    auto data = SYSTEM_BUS.transaction_getAsString(packet);
+    auto data = SYSTEM_BUS.transaction_get_varlen_string(packet);
     if (!data.has_value())
     {
         SYSTEM_BUS.transaction_error();
