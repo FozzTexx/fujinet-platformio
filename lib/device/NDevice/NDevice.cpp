@@ -602,18 +602,14 @@ void NDevice::fujidev_do_parse(const FUJI_COMMAND_PACKET &packet)
 
 void NDevice::fujidev_set_eol(const FUJI_COMMAND_PACKET &packet)
 {
-    SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-
-    uint8_t eol0 = packet.param(0);
-    uint8_t eol1 = packet.param(1);
+    SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
+    uint16_t len = packet.param(0);
+    std::string eol(len, 0);
+    SYSTEM_BUS.transaction_get(eol);
 
     network_eol_override.clear();
-    if (eol0 != 0x00)
-    {
-        network_eol_override.push_back((char)eol0);
-        if (eol1 != 0x00)
-            network_eol_override.push_back((char)eol1);
-    }
+    if (!eol.empty())
+        network_eol_override = eol;
 
     if (protocol != nullptr)
         protocol->native_eol = network_eol();
