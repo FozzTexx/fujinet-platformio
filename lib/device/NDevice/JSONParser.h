@@ -12,6 +12,10 @@ protected:
 
 public:
     using Parser::Parser;
+    JSONParser(NetworkProtocol *protocol) : Parser(protocol) {
+        _json.setLineEnding("\x0a");
+        _json.setProtocol(_protocol);
+    }
 
     fujiError_t read(std::string &buffer, size_t length) override;
     fujiError_t write(std::string &buffer) override;

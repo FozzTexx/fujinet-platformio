@@ -2,7 +2,10 @@
 
 fujiError_t JSONParser::read(std::string &buffer, size_t length)
 {
-    return Parser::read(buffer, std::min<size_t>(_remaining, length));
+    fujiError_t err = Parser::read(buffer, std::min<size_t>(_remaining, length));
+    if (err == FUJI_ERROR::NONE)
+        _remaining -= length;
+    return err;
 }
 
 fujiError_t JSONParser::write(std::string &buffer)
@@ -29,7 +32,9 @@ error_is_true JSONParser::setQuery(const std::string &query)
     buffer.resize(_remaining);
     _json.readValue(reinterpret_cast<uint8_t *>(buffer.data()), _remaining);
     buffer.resize(strlen(buffer.c_str()));
-    *_protocol->receiveBuffer += SYSTEM_BUS.unicodeTextToNative(buffer);
+    buffer = SYSTEM_BUS.unicodeTextToNative(buffer);
+    _remaining = buffer.size();
+    *_protocol->receiveBuffer += buffer;
     RETURN_SUCCESS_AS_FALSE();
 }
 
