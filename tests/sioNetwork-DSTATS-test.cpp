@@ -252,3 +252,23 @@ uint16_t FujiSIOPacket::getParam(size_t index, size_t psize) const { return 0; }
 
 void DaisyChain::addDevice(virtualDevice *newDev, fujiDeviceID_t fujiID) {}
 void DaisyChain::assignFujiIDToDevice(virtualDevice *device, fujiDeviceID_t fujiID) {}
+
+#include "Parser.h"
+#include "JSONParser.h"
+#include "SGMLParser.h"
+
+fujiError_t Parser::read(std::string &buffer, size_t length) { return FUJI_ERROR::UNSPECIFIED; }
+fujiError_t Parser::write(std::string &buffer) { return FUJI_ERROR::UNSPECIFIED; }
+size_t Parser::available() { return 0; }
+off_t Parser::seek(off_t offset, int whence) { return -1; }
+error_is_true Parser::setQuery(const std::string &query) { RETURN_ERROR_AS_TRUE(); }
+error_is_true Parser::parse() { RETURN_ERROR_AS_TRUE(); }
+NetworkStatus Parser::status() { return {}; }
+fujiError_t JSONParser::write(std::string &buffer) { return FUJI_ERROR::UNSPECIFIED; }
+off_t JSONParser::seek(off_t offset, int whence) { return -1; }
+error_is_true JSONParser::setQuery(const std::string &query) { RETURN_ERROR_AS_TRUE(); }
+error_is_true JSONParser::parse() { RETURN_ERROR_AS_TRUE(); }
+fujiError_t SGMLParser::write(std::string &buffer) { return FUJI_ERROR::UNSPECIFIED; }
+off_t SGMLParser::seek(off_t offset, int whence) { return -1; }
+error_is_true SGMLParser::setQuery(const std::string &query) { RETURN_ERROR_AS_TRUE(); }
+error_is_true SGMLParser::parse() { RETURN_ERROR_AS_TRUE(); }
