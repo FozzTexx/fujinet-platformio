@@ -14,10 +14,6 @@
 #include "Parser.h"
 #include "JSONParser.h"
 #include "SGMLParser.h"
-#ifdef OBSOLETE
-#include "fnjson.h"
-#include "fnsgml.h"
-#endif /* OBSOLETE */
 #include "IOChannel.h" // For GET_TIMESTAMP()
 #include "utils.h"
 #include "debug.h"
@@ -89,12 +85,6 @@ NDevice::NDevice()
 NDevice::~NDevice()
 {
     // _protocol & _parser are unique_ptr -- destroyed automatically.
-
-#ifdef OBSOLETE
-    if (json != nullptr)
-        delete json;
-    json = nullptr;
-#endif /* OBSOLETE */
 
     receiveBuffer->clear();
     transmitBuffer->clear();
@@ -176,23 +166,11 @@ void NDevice::fujidev_open(const FUJI_COMMAND_PACKET &packet)
     spec.resize(strlen(spec.c_str()));
     spec = SYSTEM_BUS.nativeTextToUnicode(spec);
 
-#ifdef OBSOLETE
-    parserMode = PARSER::NONE;
-#endif /* OBSOLETE */
-
     // Shut down protocol if we are sending another open before we close.
     if (_protocol != nullptr)
         _protocol->close();
     _protocol = nullptr;
     _parser = nullptr;
-
-#ifdef OBSOLETE
-    if (json != nullptr)
-    {
-        delete json;
-        json = nullptr;
-    }
-#endif /* OBSOLETE */
 
     std::unique_ptr<PeoplesUrlParser> url;
     if (!parse_and_instantiate_protocol(spec, IS_DIR_MODE(access), url))
@@ -219,20 +197,6 @@ void NDevice::fujidev_open(const FUJI_COMMAND_PACKET &packet)
 
     _parser = std::make_unique<Parser>(_protocol.get());
 
-#ifdef OBSOLETE
-    json = new FNJSON();
-    json->setLineEnding(json_line_ending());
-    json->setProtocol(protocol.get());
-    json_bytes_remaining = 0; // reset per-open so a prior session's count doesn't leak
-
-    sgml = new FNSGML();
-    json->setLineEnding(sgml_line_ending());
-    sgml->setProtocol(protocol.get());
-    sgml_bytes_remaining = 0; // reset per-open so a prior session's count doesn't leak
-
-    parserMode = PARSER::NONE;
-#endif /* OBSOLETE */
-
     SYSTEM_BUS.transaction_success();
 }
 
@@ -249,32 +213,8 @@ void NDevice::fujidev_close(const FUJI_COMMAND_PACKET &packet)
 
     _protocol = nullptr;
     _parser = nullptr;
-
-#ifdef OBSOLETE
-    if (json != nullptr)
-    {
-        delete json;
-        json = nullptr;
-    }
-#endif /* OBSOLETE */
 }
 
-#ifdef OBSOLETE
-error_is_true NDevice::fujicore_read(ByteBuffer &buf, size_t len)
-{
-    readAck = GET_TIMESTAMP();
-
-    if (receiveBuffer == nullptr
-        || protocol == nullptr
-        || read_channel(len) != FUJI_ERROR::NONE)
-        RETURN_ERROR_AS_TRUE();
-    buf.resize(len);
-    std::copy(receiveBuffer->begin(), receiveBuffer->begin() + len, buf.begin());
-    receiveBuffer->erase(0, len);
-    receiveBuffer->shrink_to_fit();
-    RETURN_SUCCESS_AS_FALSE();
-}
-#else
 error_is_true NDevice::fujicore_read(ByteBuffer &buf, size_t len)
 {
     fujiError_t err;
@@ -285,7 +225,6 @@ error_is_true NDevice::fujicore_read(ByteBuffer &buf, size_t len)
         buf.assign(strbuf.begin(), strbuf.end());
     RETURN_ERROR_IF(err != FUJI_ERROR::NONE);
 }
-#endif /* OBSOLETE */
 
 void NDevice::fujidev_read(const FUJI_COMMAND_PACKET &packet)
 {
@@ -309,21 +248,6 @@ void NDevice::fujidev_read(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_send(buf);
 }
 
-#ifdef OBSOLETE
-error_is_true NDevice::fujicore_write(const ByteBuffer &buf)
-{
-#ifdef DEBUG_RAW_WRITE
-    Debug_printf("writing\n%s", util_hexdump(buf.data(), buf.size()).c_str());
-#endif // DEBUG_RAW_WRITE
-
-    if (protocol == nullptr || transmitBuffer == nullptr)
-        RETURN_ERROR_AS_TRUE();
-
-    std::string_view view(reinterpret_cast<const char*>(buf.data()), buf.size());
-    *transmitBuffer += view;
-    RETURN_ERROR_IF(write_channel(view.size()) != FUJI_ERROR::NONE);
-}
-#else
 error_is_true NDevice::fujicore_write(const ByteBuffer &buf)
 {
     if (_parser == nullptr)
@@ -334,7 +258,6 @@ error_is_true NDevice::fujicore_write(const ByteBuffer &buf)
     err = _parser->write(strbuf);
     RETURN_ERROR_IF(err != FUJI_ERROR::NONE);
 }
-#endif /* OBSOLETE */
 
 void NDevice::fujidev_write(const FUJI_COMMAND_PACKET &packet)
 {
@@ -373,33 +296,10 @@ void NDevice::fujidev_write(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-#ifdef OBSOLETE
-size_t NDevice::fujicore_available()
-{
-    size_t avail = 0;
-
-    switch (parserMode)
-    {
-    case PARSER::NONE:
-        avail = protocol->available();
-        break;
-    case PARSER::JSON:
-        avail = json_bytes_remaining;
-        break;
-    case PARSER::SGML:
-        avail = sgml_bytes_remaining;
-        break;
-    }
-
-    //Debug_printf("NDevice::available=%d\n", avail);
-    return avail;
-}
-#else
 size_t NDevice::fujicore_available()
 {
     return _parser->available();
 }
-#endif /* OBSOLETE */
 
 NDeviceStatus NDevice::current_status()
 {
@@ -418,23 +318,6 @@ NDeviceStatus NDevice::current_status()
     }
 
     NetworkStatus ns = _parser->status();
-
-#ifdef OBSOLETE
-    switch (parserMode)
-    {
-    case PARSER::NONE:
-        protocol->status(&ns);
-        break;
-    case PARSER::JSON:
-        ns.connected = json_bytes_remaining > 0;
-        ns.error = json_bytes_remaining > 0 ? NDEV_STATUS::SUCCESS : NDEV_STATUS::END_OF_FILE;
-        break;
-    case PARSER::SGML:
-        ns.connected = sgml_bytes_remaining > 0;
-        ns.error = sgml_bytes_remaining > 0 ? NDEV_STATUS::SUCCESS : NDEV_STATUS::END_OF_FILE;
-        break;
-    }
-#endif /* OBSOLETE */
 
     nstatus.avail = std::min<size_t>(65535, fujicore_available());
     nstatus.conn = ns.connected;
@@ -533,36 +416,6 @@ void NDevice::fujidev_set_prefix(const FUJI_COMMAND_PACKET &packet)
     SYSTEM_BUS.transaction_success();
 }
 
-#ifdef OBSOLETE
-void NDevice::fujicore_set_query(const std::string &query, uint8_t parseFlags)
-{
-    std::string buffer;
-
-    switch (parserMode)
-    {
-    case PARSER::JSON:
-        json->setReadQuery(query, parseFlags);
-        json_bytes_remaining = json->available();
-        buffer.resize(json_bytes_remaining);
-        json->readValue(reinterpret_cast<uint8_t *>(buffer.data()), json_bytes_remaining);
-        break;
-    case PARSER::SGML:
-        sgml->setReadQuery(query, parseFlags);
-        sgml_bytes_remaining = sgml->available();
-        buffer.resize(sgml_bytes_remaining);
-        sgml->readValue(reinterpret_cast<uint8_t *>(buffer.data()), sgml_bytes_remaining);
-        break;
-
-    default:
-        return;
-    }
-
-    // don't copy past first nul char in tmp
-    buffer.resize(strlen(buffer.c_str()));
-    *receiveBuffer += SYSTEM_BUS.unicodeTextToNative(buffer);
-    Debug_printf("Query set to >%s<\r\n", query.c_str());
-}
-#else
 error_is_true NDevice::fujicore_set_query(const std::string &query, uint8_t parseFlags)
 {
     error_is_true err = error_is_true(false);
@@ -571,7 +424,6 @@ error_is_true NDevice::fujicore_set_query(const std::string &query, uint8_t pars
         Debug_printf("Query set to >%s<\r\n", query.c_str());
     return err;
 }
-#endif /* OBSOLETE */
 
 void NDevice::fujidev_set_query(const FUJI_COMMAND_PACKET &packet)
 {
@@ -651,13 +503,6 @@ void NDevice::fujidev_set_parser(const FUJI_COMMAND_PACKET &packet)
     parserMode_t mode = static_cast<parserMode_t>(static_cast<uint8_t>(packet.param(1)));
     switch (mode)
     {
-#ifdef OBSOLETE
-    case PARSER::NONE:
-    case PARSER::JSON:
-    case PARSER::SGML:
-        parserMode = mode;
-        break;
-#else
     case PARSER::NONE:
         _parser = std::make_unique<Parser>(_protocol.get());
         break;
@@ -669,7 +514,6 @@ void NDevice::fujidev_set_parser(const FUJI_COMMAND_PACKET &packet)
     case PARSER::SGML:
         _parser = std::make_unique<SGMLParser>(_protocol.get());
         break;
-#endif /* OBSOLETE */
 
     default:
         Debug_printf("INVALID MODE = %02x\r\n", (unsigned) mode);
@@ -683,11 +527,7 @@ void NDevice::fujidev_set_parser(const FUJI_COMMAND_PACKET &packet)
 void NDevice::fujidev_do_parse(const FUJI_COMMAND_PACKET &packet)
 {
     SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
-#ifdef OBSOLETE
-    json->parse();
-#else
     _parser->parse();
-#endif /* OBSOLETE */
     SYSTEM_BUS.transaction_success();
 }
 
@@ -740,17 +580,6 @@ void NDevice::fujidev_seek(const FUJI_COMMAND_PACKET &packet)
         return;
     }
 
-#ifdef OBSOLETE
-    if (parserMode != PARSER::NONE)
-    {
-#ifdef HAVE_LAST_ERROR
-        lastError = NDEV_STATUS::INVALID_POINT;
-#endif /* HAVE_LAST_ERROR */
-        SYSTEM_BUS.transaction_error();
-        return;
-    }
-#endif /* OBSOLETE */
-
     SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
 
     u24le_t offset;
@@ -793,55 +622,6 @@ void NDevice::fujidev_tell(const FUJI_COMMAND_PACKET &packet)
     pos[2] = (offset >> 16) & 0xFF;
     SYSTEM_BUS.transaction_send(pos, sizeof(pos), false);
 }
-
-#ifdef OBSOLETE
-fujiError_t NDevice::read_channel(unsigned short num_bytes)
-{
-    fujiError_t err = FUJI_ERROR::NONE;
-
-    switch (parserMode)
-    {
-    case PARSER::NONE:
-        err = protocol->read(num_bytes);
-        break;
-    case PARSER::JSON:
-        if (num_bytes > json_bytes_remaining)
-            json_bytes_remaining = 0;
-        else
-            json_bytes_remaining -= num_bytes;
-        break;
-    case PARSER::SGML:
-        if (num_bytes > sgml_bytes_remaining)
-            sgml_bytes_remaining = 0;
-        else
-            sgml_bytes_remaining -= num_bytes;
-        break;
-    }
-    return err;
-}
-#endif /* OBSOLETE */
-
-#ifdef OBSOLETE
-fujiError_t NDevice::write_channel(unsigned short num_bytes)
-{
-    fujiError_t err = FUJI_ERROR::NONE;
-
-    switch (parserMode)
-    {
-    case PARSER::NONE:
-        if (!protocol)
-            return FUJI_ERROR::UNSPECIFIED;
-        err = protocol->write(num_bytes);
-        break;
-    case PARSER::JSON:
-    case PARSER::SGML:
-        Debug_printf("Write not possible.\n");
-        err = FUJI_ERROR::UNSPECIFIED;
-        break;
-    }
-    return err;
-}
-#endif /* OBSOLETE */
 
 // ================================ fs ops ====================================
 

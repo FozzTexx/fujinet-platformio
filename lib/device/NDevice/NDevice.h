@@ -22,12 +22,6 @@ typedef enum class PARSER {
     SGML = 2,
 } parserMode_t;
 
-#ifdef OBSOLETE
-/******* Belongs in the individual parsers *******/
-class FNJSON;
-class FNSGML;
-#endif /* OBSOLETE */
-
 class Parser;
 
 class NDevice : public virtualDevice
@@ -60,14 +54,6 @@ protected:
     uint8_t timerRate = 20;
 #endif
 
-#ifdef OBSOLETE
-    /**
-     * The channel mode for the currently open N: device. By default it is
-     * PROTOCOL, which passes read/write/status through to the protocol
-     * adapter. JSON routes them to the fnJSON parser instead.
-     */
-    parserMode_t parserMode = PARSER::NONE;
-#endif /* OBSOLETE */
     std::unique_ptr<Parser> _parser;
 
     // FIMXME - NetworkProtocol should manage its own buffers
@@ -102,20 +88,6 @@ protected:
      */
     std::string network_eol_override;
 
-#ifdef OBSOLETE
-    /** fnJSON wrapper, lazily created in open(), destroyed in close(). */
-    FNJSON *json = nullptr;
-
-    /** Bytes remaining in the current JSON query result. */
-    unsigned short json_bytes_remaining = 0;
-
-    /** The fnSGML parser wrapper object (HTML/XML via CSS selector) */
-    FNSGML *sgml = nullptr;
-
-    /** Bytes remaining of current SGML query result. */
-    unsigned short sgml_bytes_remaining = 0;
-#endif /* OBSOLETE */
-
     // ---- hooks: override only where the hardware genuinely differs -------
     /** The line ending network_eol_override resolves to when unset. */
     std::string network_eol() const;
@@ -123,12 +95,6 @@ protected:
     /** Column width for LONG-format directory listings, or 0 to skip
         calling protocol->setDirLongWidth() at all. */
     virtual int dir_long_width() const { return 0; }
-
-#ifdef OBSOLETE
-    /** Line-ending byte the fnJSON wrapper null/line-terminates values with. */
-    virtual std::string json_line_ending() const { return std::string(1, '\x0a'); }
-    virtual std::string sgml_line_ending() const { return std::string(1, '\x0a'); }
-#endif /* OBSOLETE */
 
 #ifdef HAVE_LAST_ERROR
     /**
