@@ -17,6 +17,16 @@
 #include "utils.h"
 #include "debug.h"
 
+#include <type_traits>
+
+// Compile-time check for packet.setDataLength(...)
+template <typename T, typename = void>
+struct has_setDataLength : std::false_type {};
+
+template <typename T>
+struct has_setDataLength<T, std::void_t<decltype(std::declval<T>().setDataLength(std::declval<uint16_t>()))>>
+    : std::true_type {};
+
 #define IS_DIR_MODE(access_mode)                                            \
     ({fileAccessMode_t _am = static_cast<fileAccessMode_t>(access_mode);    \
         _am == ACCESS_MODE::DIRECTORY || _am == ACCESS_MODE::DIRECTORY_ALT;})
@@ -602,18 +612,27 @@ void NDevice::fujidev_do_parse(const FUJI_COMMAND_PACKET &packet)
 
 void NDevice::fujidev_set_eol(const FUJI_COMMAND_PACKET &packet)
 {
-    SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
-    uint16_t len = packet.param(0);
-    std::string eol(len, 0);
-    SYSTEM_BUS.transaction_get(eol);
+    std::string eol;
 
+    if constexpr (has_setDataLength<FUJI_COMMAND_PACKET>::value) {
+        SYSTEM_BUS.transaction_accept(TRANS_STATE::WILL_GET);
+        uint16_t len = packet.param(0);
+        eol = std::string(len, 0); // Assign to the outer eol variable
+        SYSTEM_BUS.transaction_get(eol);
+    }
+    else {
+        SYSTEM_BUS.transaction_accept(TRANS_STATE::NO_GET);
+        eol = packet.dataAsString().value_or("");
+    }
+
+    // Rest of your logic stays exactly the same
     network_eol_override.clear();
-    if (!eol.empty())
+    if (!eol.empty()) {
         network_eol_override = eol;
-
-    if (protocol != nullptr)
+    }
+    if (protocol != nullptr) {
         protocol->native_eol = network_eol();
-
+    }
     SYSTEM_BUS.transaction_success();
 }
 
