@@ -279,7 +279,7 @@ error_is_true NDevice::fujicore_read(ByteBuffer &buf, size_t len)
 
     std::string strbuf;
     err = _parser->read(strbuf, len);
-    if (err != FUJI_ERROR::NONE)
+    if (err == FUJI_ERROR::NONE)
         buf.assign(strbuf.begin(), strbuf.end());
     RETURN_ERROR_IF(err != FUJI_ERROR::NONE);
 }

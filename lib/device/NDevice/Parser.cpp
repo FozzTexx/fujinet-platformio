@@ -8,6 +8,8 @@ fujiError_t Parser::read(std::string &buffer, size_t length)
     buffer.resize(length);
     std::copy(_protocol->receiveBuffer->begin(),
               _protocol->receiveBuffer->begin() + buffer.size(), buffer.begin());
+    _protocol->receiveBuffer->erase(0, buffer.size());
+    _protocol->receiveBuffer->shrink_to_fit();
     return err;
 }
 
