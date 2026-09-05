@@ -10,15 +10,15 @@ AdamNetStatus adamNetwork::deviceStatus()
     AdamNetStatus status;
     NetworkStatus s;
 
-    if (protocol != nullptr)
+    if (_protocol != nullptr)
     {
         // passive: a bus status poll must not trigger deferred protocol
         // work (e.g. the lazy HTTP transaction) inside the reply deadline
-        protocol->fromInterrupt = true;
-        protocol->status(&s);
-        protocol->fromInterrupt = false;
+        _protocol->fromInterrupt = true;
+        _protocol->status(&s);
+        _protocol->fromInterrupt = false;
         statusByte.bits.client_connected = s.connected == true;
-        statusByte.bits.client_data_available = protocol->available() > 0;
+        statusByte.bits.client_data_available = _protocol->available() > 0;
         statusByte.bits.client_error = s.error != NDEV_STATUS::SUCCESS;
     }
 
