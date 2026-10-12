@@ -208,6 +208,8 @@ add_test(
     NAME no_gitignore_in_source_dirs
     COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/check_gitignore_policy.py
+            --exempt components
+            --exempt components_pc
             --repo ${CMAKE_SOURCE_DIR}
 )
 

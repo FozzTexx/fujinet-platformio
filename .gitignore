@@ -19,21 +19,14 @@ platformio-device-monitor-*.log
 sdkconfig.*
 !sdkconfig.defaults.psram_octal
 
-include/ssid.h
 /*.log
 sdkconfig.fujinet-v1
-include/version.h
 build/CMakeCache.txt
 build/*
 !build/.gitkeep
 out/*
 
 # ignore generated WebUI files
-data/BUILD_*
-include/version.h
-test/rmt_copy.cpp
-test/rmt_nec_example.cpp
-test/rmt_tx_example.cpp
 dependencies.lock
 
 # Ignore packed firmware files
@@ -51,8 +44,6 @@ platformio.iniwow
 # for external library source code
 .external/
 
-data/webui/device_specific/BUILD_ATARI/fnconfig.ini
-
 # ignore any releases downloaded via fujinet_firware_uploader
 fujinet_releases/*
 
@@ -65,15 +56,6 @@ fujinet_releases/*
 # espressif managed components
 managed_components
 __pycache__
-
-# shallow clones of out-of-tree companion-MCU firmware repos (build_pico.py)
-pico/_external/
-
-# companion-MCU build dirs (pico/intellivision/firmware has its own
-# .gitignore; pico/coco and pico/mac do not, and .gitignore's `build/*` at
-# line 27 is root-anchored so it does not cover them)
-pico/*/build/
-pico/*/*/build/
 
 # scratch dir cmake drops in the cwd when it runs `cmake --system-information`
 __cmake_systeminformation/
