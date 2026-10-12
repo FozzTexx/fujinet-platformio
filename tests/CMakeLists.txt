@@ -212,11 +212,18 @@ add_test(
 )
 
 # The same policy, checked against reality: after a build, no untracked or
-# ignored files may exist inside source directories. Opt-in (CI should enable
-# it) because a developer's own not-yet-committed source files would trip it:
-#   cmake -DCHECK_SOURCE_TREE_CLEAN=ON ...
+# ignored files may exist inside source directories. On by default only under
+# CI (GitHub Actions and most other CI systems export CI=true), because a
+# developer's own not-yet-committed source files would trip it locally. Force it
+# either way with -DCHECK_SOURCE_TREE_CLEAN=ON/OFF.
+if(DEFINED ENV{CI} AND NOT "$ENV{CI}" STREQUAL "" AND NOT "$ENV{CI}" STREQUAL "false")
+  set(_check_tree_default ON)
+else()
+  set(_check_tree_default OFF)
+endif()
 option(CHECK_SOURCE_TREE_CLEAN
-       "Fail tests if the build left untracked/ignored files in source dirs" OFF)
+       "Fail tests if the build left untracked/ignored files in source dirs"
+       ${_check_tree_default})
 
 if(CHECK_SOURCE_TREE_CLEAN)
   add_test(

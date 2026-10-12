@@ -21,7 +21,8 @@ Static checks (always run, work on a clean checkout):
 
 Dynamic check (--check-files, run it AFTER a build):
   3. Lists untracked and ignored files/dirs that actually exist inside source
-     directories - i.e. proof that the build modified the source tree.
+     directories, and tracked files the build modified or deleted - i.e. proof
+     that the build changed the source tree.
 
 Exemptions (for vendor code etc.):
   Put rules, one per line, in <repo-root>/.gitignore-check-exempt
@@ -232,6 +233,15 @@ def check_files_present(root, sources, exempt):
             problems.append((path + ("/" if entry.endswith("/") else ""), 0,
                              f"{label} file/dir exists inside source directory "
                              f"'{owner}/' - the build modified the source tree"))
+
+    # Tracked files rewritten (or removed) by the build, e.g. a regenerated header.
+    deleted = set(split_nul(run_git(root, "ls-files", "-z", "--deleted")))
+    modified = set(split_nul(run_git(root, "ls-files", "-z", "--modified"))) - deleted
+    for label, paths in (("modified", modified), ("deleted", deleted)):
+        for path in sorted(paths):
+            if not exempt(path):
+                problems.append((path, 0, f"tracked file {label} - the build "
+                                          f"changed the source tree"))
     return problems
 
 
@@ -255,7 +265,12 @@ def main():
                     help="print the detected source directories and exit")
     args = ap.parse_args()
 
-    root = os.fsdecode(run_git(args.repo, "rev-parse", "--show-toplevel").strip())
+    # Derive the root from --repo plus git's relative "cdup" rather than using
+    # --show-toplevel: under MSYS2 git reports /c/... paths that a native
+    # Windows Python cannot open.
+    base = os.path.abspath(args.repo)
+    cdup = os.fsdecode(run_git(base, "rev-parse", "--show-cdup").strip())
+    root = os.path.normpath(os.path.join(base, cdup)) if cdup else base
 
     rules = list(args.exempt)
     ex_files = args.exempt_file or [os.path.join(root, DEFAULT_EXEMPT_FILE)]

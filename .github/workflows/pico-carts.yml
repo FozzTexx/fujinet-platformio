@@ -49,22 +49,22 @@ jobs:
         working-directory: pico/common/host_test
         run: |
           gcc -Wall -Wextra -Werror -I../include \
-              -o test_fujibus test_fujibus.c ../src/fujibus.c
-          ./test_fujibus
+              -o /tmp/test_fujibus test_fujibus.c ../src/fujibus.c
+          /tmp/test_fujibus
 
       - name: Odyssey 2 -- cartridge image mapper
         working-directory: pico/o2/firmware/host_test
         run: |
           gcc -Wall -Wextra -Werror -I../include \
-              -o test_o2map test_o2map.c ../src/o2map.c
-          ./test_o2map
+              -o /tmp/test_o2map test_o2map.c ../src/o2map.c
+          /tmp/test_o2map
 
       - name: Intellivision -- FujiBus codec
         working-directory: pico/intellivision/firmware/host_test
         run: |
           gcc -Wall -Wextra -I.. -I../include \
-              -o test_fujibus test_fujibus.c ../src/fujibus.c
-          ./test_fujibus
+              -o /tmp/test_fujibus test_fujibus.c ../src/fujibus.c
+          /tmp/test_fujibus
 
       # Compile-only: this one is driven by a corpus of real Intellivision ROM
       # files, which are not in the repo. Running it needs `test_bootmap
@@ -72,15 +72,15 @@ jobs:
       - name: Intellivision -- boot map (compiles)
         working-directory: pico/intellivision/firmware/host_test
         run: |
-          gcc -Wall -Wextra -I../include -o test_bootmap \
+          gcc -Wall -Wextra -I../include -o /tmp/test_bootmap \
               test_bootmap.c ../src/bootmap.c ../src/memory.c ../src/utils.c
 
       - name: Astrocade -- cartridge image mapper
         working-directory: pico/astrocade/firmware/host_test
         run: |
           gcc -Wall -Wextra -Werror -I../include \
-              -o test_astromap test_astromap.c ../src/astromap.c
-          ./test_astromap
+              -o /tmp/test_astromap test_astromap.c ../src/astromap.c
+          /tmp/test_astromap
 
       # The v2 banking serve model vs MAME's rom_256k/rom_512k handlers,
       # transcribed verbatim as the reference: 2M fuzzed reads must match
@@ -90,8 +90,8 @@ jobs:
         working-directory: pico/astrocade/firmware/host_test
         run: |
           gcc -Wall -Wextra -Werror -I../include \
-              -o test_bankserve test_bankserve.c ../src/astromap.c
-          ./test_bankserve
+              -o /tmp/test_bankserve test_bankserve.c ../src/astromap.c
+          /tmp/test_bankserve
 
       # The hotspot mailbox: read-pair register decode, the SEQ/ACKSEQ and
       # SLICE_ECHO interlocks, the DBC push receiver (through the port-owned
@@ -102,8 +102,8 @@ jobs:
         working-directory: pico/astrocade/firmware/host_test
         run: |
           gcc -Wall -Wextra -Werror -I../include -I../../../common/include \
-              -o test_fujimail test_fujimail.c ../src/fujimail.c ../src/astromap.c
-          ./test_fujimail
+              -o /tmp/test_fujimail test_fujimail.c ../src/fujimail.c ../src/astromap.c
+          /tmp/test_fujimail
 
       # The push store's flash bookkeeping: the idle erase sweep and its
       # guards, and whether a chunk pays for an erase or only a program.
@@ -115,8 +115,8 @@ jobs:
         run: |
           gcc -Wall -Wextra -Werror -Istub -I../include \
               -DFUJI_STORE_BINARY_END=0x1000u \
-              -o test_fujistore test_fujistore.c ../src/fuji_store.c
-          ./test_fujistore
+              -o /tmp/test_fujistore test_fujistore.c ../src/fuji_store.c
+          /tmp/test_fujistore
 
       # The Channel F tests are the only ones in the family that cover a BUS
       # PROTOCOL rather than an address decode: the F8 has no address bus, so
@@ -170,8 +170,8 @@ jobs:
         working-directory: pico/arcadia/firmware/host_test
         run: |
           gcc -Wall -Wextra -Werror -I.. -I../include \
-              -o test_fujibus test_fujibus.c ../src/fujibus.c
-          ./test_fujibus
+              -o /tmp/test_fujibus test_fujibus.c ../src/fujibus.c
+          /tmp/test_fujibus
 
       # The connector decode is the one thing the RP2040 serve loop and the
       # MAME device MUST agree on byte-for-byte (A12 = chip select, A13 =
@@ -180,8 +180,8 @@ jobs:
         working-directory: pico/arcadia/firmware/host_test
         run: |
           gcc -Wall -Wextra -Werror -I../include \
-              -o test_arcmap test_arcmap.c ../src/arcmap.c
-          ./test_arcmap
+              -o /tmp/test_arcmap test_arcmap.c ../src/arcmap.c
+          /tmp/test_arcmap
 
       # The hotspot mailbox: read-pair register decode, the SEQ/ACKSEQ and
       # SLICE_ECHO interlocks, the DBC push receiver, and the stray-read
@@ -191,8 +191,8 @@ jobs:
         working-directory: pico/arcadia/firmware/host_test
         run: |
           gcc -Wall -Wextra -Werror -I../include \
-              -o test_fujimail test_fujimail.c ../src/fujimail.c ../src/arcmap.c
-          ./test_fujimail
+              -o /tmp/test_fujimail test_fujimail.c ../src/fujimail.c ../src/arcmap.c
+          /tmp/test_fujimail
 
       # The Emerson connector has no read strobe, so core1 de-duplicates
       # hotspot events on a pin-state change rather than an Enable edge. That
@@ -202,8 +202,13 @@ jobs:
         working-directory: pico/arcadia/firmware/host_test
         run: |
           gcc -Wall -Wextra -Werror -I../include \
-              -o test_busedge test_busedge.c
-          ./test_busedge
+              -o /tmp/test_busedge test_busedge.c
+          /tmp/test_busedge
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   a7800-console-client:
     name: "Atari 7800 6502 clients"
@@ -217,6 +222,11 @@ jobs:
       - name: Build the boot block, the loader and the clients
         working-directory: pico/atari-7800
         run: ./build.sh
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   a5200-console-client:
     name: "Atari 5200 6502 clients"
@@ -230,6 +240,11 @@ jobs:
       - name: Build the clients
         working-directory: pico/atari-5200
         run: ./build.sh
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   o2-console-client:
     name: "Odyssey 2 8048 client"
@@ -307,6 +322,11 @@ jobs:
               firmware/host_test/test_o2map.c firmware/src/o2map.c
           /tmp/test_o2map build/hello.bin build/fujitest.bin \
                           build/fujiboot.bin build/fujicfg.bin
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   astrocade-console-client:
     name: "Astrocade Z80 clients"
@@ -326,6 +346,11 @@ jobs:
       - name: Assemble and validate
         working-directory: pico/astrocade
         run: ./build.sh fujitest fujiboot fujicfg fujibank gamebank
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   channelf-console-client:
     name: "Channel F F8 clients"
@@ -367,6 +392,11 @@ jobs:
         run: |
           ASL=$HOME/asl/asl P2BIN=$HOME/asl/p2bin \
             ./build.sh hello romctest fujitest fujiboot fujicfg
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   studio2-console-client:
     name: "Studio II 1802 clients"
@@ -401,6 +431,11 @@ jobs:
       - name: Assemble and validate
         working-directory: pico/studio2
         run: ASL=$HOME/asl/asl ./build.sh hello fujitest fujiboot
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   nes-console-client:
     name: "NES 6502 clients"
@@ -416,6 +451,11 @@ jobs:
       - name: Assemble and validate
         working-directory: pico/nes
         run: ./build.sh loader hello fujitest fujiboot
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   arcadia-console-client:
     name: "Arcadia 2001 2650 clients"
@@ -466,6 +506,11 @@ jobs:
               python3 tools/checkdepth.py \
                   testrom/$c.asm testrom/fujilib.inc testrom/fujidisp.inc
           done
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
 
   cartridge-firmware:
     name: "RP2040 cartridge firmware"
@@ -643,3 +688,8 @@ jobs:
             python3 build_pico.py "$board" --no-generate
             echo "::endgroup::"
           done
+      # Building must never change the source tree: no untracked, ignored or
+      # rewritten files inside source dirs. Policy and exemptions are documented
+      # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
+      - name: Check the build left the source tree untouched
+        run: python3 tests/check_gitignore_policy.py --check-files
