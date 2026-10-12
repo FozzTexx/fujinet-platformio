@@ -526,6 +526,37 @@ add_test(
             ${CMAKE_SOURCE_DIR}/lib/media
 )
 
+# ------------------------------------------------------------------------------
+# Policy check: building must never change the source tree. No .gitignore may
+# ignore (or apply inside) a directory that holds tracked files; ignored output
+# belongs in dedicated build dirs. Vendor code that cannot comply is exempted in
+# <repo>/.gitignore-check-exempt. Needs only git and Python; --repo is explicit
+# because ctest runs from the build directory, not the source tree.
+# ------------------------------------------------------------------------------
+add_test(
+    NAME no_gitignore_in_source_dirs
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/check_gitignore_policy.py
+            --repo ${CMAKE_SOURCE_DIR}
+)
+
+# The same policy, checked against reality: after a build, no untracked or
+# ignored files may exist inside source directories. Opt-in (CI should enable
+# it) because a developer's own not-yet-committed source files would trip it:
+#   cmake -DCHECK_SOURCE_TREE_CLEAN=ON ...
+option(CHECK_SOURCE_TREE_CLEAN
+       "Fail tests if the build left untracked/ignored files in source dirs" OFF)
+
+if(CHECK_SOURCE_TREE_CLEAN)
+  add_test(
+      NAME no_build_output_in_source_tree
+      COMMAND ${Python3_EXECUTABLE}
+              ${CMAKE_CURRENT_SOURCE_DIR}/check_gitignore_policy.py
+              --repo ${CMAKE_SOURCE_DIR}
+              --check-files
+  )
+endif()
+
 if(FUJINET_TARGET STREQUAL "ATARI")
   # sioNetwork and NDevice with stubs for everything they pull in, shared by
   # the DSTATS test, the sioNetwork command tests and the NDevice tests.
