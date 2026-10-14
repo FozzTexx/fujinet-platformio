@@ -1,4 +1,4 @@
-#ifdef __WINDOWS__
+#ifdef _WIN32
   #include <winsock2.h>
 #endif // __WINDOWS__
 
