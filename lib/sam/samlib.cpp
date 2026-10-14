@@ -15,6 +15,10 @@
   #include "compat_string.h"
 #endif
 
+#ifdef __WINDOWS__
+  #include <winsock2.h>
+#endif // __WINDOWS__
+
 #include "fnSystem.h"
 
 #ifdef __cplusplus

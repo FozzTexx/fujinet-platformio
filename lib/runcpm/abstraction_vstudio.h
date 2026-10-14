@@ -5,13 +5,6 @@
 
 #ifdef _WIN32
 #define _CRT_SECURE_NO_WARNINGS
-/*
- * Include windows.h without Windows Sockets 1.1 to prevent conflicts with
- * Windows Sockets 2.0.
- */
-#ifndef WIN32_LEAN_AND_MEAN
-#	define WIN32_LEAN_AND_MEAN
-#endif
 #include <windows.h>
 #include <stdio.h>
 #include <conio.h>
