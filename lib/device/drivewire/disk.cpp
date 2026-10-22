@@ -17,7 +17,7 @@
 // as cartridge ROM. Nothing reads it back through the media object afterwards.
 static bool push_rom_image(MediaTypeROM *rom)
 {
-#ifdef PINMAP_FUJIVERSAL_DRIVEWIRE
+#if 1 //def PINMAP_FUJIVERSAL_DRIVEWIRE
     if (SYSTEM_BUS.isBoIP())
     {
         Debug_printv("ROM media requires a real pico; not supported over BoIP");

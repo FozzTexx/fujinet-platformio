@@ -28,7 +28,7 @@
 #include "fujiDeviceID.h"
 #include "fujiCommandID.h"
 #include "status_error_codes.h"
-#ifdef PINMAP_FUJIVERSAL_DRIVEWIRE
+#if 1 //def PINMAP_FUJIVERSAL_DRIVEWIRE
 #include "FujiBusPacket.h"
 #include <deque>
 #endif
@@ -136,7 +136,7 @@ private:
 #endif /* FUJINET_OVER_USB */
     BoIPChannel _becker;
 
-#ifdef PINMAP_FUJIVERSAL_DRIVEWIRE
+#if 1 //def PINMAP_FUJIVERSAL_DRIVEWIRE
     std::deque<uint8_t> _dbc_pushback;
 #endif
 
@@ -278,7 +278,7 @@ public:
     // I wish this codebase would make up its mind to use camel or snake casing.
     drivewireModem *get_modem() { return _modemDev; }
 
-#ifdef PINMAP_FUJIVERSAL_DRIVEWIRE
+#if 1 //def PINMAP_FUJIVERSAL_DRIVEWIRE
     std::unique_ptr<FujiBusPacket> readFujiBusPacket(int first = -1) override;
     success_is_true writeFujiBusPacket(FujiBusPacket &packet) override;
 #endif /* PINMAP_FUJIVERSAL_DRIVEWIRE */

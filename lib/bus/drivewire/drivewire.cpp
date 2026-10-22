@@ -968,7 +968,7 @@ void systemBus::shutdown()
     Debug_printf("All devices shut down.\n");
 }
 
-#ifdef PINMAP_FUJIVERSAL_DRIVEWIRE
+#if 1 //def PINMAP_FUJIVERSAL_DRIVEWIRE
 std::unique_ptr<FujiBusPacket> systemBus::readFujiBusPacket(int first)
 {
     if (isBoIP())
