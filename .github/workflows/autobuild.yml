@@ -128,9 +128,10 @@ jobs:
     # rewritten files inside source dirs. Policy and exemptions are documented
     # in tests/check_gitignore_policy.py (exempt rules: .gitignore-check-exempt).
     - name: Check the build left the source tree untouched
-      run: python3 tests/check_gitignore_policy.py --check-files \
-            --exempt components \
-            --exempt components_pc
+      run: |
+        python3 tests/check_gitignore_policy.py --check-files \
+          --exempt components \
+          --exempt components_pc
 
     - name: Upload firmware zip for ${{ matrix.target-platform }}
       uses: actions/upload-artifact@v4
