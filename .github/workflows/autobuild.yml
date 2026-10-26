@@ -1,3 +1,5 @@
+# -*- indent-tabs-mode: nil; -*-
+
 name: "FujiNet CI"
 
 on:
@@ -131,7 +133,8 @@ jobs:
       run: |
         python3 tests/check_gitignore_policy.py --check-files \
           --exempt components \
-          --exempt components_pc
+          --exempt components_pc \
+          --exempt sdkconfig.\*
 
     - name: Upload firmware zip for ${{ matrix.target-platform }}
       uses: actions/upload-artifact@v4
