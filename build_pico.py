@@ -174,6 +174,21 @@ PICO_SDK_REPO = "https://github.com/raspberrypi/pico-sdk.git"
 # Read under every ini, so a bare board ini still gets the shared pico_* versions.
 COMMON_INI = os.path.join("platformio-ini-files", "platformio.common.ini")
 
+# Set by _scons_entry(); CLI runs fall back to PlatformIO's default locations.
+_PIO_BUILD_DIR = ""
+_PIO_WORKSPACE_DIR = ""
+
+
+def pio_workspace_dir() -> str:
+    return os.path.abspath(_PIO_WORKSPACE_DIR or os.environ.get("PLATFORMIO_WORKSPACE_DIR")
+                           or ".pio")
+
+
+def pio_build_dir(board: str) -> str:
+    root = _PIO_BUILD_DIR or os.path.join(
+        os.environ.get("PLATFORMIO_BUILD_DIR") or os.path.join(".pio", "build"), board)
+    return os.path.abspath(root)
+
 TRUE_WORDS = {"yes", "true", "1", "on"}
 FALSE_WORDS = {"no", "false", "0", "off"}
 
@@ -387,7 +402,26 @@ def read_config(ini_path: str, board: str) -> Optional[PicoConfig]:
         fail(board, "pico_build",
              f"unsupported value '{pico_build}' -- expected one of {BUILD_MODES}")
 
-    pico_build_dir = section.get("pico_build_dir", "build").strip() or "build"
+    # Outside .pio/build, which PlatformIO wipes, and never in the source tree.
+    pio_dir = pio_build_dir(board)
+    ws_dir = pio_workspace_dir()
+    raw_build_dir = section.get("pico_build_dir", "").strip() or "{pio_workspace_dir}/pico/{board}"
+    try:
+        # Not _Placeholders: a typo must fail, not expand to "" (and "{typo}/x" to /x).
+        pico_build_dir = raw_build_dir.format_map(
+            {"board": board, "pio_build_dir": pio_dir, "pio_workspace_dir": ws_dir})
+    except (KeyError, IndexError, ValueError) as e:
+        fail(board, "pico_build_dir",
+             f"unknown or malformed placeholder {e} -- only {{pio_workspace_dir}}, "
+             f"{{pio_build_dir}} and {{board}} are available here")
+        raise AssertionError("unreachable")
+    # Wiped when its CMake cache is stale, so it must not be or hold the ESP32 build dir.
+    resolved = os.path.normpath(os.path.abspath(os.path.join(pico_src, pico_build_dir)))
+    if resolved == pio_dir or pio_dir.startswith(resolved + os.sep):
+        fail(board, "pico_build_dir",
+             f"{resolved} is, or contains, PlatformIO's build dir for this board "
+             f"({pio_dir}) and would be wiped with it; use a subdirectory such as "
+             "{pio_workspace_dir}/pico/{board}")
     pico_build_type = section.get("pico_build_type", "Release").strip() or "Release"
     pico_board = section.get("pico_board", "").strip() or None
 
@@ -454,6 +488,8 @@ def read_config(ini_path: str, board: str) -> Optional[PicoConfig]:
         # pico_prebuild/pico_command lines run with cwd=pico_src, so use
         # {repo} for anything outside the companion source tree.
         "build_dir": os.path.join(pico_src, pico_build_dir),
+        "pio_build_dir": pio_dir,
+        "pio_workspace_dir": ws_dir,
         "sdk": pico_sdk_path,
         # Absolute project root. Both modes run with cwd = project root at
         # this point (SCons by construction, CLI via main()'s chdir).
@@ -1368,6 +1404,10 @@ def _scons_entry(env) -> None:
         targets = [str(t) for t in COMMAND_LINE_TARGETS]
     except NameError:
         targets = []
+
+    global _PIO_BUILD_DIR, _PIO_WORKSPACE_DIR
+    _PIO_BUILD_DIR = env.subst("$BUILD_DIR")
+    _PIO_WORKSPACE_DIR = env.subst("$PROJECT_WORKSPACE_DIR")
 
     skip_pico = _skip_pico_requested(False)
     cfg, resolved_ini = resolve_config(ini_path, board)
