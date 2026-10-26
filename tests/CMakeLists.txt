@@ -563,6 +563,8 @@ if(CHECK_SOURCE_TREE_CLEAN)
               ${CMAKE_CURRENT_SOURCE_DIR}/check_gitignore_policy.py
               --repo ${CMAKE_SOURCE_DIR}
               --check-files
+              --exempt components
+              --exempt components_pc
   )
 endif()
 
