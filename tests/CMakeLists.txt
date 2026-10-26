@@ -556,7 +556,11 @@ option(CHECK_SOURCE_TREE_CLEAN
        "Fail tests if the build left untracked/ignored files in source dirs"
        ${_check_tree_default})
 
-if(CHECK_SOURCE_TREE_CLEAN)
+# Skipped on Windows: git reports every file as modified there (line endings),
+# so the check is not reliable. CI on Linux and macOS still enforces it.
+if(CHECK_SOURCE_TREE_CLEAN AND WIN32)
+  message(STATUS "Skipping no_build_output_in_source_tree on Windows")
+elseif(CHECK_SOURCE_TREE_CLEAN)
   add_test(
       NAME no_build_output_in_source_tree
       COMMAND ${Python3_EXECUTABLE}
