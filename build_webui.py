@@ -112,7 +112,14 @@ if env is not None:
         build_platform = pio_config['fujinet']['build_platform']
 
 if build_data_dir is None:
-    build_data_dir = os.path.join("data", build_platform)
+    if env is not None:
+        build_data_dir = env.subst("$PROJECT_DATA_DIR")   # [platformio] data_dir from the ini
+    else:
+        build_data_dir = os.path.join("data", build_platform)
+
+# The script rmtree()s this directory, so refuse anything that could be tracked source.
+if os.path.realpath(build_data_dir) in (os.path.realpath("."), os.path.realpath("data")):
+    raise Exception(f"refusing to wipe {build_data_dir}")
 
 print(f"Building webUI into {build_data_dir}")
 print(f"  build_platform: {build_platform}")

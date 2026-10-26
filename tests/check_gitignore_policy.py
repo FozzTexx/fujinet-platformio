@@ -24,6 +24,14 @@ Dynamic check (--check-files, run it AFTER a build):
      directories, and tracked files the build modified or deleted - i.e. proof
      that the build changed the source tree.
 
+Local use (no push needed): snapshot what is already there, build, then compare, so
+your own uncommitted files are not blamed on the build:
+    python3 tests/check_gitignore_policy.py --check-files --save-baseline /tmp/base
+    <run your platformio / build.sh build>
+    python3 tests/check_gitignore_policy.py --check-files --baseline /tmp/base
+(Limitation: a path already reported in the baseline is not reported again, even
+if the build touched it further.)
+
 Exemptions (for vendor code etc.):
   Put rules, one per line, in <repo-root>/.gitignore-check-exempt
   (or pass --exempt-file / --exempt PATTERN; both can be repeated).
@@ -258,6 +266,10 @@ def main():
     ap.add_argument("--check-files", action="store_true",
                     help="also verify no untracked/ignored files exist in source dirs "
                          "(run after a build)")
+    ap.add_argument("--save-baseline", metavar="FILE",
+                    help="write the current findings to FILE and exit 0 (run before a build)")
+    ap.add_argument("--baseline", metavar="FILE",
+                    help="ignore findings already listed in FILE (run after a build)")
     ap.add_argument("--strict-root", action="store_true",
                     help="treat the repo root itself as a source dir (default: it is not, "
                          "so a root .gitignore with /build/ or *.pyc is allowed)")
@@ -299,6 +311,20 @@ def main():
         if p not in seen:
             seen.add(p)
             unique.append(p)
+
+    if args.save_baseline:
+        with open(args.save_baseline, "w", encoding="utf-8") as fh:
+            for path, _lineno, msg in unique:
+                fh.write(f"{path}\t{msg}\n")
+        print(f"baseline saved: {len(unique)} existing finding(s) in {args.save_baseline}")
+        return 0
+    if args.baseline:
+        try:
+            with open(args.baseline, encoding="utf-8") as fh:
+                known = {tuple(l.rstrip("\n").split("\t", 1)) for l in fh}
+        except OSError as e:
+            die(f"cannot read baseline: {e}")
+        unique = [p for p in unique if (p[0], p[2]) not in known]
 
     if not unique:
         print(f"OK: checked {len(gitignores)} .gitignore file(s); "
