@@ -1777,6 +1777,7 @@ void fujiDevice::fujicmd_random()
 
 bool fujiDevice::processCommand(const FUJI_COMMAND_PACKET &packet)
 {
+    Debug_printf("FUJI COMMAND: 0x%02x\n", packet.command());
     if (tryAllMixins(packet))
         return true;
 

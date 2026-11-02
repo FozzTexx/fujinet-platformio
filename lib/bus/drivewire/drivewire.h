@@ -219,7 +219,7 @@ private:
     void op_namedobj_mnt();
 
     size_t read(void *buffer, size_t length) {
-#ifdef PINMAP_FUJIVERSAL_DRIVEWIRE
+#if 1 //def PINMAP_FUJIVERSAL_DRIVEWIRE
         size_t n = 0;
         while (!_dbc_pushback.empty() && n < length) {
             ((uint8_t *)buffer)[n++] = _dbc_pushback.front();
@@ -239,7 +239,7 @@ private:
     size_t write(const void *buffer, size_t length) { return _port->write(buffer, length); }
     size_t write(int n) { return _port->write(n); }
     size_t available() {
-#ifdef PINMAP_FUJIVERSAL_DRIVEWIRE
+#if 1 //def PINMAP_FUJIVERSAL_DRIVEWIRE
         return _dbc_pushback.size() + _port->available();
 #else
         return _port->available();
