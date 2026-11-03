@@ -42,7 +42,7 @@
 #include <forward_list>
 #include <map>
 #include <cassert>
-#include "media.h"
+#include "Media.h"
 
 #define FUJI_COMMAND_PACKET FujiDWPacket
 

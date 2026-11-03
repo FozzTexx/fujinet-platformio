@@ -1,6 +1,7 @@
 #ifdef BUILD_COCO
 
 #include "disk.h"
+#include "ROMFactory.h"
 
 #include <cstring>
 #include <string>
@@ -15,41 +16,39 @@
 // A ROM image isn't served block by block the way a disk is: the whole file
 // goes to the cartridge's RP2040 at mount time, which presents it to the CoCo
 // as cartridge ROM. Nothing reads it back through the media object afterwards.
-static bool push_rom_image(MediaTypeROM *rom)
+static error_is_true push_rom_image(ROMMedia &rom)
 {
 #if 1 //def PINMAP_FUJIVERSAL_DRIVEWIRE
     if (SYSTEM_BUS.isBoIP())
     {
         Debug_printv("ROM media requires a real pico; not supported over BoIP");
-        return false;
+        RETURN_ERROR_AS_TRUE();
     }
 
-    uint32_t imagesize = rom->stream_size();
+    uint32_t imagesize = rom.size();
     if (imagesize == 0)
     {
         Debug_printv("ROM image is empty or unreadable");
-        return false;
+        RETURN_ERROR_AS_TRUE();
     }
 
     if (!SYSTEM_BUS.sendCommand(FUJI_DEVICEID::DBC, CMD::NET_OPEN, (uint16_t)0))
     {
         Debug_printv("Failed to open pico bank");
-        return false;
+        RETURN_ERROR_AS_TRUE();
     }
 
-    uint8_t blockbuff[MEDIA_BLOCK_SIZE];
-    uint32_t sent = 0;
-    while (sent < imagesize)
+    ByteBuffer blockbuff;
+    size_t sent = 0;
+    while (true)
     {
-        size_t want = (imagesize - sent) > MEDIA_BLOCK_SIZE ? MEDIA_BLOCK_SIZE : (imagesize - sent);
-        size_t got = rom->stream_read(sent, blockbuff, want);
-        if (got == 0)
+        auto got = rom.read(blockbuff, MEDIA_BLOCK_SIZE);
+        if (got.is_error() || got == 0)
         {
             Debug_printv("ROM read short: sent %lu of %lu bytes", (unsigned long)sent, (unsigned long)imagesize);
             break;
         }
-        if (!SYSTEM_BUS.sendCommand(FUJI_DEVICEID::DBC, CMD::NET_WRITE,
-                                    std::string((char *)blockbuff, got)))
+        if (!SYSTEM_BUS.sendCommand(FUJI_DEVICEID::DBC, CMD::NET_WRITE, blockbuff))
         {
             Debug_printv("Failed to send ROM block at %lu of %lu bytes", (unsigned long)sent, (unsigned long)imagesize);
             break;
@@ -60,7 +59,7 @@ static bool push_rom_image(MediaTypeROM *rom)
     SYSTEM_BUS.sendCommand(FUJI_DEVICEID::DBC, CMD::NET_CLOSE);
     Debug_printv("ROM transfer complete: %lu / %lu bytes", (unsigned long)sent, (unsigned long)imagesize);
 
-    return sent == imagesize;
+    RETURN_SUCCESS_AS_FALSE();
 #else
     (void)rom;
     Debug_printv("ROM mount not supported on this FujiNet hardware.");
@@ -109,23 +108,18 @@ mediatype_t drivewireDisk::mount(fnFile *f, const char *filename, uint32_t disks
         break;
     case MEDIATYPE_ROM:
     {
-        MediaTypeROM *rom = new MediaTypeROM();
-        _media = rom;
-        strcpy(_media->_disk_filename, filename);
-        _media->_media_read_only = !(access_mode & DISK_ACCESS_MODE_WRITE);
-        mt = _media->mount(f, disksize);
-        if (mt == MEDIATYPE_ROM && !push_rom_image(rom))
-            mt = MEDIATYPE_UNKNOWN;
-        if (mt == MEDIATYPE_UNKNOWN)
+        auto rom = ROMFactory::open(filename, f);
+        if (!rom || push_rom_image(*rom).is_error())
         {
             delete _media;
             _media = nullptr;
             device_active = false;
+            return mt;
         }
-        else
-        {
-            device_active = true;
-        }
+
+        _media->_media_read_only = rom->isReadOnly();
+        mt = MEDIATYPE_ROM;
+        device_active = true;
         return mt;
     }
     case MEDIATYPE_CAS:

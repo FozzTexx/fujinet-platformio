@@ -3,7 +3,7 @@
 
 #include "../disk.h"
 #include "bus.h"
-#include "media.h"
+#include "Media.h"
 
 class drivewireDisk : public drivewireDevice
 {
