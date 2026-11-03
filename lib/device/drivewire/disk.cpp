@@ -117,7 +117,6 @@ mediatype_t drivewireDisk::mount(fnFile *f, const char *filename, uint32_t disks
             return mt;
         }
 
-        _media->_media_read_only = rom->isReadOnly();
         mt = MEDIATYPE_ROM;
         device_active = true;
         return mt;

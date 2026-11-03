@@ -332,7 +332,9 @@ set(SOURCES src/main.cpp
     lib/device/netstream.h
     lib/device/siocpm.h
     lib/modem-sniffer/modem-sniffer.h lib/modem-sniffer/modem-sniffer.cpp
-    lib/media/media.h
+    lib/media/Media.h lib/media/ROMMedia.h
+    lib/media/ROMFactory.h lib/media/ROMFactory.cpp
+
     # Matches the ESP builds, which glob lib/media/*.cpp into every target
     lib/media/IMDImage.h lib/media/IMDImage.cpp
     lib/encoding/base64.h lib/encoding/base64.cpp
@@ -454,11 +456,12 @@ if(FUJINET_TARGET STREQUAL "COCO")
     lib/bus/FujiBusPacket.h lib/bus/FujiBusPacket.cpp
     lib/hardware/BoIPChannel.h lib/hardware/BoIPChannel.cpp
 
+    lib/media/CoCoCartROM.h lib/media/CoCoCartROM.cpp
+
     lib/media/drivewire/mediaType.h lib/media/drivewire/mediaType.cpp
     lib/media/drivewire/mediaTypeDSK.h lib/media/drivewire/mediaTypeDSK.cpp
     lib/media/drivewire/mediaTypeMRM.h lib/media/drivewire/mediaTypeMRM.cpp
     lib/media/drivewire/mediaTypeVDK.h lib/media/drivewire/mediaTypeVDK.cpp
-    lib/media/drivewire/mediaTypeROM.h lib/media/drivewire/mediaTypeROM.cpp
     lib/media/drivewire/mediaTypeCASDSK.h lib/media/drivewire/mediaTypeCASDSK.cpp
     lib/media/drivewire/casSource.h lib/media/drivewire/casSourceFile.h
     lib/media/drivewire/casReader.h lib/media/drivewire/casReader.cpp
