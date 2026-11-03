@@ -115,7 +115,6 @@ protected:
 # include "drivewire/mediaTypeDSK.h"
 # include "drivewire/mediaTypeMRM.h"
 # include "drivewire/mediaTypeVDK.h"
-# include "drivewire/mediaTypeROM.h"
 # include "drivewire/mediaTypeCASDSK.h"
 #endif
 
