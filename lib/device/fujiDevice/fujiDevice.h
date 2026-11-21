@@ -87,6 +87,9 @@ struct dirEntryTimestamp {
 } __attribute__((packed));
 static_assert(sizeof(dirEntryTimestamp) == 6, "dirEntryTimestamp must be 6 bytes");
 
+// Each platform defines the values; shared code only passes one along.
+enum mediatype_t : uint8_t;
+
 struct dirEntryDetails {
     dirEntryTimestamp modified;
     uint32_t size;
@@ -181,9 +184,8 @@ protected:
     virtual size_t set_additional_direntry_details(fsdir_entry_t *f, uint8_t *dest,
                                                    uint8_t maxlen) = 0;
     dirEntryDetails _additional_direntry_details(fsdir_entry_t *f);
-    virtual mediatype_t directoryMediaType(const char *filename) {
-        return MediaType::discover_mediatype(filename);
-    }
+    // The media type a directory listing reports for filename.
+    virtual mediatype_t directoryMediaType(const char *filename) = 0;
 
     // Platform hook for fujicore_mount_disk_image_success()
     virtual error_is_true mount_media(DISK_DEVICE *disk_dev, fnFile *fileh, fujiDisk &disk,

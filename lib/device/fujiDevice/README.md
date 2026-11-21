@@ -26,6 +26,7 @@ browsing and image mounting, and it is the model for how device code should be s
 |---|---|---|
 | `setup()` | yes | create and register the platform's devices on `SYSTEM_BUS` |
 | `set_additional_direntry_details()` | yes | append the platform's directory-entry fields |
+| `directoryMediaType()` | yes | the platform's `mediatype_t` a directory listing reports for a file name |
 | `mount_media()`, `insert_boot_device()`, `get_disk_dev()` | no | platform disk handling |
 | `announce_rotation()`, `fujidev_set_device_fullpath()`, `fujidev_copy_file()` | no | per-packet hooks |
 | `qr_encode()`, `appkey_read()`, `appkey_write()` | no | mixin hooks |
