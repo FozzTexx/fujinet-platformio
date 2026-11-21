@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""dskcheck.py -- check fujinet-pc's MediaTypeAltair end to end over BoIP.
+"""dskcheck.py -- check fujinet-pc's AltairDSK end to end over BoIP.
 
 For each image (a path under the SD host, plus the same file on disk): mount
 it read-only into slot 0, read the PERCOM block, read every sector and compare

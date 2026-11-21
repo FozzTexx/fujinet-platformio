@@ -7,7 +7,7 @@ them over USB CDC to an ESP32-S3 `fujiversal-s100` on the same card.
 ## How it fits
 
 The ESP32-S3 side is plain `BUILD_RS232` with USB host transport; Altair `.dsk` images mount as
-`MediaTypeAltair` (lib/media/rs232/), 137-byte sectors addressed by track and sector. The card
+`AltairDSK` (lib/media/disk/), 137-byte sectors addressed by track and sector. The card
 decodes four blocks from DIP switches, holds each of its cycles with PRDY until the RP answers,
 and so meets the bus at any CPU speed:
 
