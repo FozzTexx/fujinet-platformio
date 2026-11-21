@@ -11,8 +11,7 @@
 // on the file handle it is given: a std::fstream, a std::FILE, or anything with
 // fnFile's seek(), tell(), read(), write() and flush().
 //
-// Deliberately not a MediaType: every platform declares its own incompatible
-// MediaType, so each platform's adapter (e.g. rs232/diskTypeIMD) wraps this.
+// Deliberately not a Media: IMDDisk in disk/ wraps it as one.
 
 #include <cstdint>
 #include <cstdio>

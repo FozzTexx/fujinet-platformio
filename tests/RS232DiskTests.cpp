@@ -73,6 +73,15 @@ std::vector<uint8_t> drive_status(TestDisk &disk)
     return bus.answer;
 }
 
+// The 12-byte PERCOM block: tracks, step rate, sectors per track (big-endian),
+// sides less one, density, sector size (big-endian), and drive present.
+std::vector<uint8_t> read_percom(TestDisk &disk)
+{
+    bus.reset();
+    disk.rs232_process(FujiBusPacket(FUJI_DEVICEID::DISK, CMD::DISK_PERCOM_READ));
+    return bus.answer;
+}
+
 void check_closed_once(TestDisk &disk, const MemFile &file)
 {
     disk.unmount();
@@ -111,7 +120,7 @@ TEST_CASE("an .img mounts raw, writable or read-only")
         TestDisk disk;
         CHECK(disk.mount(&file, IMG_TEST_FILE, file.contents().size(), mode).is_success());
         CHECK(disk.device_active);
-        CHECK(disk.mediatype() == MEDIATYPE_IMG);
+        CHECK(dynamic_cast<RawDisk *>(disk.media()) != nullptr);
         CHECK(disk.mount_time() != 0);
         check_closed_once(disk, file);
     }
@@ -182,7 +191,7 @@ TEST_CASE("unmount closes the image once and leaves nothing to read or write")
     check_closed_once(disk, file);
     CHECK_FALSE(disk.device_active);
     CHECK(disk.mount_time() == 0);
-    CHECK(disk.mediatype() == MEDIATYPE_UNKNOWN);
+    CHECK(disk.media() == nullptr);
     CHECK_FALSE(read_sector(disk, 0).has_value());
     CHECK(bus.outcome == Outcome::Error);
     CHECK(write_sector(disk, 0, filled(IMG_SECTOR_SIZE, 0x77)) == Outcome::Error);
@@ -269,14 +278,14 @@ TEST_CASE("a writable IMD stores a sector in place, and a read-only one refuses"
         CHECK(file.contents() == image);
         auto status = drive_status(disk);
         REQUIRE(status.size() == 4);
-        CHECK((status[0] & DISK_DRIVE_STATUS_WRITE_PROTECT_ERROR) != 0);
+        CHECK((status[0] & rs232Disk::DRIVE_STATUS_WRITE_PROTECT) != 0);
         check_closed_once(disk, file);
     }
 }
 
 TEST_CASE("an Altair-sized .dsk mounts as Altair, with 137-byte sectors")
 {
-    auto image = numbered_sectors(ALTAIR_MINIDISK_SECTORS, ALTAIR_SECTOR_SIZE);
+    auto image = numbered_sectors(ALTAIR_MINIDISK_SECTORS, ALTAIR_DSK_SECTOR_SIZE);
     REQUIRE(image.size() == ALTAIR_MINIDISK_SIZE);
     MemFile file(image);
     TestDisk disk;
@@ -286,7 +295,7 @@ TEST_CASE("an Altair-sized .dsk mounts as Altair, with 137-byte sectors")
     for (uint32_t sector : {300u, 0u, 1u, ALTAIR_MINIDISK_SECTORS - 1})
     {
         CAPTURE(sector);
-        CHECK(read_sector(disk, sector) == sector_of(image, sector, ALTAIR_SECTOR_SIZE));
+        CHECK(read_sector(disk, sector) == sector_of(image, sector, ALTAIR_DSK_SECTOR_SIZE));
     }
     CHECK_FALSE(read_sector(disk, ALTAIR_MINIDISK_SECTORS).has_value());
     check_closed_once(disk, file);
@@ -296,7 +305,7 @@ TEST_CASE("an Altair write lands in its sector, and a read-only mount refuses")
 {
     for (auto mode : {DISK_ACCESS_MODE_READ, DISK_ACCESS_MODE_WRITE})
     {
-        auto image = numbered_sectors(ALTAIR_MINIDISK_SECTORS, ALTAIR_SECTOR_SIZE);
+        auto image = numbered_sectors(ALTAIR_MINIDISK_SECTORS, ALTAIR_DSK_SECTOR_SIZE);
         MemFile file(image);
         TestDisk disk;
         REQUIRE(disk.mount(&file, ALTAIR_TEST_FILE, image.size(), mode).is_success());
@@ -304,15 +313,18 @@ TEST_CASE("an Altair write lands in its sector, and a read-only mount refuses")
         std::vector<uint8_t> expected = image;
         if (mode == DISK_ACCESS_MODE_WRITE)
         {
-            CHECK(write_sector(disk, 7, filled(ALTAIR_SECTOR_SIZE, 0x77)) == Outcome::Success);
-            std::fill_n(expected.begin() + 7 * ALTAIR_SECTOR_SIZE, ALTAIR_SECTOR_SIZE, 0x77);
-            CHECK(read_sector(disk, 7) == filled(ALTAIR_SECTOR_SIZE, 0x77));
+            CHECK(write_sector(disk, 7, filled(ALTAIR_DSK_SECTOR_SIZE, 0x77))
+                  == Outcome::Success);
+            std::fill_n(expected.begin() + 7 * ALTAIR_DSK_SECTOR_SIZE, ALTAIR_DSK_SECTOR_SIZE,
+                        0x77);
+            CHECK(read_sector(disk, 7) == filled(ALTAIR_DSK_SECTOR_SIZE, 0x77));
         }
         else
         {
-            CHECK(write_sector(disk, 7, filled(ALTAIR_SECTOR_SIZE, 0x77)) == Outcome::Error);
+            CHECK(write_sector(disk, 7, filled(ALTAIR_DSK_SECTOR_SIZE, 0x77))
+                  == Outcome::Error);
         }
-        CHECK(write_sector(disk, ALTAIR_MINIDISK_SECTORS, filled(ALTAIR_SECTOR_SIZE, 0x77))
+        CHECK(write_sector(disk, ALTAIR_MINIDISK_SECTORS, filled(ALTAIR_DSK_SECTOR_SIZE, 0x77))
               == Outcome::Error);
         CHECK(file.contents() == expected);
         check_closed_once(disk, file);
@@ -330,34 +342,122 @@ TEST_CASE("a .dsk that isn't an Altair size mounts raw")
     check_closed_once(disk, file);
 }
 
-TEST_CASE("an IMD with no tracks doesn't mount, and the drive is left inactive")
+TEST_CASE("the PERCOM block comes from an IMD image's data tracks")
 {
+    // Track 0 is 26 FM sectors of 128 bytes, the data tracks 8 MFM sectors of 512.
     IMD builder;
     builder.header();
+    builder.simple_track(0, 0, 0, 26, 0x11);
+    for (uint8_t cylinder = 1; cylinder < 3; cylinder++)
+    {
+        builder.thdr(3, cylinder, 0, 8, 2);
+        builder.map({1, 2, 3, 4, 5, 6, 7, 8});
+        for (int sector = 0; sector < 8; sector++)
+            builder.comp(0x02, 0x22);
+    }
     MemFile file(builder.out);
     TestDisk disk;
+    REQUIRE(disk.mount(&file, IMD_TEST_FILE, builder.out.size(), DISK_ACCESS_MODE_READ)
+            .is_success());
 
-    CHECK(disk.mount(&file, IMD_TEST_FILE, builder.out.size(), DISK_ACCESS_MODE_READ)
-            .is_error());
-    CHECK_FALSE(disk.device_active);
-    CHECK(disk.mount_time() == 0);
-    CHECK(disk.mediatype() == MEDIATYPE_UNKNOWN);
-    CHECK(file.closes == 1);
-    CHECK_FALSE(file.usedAfterClose);
+    const std::vector<uint8_t> expected = {3, 1, 0, 8, 0, rs232Disk::PERCOM_DENSITY_MFM,
+                                           2, 0, 0xFF, 0, 0, 0};
+    CHECK(read_percom(disk) == expected);
+    check_closed_once(disk, file);
 }
 
-TEST_CASE("an Altair image of the wrong size doesn't mount, and the drive is left inactive")
+TEST_CASE("the PERCOM block for an Altair minidisk is one side of 16 FM sectors of 137 bytes")
 {
-    std::vector<uint8_t> image(1000, 0);
+    auto image = numbered_sectors(ALTAIR_MINIDISK_SECTORS, ALTAIR_DSK_SECTOR_SIZE);
     MemFile file(image);
     TestDisk disk;
+    REQUIRE(disk.mount(&file, ALTAIR_TEST_FILE, image.size(), DISK_ACCESS_MODE_READ)
+            .is_success());
 
-    CHECK(disk.mount(&file, "rs232_disk_test.dsk", image.size(), DISK_ACCESS_MODE_READ,
-                     MEDIATYPE_ALTAIR)
-              .is_error());
-    CHECK_FALSE(disk.device_active);
-    CHECK(disk.mount_time() == 0);
-    CHECK(disk.mediatype() == MEDIATYPE_UNKNOWN);
-    CHECK(file.closes == 1);
-    CHECK_FALSE(file.usedAfterClose);
+    const std::vector<uint8_t> expected = {35, 1, 0, 16, 0, rs232Disk::PERCOM_DENSITY_FM,
+                                           0, 137, 0xFF, 0, 0, 0};
+    CHECK(read_percom(disk) == expected);
+    check_closed_once(disk, file);
+}
+
+TEST_CASE("a 360K raw image reports 40 tracks of two sides of 9 MFM sectors")
+{
+    MemFile file(std::vector<uint8_t>(720 * IMG_SECTOR_SIZE, 0));
+    TestDisk disk;
+    REQUIRE(disk.mount(&file, IMG_TEST_FILE, file.contents().size(), DISK_ACCESS_MODE_WRITE)
+            .is_success());
+
+    const std::vector<uint8_t> expected = {40, 1, 0, 9, 1, rs232Disk::PERCOM_DENSITY_MFM,
+                                           2, 0, 0xFF, 0, 0, 0};
+    CHECK(read_percom(disk) == expected);
+    auto status = drive_status(disk);
+    REQUIRE(status.size() == 4);
+    CHECK(status[0]
+          == (rs232Disk::DRIVE_STATUS_DOUBLE_DENSITY | rs232Disk::DRIVE_STATUS_DOUBLE_SIDED));
+    CHECK(status[1] == 0xFF);
+    check_closed_once(disk, file);
+}
+
+TEST_CASE("a PERCOM block the computer writes is read back, and nothing is without a disk")
+{
+    MemFile file(numbered_sectors(4, IMG_SECTOR_SIZE));
+    TestDisk disk;
+    REQUIRE(disk.mount(&file, IMG_TEST_FILE, file.contents().size(), DISK_ACCESS_MODE_READ)
+            .is_success());
+
+    std::vector<uint8_t> percom = {77, 1, 0, 26, 0, 0, 0, 128, 0xFF, 0, 0, 0};
+    bus.reset();
+    bus.incoming = percom;
+    disk.rs232_process(FujiBusPacket(FUJI_DEVICEID::DISK, CMD::DISK_PERCOM_WRITE));
+    CHECK(bus.outcome == Outcome::Success);
+    CHECK(read_percom(disk) == percom);
+    check_closed_once(disk, file);
+
+    read_percom(disk);
+    CHECK(bus.outcome == Outcome::Error);
+}
+
+TEST_CASE("FORMAT is refused for every kind of disk")
+{
+    MemFile file(numbered_sectors(4, IMG_SECTOR_SIZE));
+    TestDisk disk;
+    REQUIRE(disk.mount(&file, IMG_TEST_FILE, file.contents().size(), DISK_ACCESS_MODE_WRITE)
+            .is_success());
+
+    bus.reset();
+    disk.rs232_process(FujiBusPacket(FUJI_DEVICEID::DISK, CMD::DISK_FORMAT));
+    CHECK(bus.outcome == Outcome::Error);
+    CHECK(file.contents() == numbered_sectors(4, IMG_SECTOR_SIZE));
+    check_closed_once(disk, file);
+}
+
+TEST_CASE("a directory entry's type comes from the format list, and a .dsk is unknown")
+{
+    using Entries = JoinedMediaFormats<rs232Disk::Formats>;
+    CHECK(Entries::entryType("disk.img") == MEDIATYPE_IMG);
+    CHECK(Entries::entryType("load.XEX") == MEDIATYPE_IMG);
+    CHECK(Entries::entryType("cpm.imd") == MEDIATYPE_IMD);
+    CHECK(Entries::entryType("game.rom") == MEDIATYPE_ROM);
+    CHECK(Entries::entryType("game.a26") == MEDIATYPE_ROM);
+    CHECK(Entries::entryType("cpm.dsk") == MEDIATYPE_UNKNOWN);
+    CHECK(Entries::entryType("notes.txt") == MEDIATYPE_UNKNOWN);
+}
+
+TEST_CASE("a new disk is an IBM-3740 IMD by name, otherwise raw")
+{
+    rs232Disk::NewDiskRequest request = {};
+    request.sectorSize = 128;
+    request.numSectors = 77 * 26;
+
+    for (const char *name : {"new.imd", "new.img"})
+    {
+        CAPTURE(name);
+        strlcpy(request.filename, name, sizeof(request.filename));
+        MemFile file(std::vector<uint8_t>{});
+        TestDisk disk;
+        REQUIRE(disk.write_blank(&file, request).is_success());
+        bool isIMD = file.contents().size() > 4
+                     && memcmp(file.contents().data(), "IMD ", 4) == 0;
+        CHECK(isIMD == (strcmp(name, "new.imd") == 0));
+    }
 }

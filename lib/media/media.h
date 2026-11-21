@@ -89,13 +89,6 @@ protected:
 # include "atari/diskTypeXex.h"
 #endif
 
-#ifdef BUILD_RS232
-# include "rs232/diskType.h"
-# include "rs232/diskTypeAltair.h"
-# include "rs232/diskTypeImg.h"
-# include "rs232/diskTypeIMD.h"
-#endif
-
 #ifdef BUILD_IEC
 # include "cbm/mediaType.h"
 # include "cbm/BlankImage.h"

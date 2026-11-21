@@ -6,6 +6,9 @@
 
 #define MAX_FILENAME_LEN 256
 
+// FIXME - remove once all platforms have switched to Media class
+class MediaType;
+
 enum disk_access_flags_t {
     DISK_ACCESS_MODE_INVALID = 0x00,
     DISK_ACCESS_MODE_READ    = 0x01,

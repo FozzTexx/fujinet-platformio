@@ -9,7 +9,9 @@ about it.
   `fujiDisk` slot or a cached file handle.
 - A drive keeps its mounted image in `_media`, the platform's `MediaType` from
   [lib/media/](../../media/), and sets it back to `nullptr` once nothing is mounted. `iecDrive`
-  holds no `MediaType`, so it overrides `isMounted()`.
+  holds no `MediaType` and `rs232Disk` holds a `BlockMedia` from
+  [lib/media/disk/](../../media/disk/), so both override `isMounted()`. `MediaType` is
+  forward-declared here because RS232 has none.
 - `FujiDiskDrive` derives from `DiskDriveBase`, which each bus header in [lib/bus/](../../bus/)
   names: `virtualDevice` on most buses, `drivewireDevice` on DriveWire, `IECFileDevice` on IEC.
   Its constructors are the base's.
